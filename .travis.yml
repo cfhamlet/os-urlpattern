@@ -1,0 +1,20 @@
+language: python
+sudo: false
+python:
+- '2.7'
+install:
+- pip install -e .
+- pip install pytest
+- pip install coverage
+- pip install codecov
+script:
+- coverage erase
+- coverage run -m py.test
+- coverage combine
+after_success:
+- codecov
+deploy:
+  provider: pypi
+  user: cfhamlet
+  password:
+    secure: eGq3kLUT6D3grZ2ZlCaJ5e/9Ma3HkOLZQDDcMsWUs/zUqpngI/9ibplgbOcxpRxKCgFKn5GFDV9ZsKk00fEfYWpe4WZW2vG6mu3k63oB4FMkUQ4GGoQKcXdR27aNtNhvTzU3VPDgyEpNI5QJmTLJp3Y3fbzcjL3a87kschf6B46MP4Nu3NqWuXZDYIZN6GY8HwD6J3Ii15nl4rCS6phdYdKckyVX8coNQVWkljx+ZtfGMkClsui9BynKBNVwufm3/F1zwWI1UXCrU3v4FxqiCmK2CYSX7tdFcGHaVTf0NqscbPxZgPvM+1tUBbW1M5N5GlUf5f7CxwtFWEqFTlz926gzYrHUaewmjILWDm6OxWAKjuks8lgywQq2twYpd8UVlRywvjfaobGpptoBevuxgr/uzipeckWR0X1SiqUaFnKzuLOnVeZ9I1ixA5zcIR74xnjEOvBnMpeawzZsIidoQcn4PRzbyaR4uDxnYyWB5yW/Q9d1UbAYOe0QyQY6NnZzvkRovkge3H/Wlk+K2P0qSUmmznWSDekdBcm4yr3bZsujgWOKS3c9L/OHH+P3YVAC1x0304xGveWt0cU/sfTPpEi99N+0QOxPQX3CnutFkXZIgR4nsGWnZYnMngrr8eHIfav+Ms20UTYwjsn79vfXc10kkesQtW863GdFXBYfw3c=

@@ -1,0 +1,9 @@
+[run]
+parallel = true
+branch = true
+source = os_urlpattern
+
+[paths]
+source =
+    src/os_urlpattern
+    .tox/*/lib/python*/site-packages/os_urlpattern

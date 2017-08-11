@@ -1,0 +1,6 @@
+include LICENSE
+include README.rst
+include MANIFEST.in
+include src/os_urlpattern/VERSION
+recursive-include tests *.py
+

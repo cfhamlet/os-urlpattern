@@ -1,0 +1,2 @@
+class IrregularURLException(Exception):
+    pass
