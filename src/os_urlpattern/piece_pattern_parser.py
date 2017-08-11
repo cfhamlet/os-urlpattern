@@ -110,12 +110,18 @@ class PiecePatternParser(object):
                                   for part, pattern_str in zip(piece_list, rule_list)])
 
     def _create_piece_pattern(self):
+        def _ext_pattern(piece, pattern_string):
+            if pattern_string == BasePatternRule.DOT:
+                return self._p_one_or_more(pattern_string)
+            return get_pattern_from_cache(pattern_string)
+
         if self._should_split_by_last_dot():
             pos = self._last_dot_pos
             bpp = self._process(
                 self._piece_list[0:pos], self._rule_list[0:pos])
-            fpp = self._process(
-                self._piece_list[pos:], self._rule_list[pos:])
+            fpp = MultiPiecePattern([PiecePattern(piece, _ext_pattern(piece, pattern_str))
+                                     for piece, pattern_str in zip(self._piece_list[pos:],
+                                                                   self._rule_list[pos:])])
             return MultiPiecePattern([bpp, fpp])
         else:
             return self._process(self._piece_list, self._rule_list)
