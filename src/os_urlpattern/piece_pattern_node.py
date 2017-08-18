@@ -1,6 +1,5 @@
 import math
 from pattern import get_pattern_from_cache
-from piece_pattern import EMPTY_PIECE_PATTERN
 
 
 class PiecePatternNode(object):
@@ -65,8 +64,8 @@ class PiecePatternNode(object):
     def children(self):
         return self._children
 
-    def add_child_node_from_piece(self, piece_pattern_parser, piece, last_dot_split=False, count=1):
-        piece_pattern = piece_pattern_parser.parse(piece, last_dot_split)
+    def add_child_node_from_piece(self, piece_pattern_parser, piece, count=1):
+        piece_pattern = piece_pattern_parser.parse(piece)
         return self.add_child_node_from_piece_pattern(piece_pattern, count)
 
     def __str__(self):

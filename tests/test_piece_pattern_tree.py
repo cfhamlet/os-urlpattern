@@ -29,7 +29,7 @@ def test_count(config):
     num = 100
     urls = ['http://test.com/abc/%d' % i for i in range(num)]
     url_meta, _ = parse_url(urls[0])
-    parser = PiecePatternParser(config)
+    parser = PiecePatternParser()
     tree = PiecePatternTree(config, url_meta)
     for url in urls:
         _, pieces = parse_url(url)

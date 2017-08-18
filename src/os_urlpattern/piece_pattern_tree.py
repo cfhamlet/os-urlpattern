@@ -1,6 +1,6 @@
 import math
 from piece_pattern_node import PiecePatternNode
-from piece_pattern import EMPTY_PIECE_PATTERN
+from piece_pattern_parser import EMPTY_PIECE_PATTERN
 from utils import load_object
 
 
@@ -65,9 +65,8 @@ class PiecePatternTree(object):
         node.incr_count(count)
         self._level_combiners[0].add_node(node, None, count)
         for idx, piece in enumerate(pieces):
-            last_dot_split = True if idx == self._url_meta.path_depth - 1 else False
             node, is_new = node.add_child_node_from_piece(
-                piece_pattern_parser, piece, last_dot_split, count)
+                piece_pattern_parser, piece, count)
             self._level_combiners[idx + 1].add_node(node, is_new, count)
 
     def _piece_eq_pattern(self, path):
