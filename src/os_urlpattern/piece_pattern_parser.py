@@ -7,7 +7,8 @@ from pattern import get_pattern_from_cache
 
 class PiecePatternParser(object):
     def __init__(self, config):
-        self._config = config
+        self._reserved_ext_names =  set(config.getlist('make', 'reserved_ext_names'))
+        self._merge_multi_piece_threshold = config.getint('make', 'merge_multi_piece_threshold')
         self._reset()
 
     def _reset(self):
@@ -15,10 +16,6 @@ class PiecePatternParser(object):
         self._rule_list = []
         self._piece_list = []
         self._last_dot_pos = -1024
-
-    @property
-    def config(self):
-        return self._config
 
     def parse(self, string, last_dot_split=False):
         self._reset()
@@ -73,7 +70,7 @@ class PiecePatternParser(object):
 
         if self._should_split_by_last_dot():
             ext_name = "".join(self._piece_list[self._last_dot_pos + 1:])
-            if ext_name in self.config.reserved_ext_names:
+            if ext_name in self._reserved_ext_names:
                 del self._piece_list[self._last_dot_pos + 1:]
                 del self._rule_list[self._last_dot_pos + 1:]
                 self._piece_list.append(ext_name)
@@ -100,7 +97,7 @@ class PiecePatternParser(object):
         if BasePatternRule.BASE_ASCII in rule_set:
             rule_set.update(BASE_ASCII_RULE_SET)
             rule_set.discard(BasePatternRule.BASE_ASCII)
-        if part_num > self.config.merge_multi_piece_threshold:
+        if part_num > self._merge_multi_piece_threshold:
             return PiecePattern(''.join(piece_list), self._p_merge_rules(rule_set))
 
         if not rule_set.intersection(DIGIT_AND_ASCII_RULE_SET):

@@ -13,7 +13,7 @@ class Config(ConfigParser):
                               dict_type=dict_type, allow_no_value=allow_no_value)
         self._frozen = False
 
-    def get_list(self, section, option, sep=',', conv=None):
+    def getlist(self, section, option, sep=',', conv=None):
         values = self.get(section, option).split(sep)
         if conv:
             return [conv(v.strip()) for v in values]
@@ -28,4 +28,4 @@ class Config(ConfigParser):
 
     def set(self, section, option, value=None):
         self._assert_mutability()
-        ConfigParser.set(self, section, option, value=None)
+        ConfigParser.set(self, section, option, value)

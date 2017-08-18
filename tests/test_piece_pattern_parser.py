@@ -1,3 +1,4 @@
+from os_urlpattern.config import Config
 from os_urlpattern.piece_pattern_parser import PiecePatternParser
 
 
@@ -9,10 +10,11 @@ def _test_parse(parser, data):
 
 
 def test_parse():
-    class TempConfig(object):
-        reserved_ext_names = set(['exe'])
-        merge_multi_piece_threshold = 7
-    parser = PiecePatternParser(TempConfig)
+    c = Config()
+    c.add_section('make')
+    c.set('make', 'reserved_ext_names', 'exe')
+    c.set('make', 'merge_multi_piece_threshold', '7')
+    parser = PiecePatternParser(c)
     data = [
         ('abc', True, [('pattern_string', '[a-z]+'), ('piece', 'abc')]),
         ('abc.exe', True, [
