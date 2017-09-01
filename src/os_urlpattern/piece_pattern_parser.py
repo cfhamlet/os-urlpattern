@@ -8,25 +8,33 @@ class PiecePattern(object):
     def __init__(self, pieces, rules):
         self._pieces = pieces
         self._rules = rules
+        self._piece = None
+        self._fuzzy_pattern = None
+        self._base_pattern = None
 
     @property
     def piece(self):
-        return ''.join(self._pieces)
+        if self._piece is None:
+            self._piece = ''.join(self._pieces)
+        return self._piece
 
     def _one_or_more(self, rule):
         return '[%s]+' % rule if rule else ''
 
     @property
     def fuzzy_pattern(self):
-        uniq_rules = sorted(set(self._rules))
-        return get_pattern_from_cache(self._one_or_more(''.join(uniq_rules)))
+        if self._fuzzy_pattern is None:
+            uniq_rules = sorted(set(self._rules))
+            self._fuzzy_pattern = get_pattern_from_cache(
+                self._one_or_more(''.join(uniq_rules)))
+        return self._fuzzy_pattern
 
     @property
     def base_pattern(self):
-        return get_pattern_from_cache(''.join([self._one_or_more(rule) for rule in self._rules]))
-
-    def has_multi_part(self):
-        return False if self.piece_num <= 1 else True
+        if self._base_pattern is None:
+            self._base_pattern = get_pattern_from_cache(
+                ''.join([self._one_or_more(rule) for rule in self._rules]))
+        return self._base_pattern
 
     @property
     def piece_num(self):
@@ -79,8 +87,7 @@ class PiecePatternParser(object):
 
     def _normalize(self, letter, rule):
         if rule in SIGN_RULE_SET:
-            l = len(letter)
-            return self._exact_num(rule, l)
+            return self._exact_num(rule, len(letter))
         return letter
 
     def _create_piece_pattern(self):

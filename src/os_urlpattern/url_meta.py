@@ -14,6 +14,9 @@ class URLMeta(object):
     def __hash__(self):
         return hash(self.hashcode)
 
+    def __eq__(self, o):
+        return hash(o) == hash(self)
+
     @property
     def hashcode(self):
         if self._hash_code is not None:
