@@ -45,20 +45,22 @@ class PiecePatternNode(object):
 
     @property
     def children(self):
-        return self._children
+        if not self._children:
+            return None
+        return self._children.values()
 
     @property
     def count(self):
         return self._count
 
-    def incr_count(self, count=1, recur=False):
+    def incr_count(self, count, recur=False):
         self._count += count
         node = self.parrent if recur else None
         while node:
             node.incr_count(count)
             node = node.parrent
 
-    def add_child_node_from_piece_pattern(self, piece_pattern, count=1, pattern=None):
+    def add_child_node_from_piece_pattern(self, piece_pattern, count, pattern=None):
         if self._children is None:
             self._children = {}
         piece = piece_pattern.piece
@@ -73,12 +75,10 @@ class PiecePatternNode(object):
         return child, is_new
 
     def __str__(self):
-        return ' '.join((str(self._piece_pattern), self.pattern.pattern_string))
-
-    __repr__ = __str__
+        return ' '.join((str(self._piece_pattern), str(self.pattern)))
 
     def set_parrent(self, parrent):
-        if not self._pattern:
+        if not self._parrent:
             self._parrent = parrent
 
     def _dump_paths(self, path_list):

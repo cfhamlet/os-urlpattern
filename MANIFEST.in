@@ -2,5 +2,6 @@ include LICENSE
 include README.rst
 include MANIFEST.in
 include src/os_urlpattern/VERSION
+include src/os_urlpattern/config/default_config.cfg
 recursive-include tests *.py
 

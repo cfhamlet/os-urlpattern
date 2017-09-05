@@ -12,6 +12,9 @@ class PiecePattern(object):
         self._fuzzy_pattern = None
         self._base_pattern = None
 
+    def __str__(self):
+        return ' '.join((self.piece, str(self.base_pattern)))
+
     @property
     def piece(self):
         if self._piece is None:
@@ -21,12 +24,20 @@ class PiecePattern(object):
     def _one_or_more(self, rule):
         return '[%s]+' % rule if rule else ''
 
+    def _exact_num(self, rule, num):
+        return '[%s]' % rule if num == 1 else '[%s]{%d}' % (rule, num)
+
     @property
     def fuzzy_pattern(self):
         if self._fuzzy_pattern is None:
-            uniq_rules = sorted(set(self._rules))
+            fuzzy_rule = None
+            if self.part_num == 1:
+                fuzzy_rule = self._rules[0]
+            else:
+                uniq_rules = sorted(set(self._rules))
+                fuzzy_rule = ''.join(uniq_rules)
             self._fuzzy_pattern = get_pattern_from_cache(
-                self._one_or_more(''.join(uniq_rules)))
+                self._one_or_more(fuzzy_rule))
         return self._fuzzy_pattern
 
     @property
@@ -36,8 +47,12 @@ class PiecePattern(object):
                 ''.join([self._one_or_more(rule) for rule in self._rules]))
         return self._base_pattern
 
+    def exact_num_pattern(self, num):
+        assert self.part_num == 1, 'only one part has exact num pattern'
+        return get_pattern_from_cache(self._exact_num(self._rules[0], num))
+
     @property
-    def piece_num(self):
+    def part_num(self):
         return len(self._pieces)
 
 

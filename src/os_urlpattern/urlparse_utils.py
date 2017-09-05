@@ -160,8 +160,8 @@ def parse_query_string(query_string):
 
 
 def parse_url_structure(result, norm_query_key=True):
-    parts = filter_useless_part(result.path.split('/')[1:])
-    path_depth = len(parts)
+    pieces = filter_useless_part(result.path.split('/')[1:])
+    path_depth = len(pieces)
     assert path_depth > 0
 
     if result.blank_query:
@@ -176,12 +176,38 @@ def parse_url_structure(result, norm_query_key=True):
         result.fragment or result.blank_fragment) else False
 
     url_meta = URLMeta(path_depth, key_list, has_fragment)
-    parts.extend(value_list)
+    pieces.extend(value_list)
     if has_fragment:
-        parts.append(result.fragment)
-    return url_meta, parts
+        pieces.append(result.fragment)
+    return url_meta, pieces
 
 
 def parse_url(url):
     result = analyze_url(url)
     return parse_url_structure(result, True)
+
+
+def split(url_meta, pattern_path):
+    s = 0
+    l = []
+    for i in url_meta.depths:
+        e = s + i
+        l.append([p for p in pattern_path[s:e]])
+        s = e
+    return l
+
+
+def join(url_meta,  path_patterns, query_patterns, fragment_patterns):
+    s = StringIO.StringIO()
+    s.write('/')
+    p = '/'.join([str(p) for p in path_patterns])
+    s.write(p)
+    if query_patterns:
+        s.write('[\\?]')
+        s.write('&'.join(["".join((str(k), str(v)))
+                          for k, v in zip(url_meta.query_keys, query_patterns)]))
+    if fragment_patterns:
+        s.write('#')
+        s.write(''.join(str(p) for p in fragment_patterns))
+    s.seek(0)
+    return s.read()
