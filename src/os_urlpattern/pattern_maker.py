@@ -1,3 +1,5 @@
+import logging
+import time
 from os_urlpattern.urlparse_utils import parse_url
 from os_urlpattern.piece_pattern_parser import PiecePatternParser
 from os_urlpattern.piece_pattern_tree import PiecePatternTree
@@ -16,7 +18,7 @@ class PatternMaker(object):
         pp_hash = hash(
             '/'.join([pp.fuzzy_pattern.pattern_string for pp in piece_patterns]))
         pp_hash = str(pp_hash)
-        return ''.join((meta_hash, '|', pp_hash))
+        return ''.join((meta_hash, pp_hash))
 
     def load(self, url):
         url_meta, pieces = parse_url(url)

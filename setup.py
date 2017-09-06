@@ -32,6 +32,7 @@ setup(
             'pattern-match = os_urlpattern.cmdline:match',
         ]
     },
+    extras_require={'Memory': ['psutil']},
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',

@@ -15,8 +15,7 @@ class PatternPath(object):
 
     @property
     def pattern_id(self):
-        m = hashlib.md5(self.pattern_path_string)
-        return m.hexdigest()
+        return hashlib.md5(self.pattern_path_string).hexdigest()
 
     @property
     def pattern_path_string(self):

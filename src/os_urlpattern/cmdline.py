@@ -4,6 +4,8 @@ import os
 import argparse
 import logging
 import json
+import time
+from os_urlpattern.utils import Counter
 from logging.config import dictConfig
 from os_urlpattern.pattern_maker import PatternMaker
 from os_urlpattern.pattern_tree import PatternPathEncoder
@@ -72,9 +74,13 @@ class MakePatternCommand(Command):
                 raise ValueError, 'File not exist: %s' % args.config
         self._config.freeze()
         pattern_maker = PatternMaker(self._config)
+        counter = Counter('LoadStatus', 5000)
+        counter.start()
         for url in inputs:
             url = url.strip()
             pattern_maker.load(url)
+            counter.log('LOADING')
+        counter.log('LOADED', True)
         for pattern_path in pattern_maker.process_and_dump():
             print(json.dumps(pattern_path, cls=PatternPathEncoder))
 
@@ -87,6 +93,8 @@ _DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
     'incremental': True,
+
+
 }
 
 

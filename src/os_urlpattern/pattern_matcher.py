@@ -1,0 +1,2 @@
+class PatternMatcher(object):
+    pass
