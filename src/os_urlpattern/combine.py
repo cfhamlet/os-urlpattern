@@ -1,11 +1,14 @@
 from pattern import get_pattern_from_cache
+from url_meta import URLMeta
+from piece_pattern_tree import PiecePatternTree
 
 
 class Combiner(object):
-    def __init__(self, config, current_level):
+    def __init__(self, config, current_level, **kwargs):
         self._config = config
-        self._min_combine_num = config.getint('make', 'min_combine_num')
         self._current_level = current_level
+        self._from_level = kwargs.get('from_level', 0)
+        self._min_combine_num = config.getint('make', 'min_combine_num')
         self._nodes = []
 
     def last_level(self):
@@ -18,18 +21,27 @@ class Combiner(object):
         pass
 
     def combine(self):
-        self.process()
-        if self.last_level():
-            return
         next_level_combiners = {}
         next_level = self._current_level + 1
-        for node in self._nodes:
-            n_hash = hash(node.pattern)
-            if n_hash not in next_level_combiners:
-                next_level_combiners[n_hash] = create_combiner(
-                    self._config, node.children[0], next_level)
-            for child in node.children:
-                next_level_combiners[n_hash].add_node(child)
+
+        if self._current_level < self._from_level:
+            next_level_combiner = create_combiner(
+                self._config, self._nodes[0].children[0], next_level, from_level=self._from_level)
+            for node in self._nodes:
+                for child in node.children:
+                    next_level_combiner.add_node(child)
+            next_level_combiners[1] = next_level_combiner
+        else:
+            self.process()
+            if self.last_level():
+                return
+            for node in self._nodes:
+                n_hash = hash(node.pattern)
+                if n_hash not in next_level_combiners:
+                    next_level_combiners[n_hash] = create_combiner(
+                        self._config, node.children[0], next_level, from_level=self._from_level)
+                for child in node.children:
+                    next_level_combiners[n_hash].add_node(child)
         for combiner in next_level_combiners.values():
             combiner.combine()
 
@@ -95,9 +107,8 @@ class _CombineStrategy(object):
 
 
 class SingleCombiner(Combiner):
-    def __init__(self, config,  current_level):
-        super(SingleCombiner, self).__init__(
-            config,  current_level)
+    def __init__(self, config, current_level, **kwargs):
+        super(SingleCombiner, self).__init__(config, current_level, **kwargs)
         self._piece_node_bag = {}
 
     def add_node(self, node):
@@ -120,26 +131,52 @@ class SingleCombiner(Combiner):
         high_prob.process()
 
 
-class MultilevelCombiner(object):
-    pass
+class MultilevelCombiner(Combiner):
+    def __init__(self, config, current_level, **kwargs):
+        super(MultilevelCombiner, self).__init__(
+            config, current_level, **kwargs)
+        from pattern_maker import PatternMaker
+        self._maker = None
+
+    def add_node(self, node):
+        self._maker.load(
+            node.piece_patterns.sub_piece_patterns(), node.count, uniq_path=False)
+
+    def combine(self):
+        pattern_tree = self._maker.make()
 
 
 class FuzzyCombiner(Combiner):
-    pass
+    def __init__(self, config, current_level, **kwargs):
+        super(FuzzyCombiner, self).__init__(config, current_level, **kwargs)
+        self._multi_level_combiners = {}
+
+    def add_node(self, node):
+        super(FuzzyCombiner, self).add_node(node)
+        b_hash = hash(node.piece_pattern.base_pattern)
+        if b_hash not in self._multi_level_combiners:
+            url_meta = URLMeta(node.piece_pattern.part_num, [], False)
+            self._multi_level_combiners = create_combiner(
+                self._config, node, self._current_level, multi=True, url_meta=url_meta)
+        self._multi_level_combiners[b_hash].add_node(node)
+
+    def process(self):
+        for combiner in self._multi_level_combiners.values():
+            combiner.combine()
 
 
-def create_combiner(config, node, current_level, fuzzy=True):
+def create_combiner(config, node, current_level, **kwargs):
     combiner_class = SingleCombiner
     if node.piece_pattern.part_num > 1:
-        if not fuzzy:
+        if kwargs.get('multi'):
             combiner_class = MultilevelCombiner
         else:
             combiner_class = FuzzyCombiner
-    return combiner_class(config, current_level)
+    return combiner_class(config, current_level, **kwargs)
 
 
-def combine(config, piece_pattern_tree):
+def combine(config, piece_pattern_tree, **kwargs):
     node = piece_pattern_tree.root
-    combiner = create_combiner(config, node, 0)
+    combiner = create_combiner(config, node, 0, **kwargs)
     combiner.add_node(node)
     combiner.combine()

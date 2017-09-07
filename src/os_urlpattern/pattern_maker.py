@@ -41,8 +41,9 @@ class Maker(object):
         self._url_meta = url_meta
         self._piece_pattern_tree = PiecePatternTree()
 
-    def load(self, piece_patterns):
-        self._piece_pattern_tree.add_piece_patterns(piece_patterns)
+    def load(self, piece_patterns, count=1, uniq_path=True):
+        self._piece_pattern_tree.add_piece_patterns(
+            piece_patterns, count, uniq_path)
 
     def _path_dump_and_load(self, src, dest, index=0):
         for path in src.dump_paths():

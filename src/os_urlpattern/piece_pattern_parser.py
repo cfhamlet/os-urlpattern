@@ -12,6 +12,9 @@ class PiecePattern(object):
         self._fuzzy_pattern = None
         self._base_pattern = None
 
+    def sub_piece_patterns(self):
+        return [PiecePattern([piece], [rule]) for piece, rule in zip(self._pieces, self._rules)]
+
     def __str__(self):
         return ' '.join((self.piece, str(self.base_pattern)))
 
@@ -43,8 +46,11 @@ class PiecePattern(object):
     @property
     def base_pattern(self):
         if self._base_pattern is None:
-            self._base_pattern = get_pattern_from_cache(
-                ''.join([self._one_or_more(rule) for rule in self._rules]))
+            if self.part_num == 1:
+                self._base_pattern = self._one_or_more(self._rules[0])
+            else:
+                self._base_pattern = get_pattern_from_cache(
+                    ''.join([self._one_or_more(rule) for rule in self._rules]))
         return self._base_pattern
 
     def exact_num_pattern(self, num):

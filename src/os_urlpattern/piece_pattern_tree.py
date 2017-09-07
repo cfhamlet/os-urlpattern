@@ -15,14 +15,14 @@ class PiecePatternTree(object):
     def count(self):
         return self._root.count
 
-    def add_piece_patterns(self, piece_patterns, count=1):
+    def add_piece_patterns(self, piece_patterns, count=1, uniq_path=True):
         node = self._root
         node.incr_count(count)
         is_new = None
         for piece_pattern in piece_patterns:
             node, is_new = node.add_child_node_from_piece_pattern(
                 piece_pattern, count)
-        if not is_new:
+        if uniq_path and not is_new:
             node.incr_count(0 - count, True)
         return is_new
 
