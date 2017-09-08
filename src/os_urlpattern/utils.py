@@ -10,8 +10,9 @@ class Counter(object):
         self._log_interval = log_interval
         self._logger = logging.getLogger(logger_name)
 
-    def start(self):
+    def reset(self):
         self._start_time = time.time()
+        self._count = 0
 
     def _speed(self):
         now = time.time()

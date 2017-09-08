@@ -75,7 +75,7 @@ class MakePatternCommand(Command):
         self._config.freeze()
         pattern_maker = PatternMaker(self._config)
         counter = Counter('LoadStatus', 5000)
-        counter.start()
+        counter.reset()
         for url in inputs:
             url = url.strip()
             pattern_maker.load(url)

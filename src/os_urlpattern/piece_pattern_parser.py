@@ -47,7 +47,8 @@ class PiecePattern(object):
     def base_pattern(self):
         if self._base_pattern is None:
             if self.part_num == 1:
-                self._base_pattern = self._one_or_more(self._rules[0])
+                self._base_pattern = get_pattern_from_cache(
+                    self._one_or_more(self._rules[0]))
             else:
                 self._base_pattern = get_pattern_from_cache(
                     ''.join([self._one_or_more(rule) for rule in self._rules]))
