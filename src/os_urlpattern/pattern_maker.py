@@ -1,5 +1,4 @@
-import logging
-import time
+import hashlib
 from os_urlpattern.urlparse_utils import parse_url
 from os_urlpattern.piece_pattern_parser import PiecePatternParser
 from os_urlpattern.piece_pattern_tree import PiecePatternTree
@@ -15,10 +14,9 @@ class PatternMaker(object):
 
     def _uniq_hash(self, url_meta, piece_patterns):
         meta_hash = url_meta.hashcode
-        pp_hash = hash(
-            '/'.join([pp.fuzzy_pattern.pattern_string for pp in piece_patterns]))
-        pp_hash = str(pp_hash)
-        return ''.join((meta_hash, pp_hash))
+        pp_hash = '/'.join([pp.fuzzy_pattern.pattern_string for pp in piece_patterns])
+        pp_hash = hashlib.md5(pp_hash).hexdigest().upper()
+        return '-'.join((meta_hash, pp_hash))
 
     def load(self, url):
         url_meta, pieces = parse_url(url)

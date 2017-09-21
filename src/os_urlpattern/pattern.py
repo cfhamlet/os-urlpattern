@@ -9,6 +9,8 @@ class Pattern(object):
     def __str__(self):
         return self.pattern_string
 
+    __repr__ = __str__
+
     @property
     def pattern_string(self):
         return self._pattern_string

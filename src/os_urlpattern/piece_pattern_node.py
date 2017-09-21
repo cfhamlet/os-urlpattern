@@ -17,37 +17,6 @@ class PiecePatternNode(object):
     def use_piece_as_pattern(self):
         self._pattern = get_pattern_from_cache(self.piece)
 
-    def split(self):
-        if not self._parrent or not self._parrent.parrent:
-            return
-        tpoint = self._parrent.parrent
-        spoint = self._parrent
-        if self._count == spoint.count:
-            return
-        cnodes = tpoint.get_child(spoint.piece)
-        if not isinstance(cnodes, list):
-            cnodes = [spoint]
-            tpoint.set_child(cnodes)
-        npoint = PiecePatternNode(spoint.piece_eq_pattern, spoint.pattern)
-        npoint.incr_count(self.count)
-        npoint.set_parrent(tpoint)
-        self.set_parrent(npoint)
-        npoint.set_child(self)
-        cnodes.append(npoint)
-
-        spoint.incr_count(0 - self.count)
-        spoint.remove_child(self.piece)
-
-    def get_child(self, piece):
-        return self._children[piece]
-
-    def set_child(self, node):
-        piece = node[0].piece if isinstance(node, list) else node.piece
-        self._children[piece] = node
-
-    def remove_child(self, piece):
-        self._children.pop(piece)
-
     def piece_eq_pattern(self):
         return True if self.piece == self._pattern.pattern_string else False
 
@@ -81,13 +50,7 @@ class PiecePatternNode(object):
     def children(self):
         if not self._children:
             return None
-        children = []
-        for child in self._children.values():
-            if isinstance(child, list):
-                children.extend(child)
-            else:
-                children.append(child)
-        return children
+        return self._children.values()
 
     @property
     def count(self):
@@ -126,16 +89,10 @@ class PiecePatternNode(object):
         if not self._children:
             yield path_list
             return
-        for child in self._children.values():
-            if isinstance(child, list):
-                for c in child:
-                    for path in c._dump_paths(path_list):
-                        yield path
-                    path_list.pop(-1)
-            else:
-                for path in child._dump_paths(path_list):
-                    yield path
-                path_list.pop(-1)
+        for child in self.children:
+            for path in child._dump_paths(path_list):
+                yield path
+            path_list.pop(-1)
 
     def dump_paths(self):
         path_list = []
