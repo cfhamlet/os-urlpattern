@@ -14,6 +14,15 @@ class PiecePatternNode(object):
         self._pattern = get_pattern_from_cache(
             self.piece) if pattern is None else pattern
 
+    @property
+    def current_level(self):
+        level = 0
+        p = self.parrent
+        while p:
+            level += 1
+            p = p.parrent
+        return level
+
     def use_piece_as_pattern(self):
         self._pattern = get_pattern_from_cache(self.piece)
 

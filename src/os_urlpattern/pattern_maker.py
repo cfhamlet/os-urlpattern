@@ -37,7 +37,7 @@ class Maker(object):
     def __init__(self, config, url_meta):
         self._config = config
         self._url_meta = url_meta
-        self._piece_pattern_tree = PiecePatternTree()
+        self._piece_pattern_tree = PiecePatternTree(url_meta)
 
     def load(self, piece_patterns, count=1, uniq_path=True):
         self._piece_pattern_tree.add_piece_patterns(

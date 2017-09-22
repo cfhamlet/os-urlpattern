@@ -4,8 +4,13 @@ from piece_pattern_parser import EMPTY_PIECE_PATTERN
 
 
 class PiecePatternTree(object):
-    def __init__(self):
+    def __init__(self, url_meta):
         self._root = PiecePatternNode(EMPTY_PIECE_PATTERN)
+        self._url_meta = url_meta
+
+    @property
+    def url_meta(self):
+        return self._url_meta
 
     @property
     def root(self):
