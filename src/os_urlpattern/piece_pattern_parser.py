@@ -155,6 +155,10 @@ class PiecePattern(object):
     def part_num(self):
         return len(self._pieces)
 
+    @property
+    def mixed_part_num(self):
+        return len(self.mixed_piece_patterns)
+
 
 EMPTY_PIECE_PATTERN = PiecePattern((), ())
 

@@ -37,7 +37,7 @@ class Maker(object):
     def __init__(self, config, url_meta):
         self._config = config
         self._url_meta = url_meta
-        self._piece_pattern_tree = PiecePatternTree(url_meta)
+        self._piece_pattern_tree = PiecePatternTree()
 
     def load(self, piece_patterns, count=1, uniq_path=True):
         self._piece_pattern_tree.add_piece_patterns(
@@ -50,6 +50,6 @@ class Maker(object):
 
     def make(self):
         pattern_tree = PatternTree(self._url_meta)
-        combine(self._config, self._piece_pattern_tree)
+        combine(self._config, self._url_meta, self._piece_pattern_tree)
         self._path_dump_and_load(self._piece_pattern_tree, pattern_tree, 1)
         return pattern_tree
