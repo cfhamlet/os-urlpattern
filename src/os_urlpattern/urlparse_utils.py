@@ -139,7 +139,7 @@ def parse_query_string(query_string):
             last_c = i
             continue
         if i == '&':
-            raise IrregularURLException
+            raise IrregularURLException('Invalid url query')
         s = kv_buf[kv_type]
         s.write(i)
         last_c = i

@@ -30,6 +30,7 @@ def _config_logging(log_level):
 class Command(object):
     def __init__(self, config):
         self._config = config
+        self._logger = logging.getLogger(__name__)
 
     def add_argument(self, parser):
         parser.add_argument('-c', '--config',
@@ -78,7 +79,11 @@ class MakePatternCommand(Command):
         counter.reset()
         for url in inputs:
             url = url.strip()
-            pattern_maker.load(url)
+            try:
+                pattern_maker.load(url)
+            except Exception, e:
+                self._logger.warn('%s, %s' % (str(e), url))
+                continue
             counter.log('LOADING')
         counter.log('LOADED', True)
         for pattern_path in pattern_maker.process_and_dump():

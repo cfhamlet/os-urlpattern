@@ -161,16 +161,13 @@ class BasePatternCombiner(Combiner):
             h = hash(node.piece_pattern.mixed_base_pattern)
             if h not in mixed_combiners:
                 part_num = node.piece_pattern.mixed_part_num
-                if part_num == 1:
-                    combiner_class = LengthCombiner
-                else:
-                    combiner_class = MultilevelCombiner
-                mixed_combiners[h] = combiner_class(
+                mixed_combiners[h] = MultilevelCombiner(
                     self._combiner_manager, self._current_level, part_num=part_num, mixed=True)
             combiner = mixed_combiners[h]
 
             for piece_bag in bag.objs:
                 combiner.add_bag(piece_bag)
+        for combiner in mixed_combiners.values():
             combiner.combine()
 
     def combine(self):
