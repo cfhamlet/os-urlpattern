@@ -157,8 +157,8 @@ class BasePatternCombiner(Combiner):
     def _combine_mixed_pattern(self, pattern_bags):
         mixed_combiners = {}
         for bag in pattern_bags.values():
-            node = bag.objs[0][0]
-            h = hash(node.piece_pattern.mixed_piece_pattern)
+            node = bag.objs[0].objs[0]
+            h = hash(node.piece_pattern.mixed_base_pattern)
             if h not in mixed_combiners:
                 part_num = node.piece_pattern.mixed_part_num
                 if part_num == 1:
