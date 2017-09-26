@@ -16,8 +16,8 @@ class PiecePattern(object):
         self._piece_length = -1
         self._fuzzy_pattern = None
         self._base_pattern = None
-        self._sub_piece_patterns = None
-        self._mixed_base_pattern = None
+        self._base_piece_patterns = None
+        self._mixed_pattern = None
         self._mixed_piece_patterns = None
 
     @property
@@ -45,19 +45,19 @@ class PiecePattern(object):
         return self._piece_length
 
     @property
-    def sub_piece_patterns(self):
-        if not self._sub_piece_patterns:
-            self._sub_piece_patterns = [PiecePattern(
+    def base_piece_patterns(self):
+        if not self._base_piece_patterns:
+            self._base_piece_patterns = [PiecePattern(
                 [piece], [rule]) for piece, rule in zip(self._pieces, self._rules)]
-        return self._sub_piece_patterns
+        return self._base_piece_patterns
 
     @property
     def mixed_piece_patterns(self):
         if self._mixed_piece_patterns:
             return self._mixed_piece_patterns
 
-        if self.part_num == 1:
-            return self.sub_piece_patterns
+        if self.base_part_num == 1:
+            return self.base_piece_patterns
 
         mixed_pieces = []
         mixed_rules = []
@@ -119,7 +119,7 @@ class PiecePattern(object):
     def fuzzy_pattern(self):
         if self._fuzzy_pattern is None:
             fuzzy_rule = None
-            if self.part_num == 1:
+            if self.base_part_num == 1:
                 fuzzy_rule = self._rules[0]
             else:
                 uniq_rules = sorted(set(self._rules))
@@ -131,7 +131,7 @@ class PiecePattern(object):
     @property
     def base_pattern(self):
         if self._base_pattern is None:
-            if self.part_num == 1:
+            if self.base_part_num == 1:
                 self._base_pattern = get_pattern_from_cache(
                     self._one_or_more(self._rules[0]))
             else:
@@ -140,19 +140,19 @@ class PiecePattern(object):
         return self._base_pattern
 
     @property
-    def mixed_base_pattern(self):
-        if self._mixed_base_pattern:
-            return self._mixed_base_pattern
-        self._mixed_base_pattern = get_pattern_from_cache(
+    def mixed_pattern(self):
+        if self._mixed_pattern:
+            return self._mixed_pattern
+        self._mixed_pattern = get_pattern_from_cache(
             ''.join([str(p.base_pattern) for p in self.mixed_piece_patterns]))
-        return self._mixed_base_pattern
+        return self._mixed_pattern
 
     def exact_num_pattern(self, num):
-        assert self.part_num == 1, 'only one part has exact num pattern'
+        assert self.base_part_num == 1, 'only one part has exact num pattern'
         return get_pattern_from_cache(self._exact_num(self._rules[0], num))
 
     @property
-    def part_num(self):
+    def base_part_num(self):
         return len(self._pieces)
 
     @property
