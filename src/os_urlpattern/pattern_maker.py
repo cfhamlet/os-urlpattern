@@ -24,7 +24,7 @@ class PatternMaker(object):
         u_hash = self._uniq_hash(url_meta, piece_patterns)
         if u_hash not in self._makers:
             self._makers[u_hash] = Maker(self._config, url_meta)
-        self._makers[u_hash].load(piece_patterns)
+        return self._makers[u_hash].load(piece_patterns)
 
     def process_and_dump(self):
         for maker in self._makers.values():
@@ -40,7 +40,7 @@ class Maker(object):
         self._piece_pattern_tree = PiecePatternTree()
 
     def load(self, piece_patterns, count=1, uniq_path=True):
-        self._piece_pattern_tree.add_piece_patterns(
+        return self._piece_pattern_tree.add_piece_patterns(
             piece_patterns, count, uniq_path)
 
     def _path_dump_and_load(self, src, dest, index=0):

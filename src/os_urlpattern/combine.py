@@ -55,6 +55,12 @@ class _Bag(object):
         self._objs = []
         self._count = 0
 
+    def get_inner_obj(self):
+        obj = self._objs[0]
+        while isinstance(obj, _Bag):
+            obj = obj.objs[0]
+        return obj
+
     @property
     def objs(self):
         return self._objs
@@ -103,9 +109,9 @@ class LengthCombiner(Combiner):
         for length, bag in length_bags.items():
             pattern = None
             if use_base:
-                pattern = bag.objs[0].objs[0].piece_pattern.base_pattern
+                pattern = bag.get_inner_obj().piece_pattern.base_pattern
             else:
-                pattern = bag.objs[0].objs[0].piece_pattern.exact_num_pattern(
+                pattern = bag.get_inner_obj().piece_pattern.exact_num_pattern(
                     length)
             bag.set_pattern(pattern)
 
@@ -146,7 +152,7 @@ class BasePatternCombiner(Combiner):
 
     def _combine_base_pattern(self, pattern_bags):
         for bag in pattern_bags.values():
-            node = bag.objs[0].objs[0]
+            node = bag.get_inner_obj()
             part_num = node.piece_pattern.part_num
             combiner = MultilevelCombiner(
                 self._combiner_manager, self._current_level, part_num=part_num, mixed=False)
@@ -157,7 +163,7 @@ class BasePatternCombiner(Combiner):
     def _combine_mixed_pattern(self, pattern_bags):
         mixed_combiners = {}
         for bag in pattern_bags.values():
-            node = bag.objs[0].objs[0]
+            node = bag.get_inner_obj()
             h = hash(node.piece_pattern.mixed_base_pattern)
             if h not in mixed_combiners:
                 part_num = node.piece_pattern.mixed_part_num

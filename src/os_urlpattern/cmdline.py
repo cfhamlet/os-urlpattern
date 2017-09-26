@@ -30,7 +30,7 @@ def _config_logging(log_level):
 class Command(object):
     def __init__(self, config):
         self._config = config
-        self._logger = logging.getLogger(__name__)
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     def add_argument(self, parser):
         parser.add_argument('-c', '--config',
@@ -77,15 +77,22 @@ class MakePatternCommand(Command):
         pattern_maker = PatternMaker(self._config)
         counter = Counter('LoadStatus', 5000)
         counter.reset()
+        status = {'ALL': 0, 'VALID': 0, 'INVALID': 0, 'UNIQ': 0}
+
         for url in inputs:
             url = url.strip()
+            status['ALL'] += 1
             try:
-                pattern_maker.load(url)
+                if pattern_maker.load(url):
+                    status['UNIQ'] += 1
+                status['VALID'] += 1
             except Exception, e:
                 self._logger.warn('%s, %s' % (str(e), url))
+                status['INVALID'] += 1
                 continue
             counter.log('LOADING')
-        counter.log('LOADED', True)
+        counter.log('LOADED', force=True)
+        self._logger.debug('[LOADED] %s' % str(status))
         for pattern_path in pattern_maker.process_and_dump():
             print(json.dumps(pattern_path, cls=PatternPathEncoder))
 
