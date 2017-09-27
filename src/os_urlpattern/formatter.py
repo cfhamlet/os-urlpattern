@@ -4,7 +4,7 @@ from os_urlpattern.utils import get_ete_tree
 
 
 class Formatter(object):
-    def write(self, pattern_tree):
+    def format(self, pattern_tree):
         pass
 
 
@@ -16,13 +16,13 @@ class PatternPathEncoder(json.JSONEncoder):
 
 
 class JsonFormatter(Formatter):
-    def write(self, pattern_tree):
+    def format(self, pattern_tree):
         for pattern_path in pattern_tree.dumps():
             print(json.dumps(pattern_path, cls=PatternPathEncoder))
 
 
 class ETEFormatter(Formatter):
-    def write(self, pattern_tree):
+    def format(self, pattern_tree):
         ete_tree = get_ete_tree(pattern_tree.root_node, format=' {} '.format)
         print(ete_tree.get_ascii(show_internal=True))
 

@@ -107,7 +107,7 @@ class MakePatternCommand(Command):
         self._logger.debug('[LOADED] %s' % str(status))
         formatter = FORMATTERS[args.formatter]
         for pattern_tree in pattern_maker.process():
-            formatter.write(pattern_tree)
+            formatter.format(pattern_tree)
 
 
 class MatchPatternCommand(Command):
