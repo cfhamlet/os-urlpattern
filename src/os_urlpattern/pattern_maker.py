@@ -26,9 +26,12 @@ class PatternMaker(object):
             self._makers[u_hash] = Maker(self._config, url_meta)
         return self._makers[u_hash].load(piece_patterns)
 
-    def process_and_dump(self):
+    def process(self):
         for maker in self._makers.values():
-            pattern_tree = maker.make()
+            yield maker.make()
+
+    def process_and_dump(self):
+        for pattern_tree in self.process():
             for pattern_path in pattern_tree.dumps():
                 yield pattern_path
 

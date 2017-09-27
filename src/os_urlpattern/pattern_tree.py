@@ -50,6 +50,10 @@ class PatternNode(object):
     def set_parrent(self, parrent):
         self._parrent = parrent
 
+    @property
+    def children(self):
+        return self._children.values()
+
     def add_child(self, pattern, count):
         if pattern not in self._children:
             child = PatternNode(pattern)  # , part_pattern.base_pattern)
@@ -83,6 +87,10 @@ class PatternTree(object):
         self._url_meta = url_meta
         self._root = PatternNode(BasePattern.EMPTY)
 
+    @property
+    def root_node(self):
+        return self._root
+
     def load_path(self, piece_pattern_node_path):
         node = self._root
         count = piece_pattern_node_path[-1].count
@@ -93,10 +101,3 @@ class PatternTree(object):
     def dumps(self):
         for patten_node_path in self._root.dump_paths():
             yield PatternPath(patten_node_path, self._url_meta)
-
-
-class PatternPathEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, PatternPath):
-            return {'count': o.count, 'pat': o.pattern_path_string, 'pid': o.pattern_id}
-        return json.JSONEncoder.default(o)

@@ -42,3 +42,16 @@ def used_memory():
             return '%.1f%s' % (memory, i)
         memory = memory / 1024.0
     return '%.1fG' % memory
+
+
+def get_ete_tree(root_node, format=str):
+    from ete3 import Tree
+
+    def add_children(node, ete_node):
+        for child in node.children:
+            ete_child = ete_node.add_child(name=format(child))
+            add_children(child, ete_child)
+
+    ete_root_node = Tree(name=format(root_node))
+    add_children(root_node, ete_root_node)
+    return ete_root_node

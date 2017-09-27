@@ -8,7 +8,7 @@ import time
 from os_urlpattern.utils import Counter
 from logging.config import dictConfig
 from os_urlpattern.pattern_maker import PatternMaker
-from os_urlpattern.pattern_tree import PatternPathEncoder
+from os_urlpattern.formatter import FORMATTERS
 
 
 def _config_logging(log_level):
@@ -66,6 +66,18 @@ class Command(object):
 
 class MakePatternCommand(Command):
 
+    def add_argument(self, parser):
+        super(MakePatternCommand, self).add_argument(parser)
+
+        parser.add_argument('-F', '--formatter',
+                            help='output formatter (default: JSON)',
+                            default='JSON',
+                            action='store',
+                            dest='formatter',
+                            choices=FORMATTERS.keys(),
+                            type=lambda s: s.upper(),
+                            )
+
     def run(self, args):
         inputs = sys.stdin
         if args.file and os.path.exists(args.file):
@@ -93,8 +105,9 @@ class MakePatternCommand(Command):
             counter.log('LOADING')
         counter.log('LOADED', force=True)
         self._logger.debug('[LOADED] %s' % str(status))
-        for pattern_path in pattern_maker.process_and_dump():
-            print(json.dumps(pattern_path, cls=PatternPathEncoder))
+        formatter = FORMATTERS[args.formatter]
+        for pattern_tree in pattern_maker.process():
+            formatter.write(pattern_tree)
 
 
 class MatchPatternCommand(Command):
@@ -105,8 +118,6 @@ _DEFAULT_LOGGING = {
     'version': 1,
     'disable_existing_loggers': True,
     'incremental': True,
-
-
 }
 
 

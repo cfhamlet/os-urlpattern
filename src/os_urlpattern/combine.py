@@ -180,7 +180,7 @@ class MixedPatternCombiner(Combiner):
             else:
                 low_prob[h] = bag
 
-        if len(low_prob) > self._min_combine_num:
+        if len(low_prob) >= self._min_combine_num:
             self._combine_fuzzy_pattern(self._mixed_pattern_bags)
         else:
             if len(high_prob) == 1:
@@ -234,7 +234,7 @@ class BasePatternCombiner(Combiner):
             else:
                 low_prob[h] = bag
 
-        if len(low_prob) > self._min_combine_num:
+        if len(low_prob) >= self._min_combine_num:
             self._combine_mixed_pattern(self._base_pattern_bags)
         else:
             if len(high_prob) == 1:
@@ -268,7 +268,7 @@ class BaseMultiLevelCombiner(MultilevelCombiner):
         for node in bag.objs:
             pp = node.piece_pattern.base_piece_patterns
             self._piece_pattern_tree.add_piece_patterns(
-                pp, node.count)
+                pp, node.count, False)
             self.add_node(node)
 
 class MixedMultiLevelCombiner(MultilevelCombiner):
@@ -276,7 +276,7 @@ class MixedMultiLevelCombiner(MultilevelCombiner):
         for node in bag.objs:
             pp = node.piece_pattern.mixed_piece_patterns
             self._piece_pattern_tree.add_piece_patterns(
-                pp, node.count)
+                pp, node.count, False)
             self.add_node(node)
 
 
