@@ -23,7 +23,9 @@ class JsonFormatter(Formatter):
 
 class ETEFormatter(Formatter):
     def format(self, pattern_tree):
-        ete_tree = get_ete_tree(pattern_tree.root_node, format=' {} '.format)
+        def f(pattern_node):
+            return ' {pattern_string}({count}) '.format(count=pattern_node.count,pattern_string=pattern_node)
+        ete_tree = get_ete_tree(pattern_tree.root_node, format=f)
         print(ete_tree.get_ascii(show_internal=True))
 
 
