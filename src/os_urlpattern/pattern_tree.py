@@ -32,6 +32,11 @@ class PatternNode(object):
         self._children = {}
         self._parrent = None
         self._count = 0
+        self._level = 0
+
+    @property
+    def level(self):
+        return self._level
 
     @property
     def pattern(self):
@@ -58,6 +63,7 @@ class PatternNode(object):
         if pattern not in self._children:
             child = PatternNode(pattern)  # , part_pattern.base_pattern)
             child.set_parrent(self)
+            child._level = self.level + 1
             self._children[pattern] = child
 
         self._children[pattern].incr_count(count)
@@ -86,6 +92,10 @@ class PatternTree(object):
     def __init__(self, url_meta):
         self._url_meta = url_meta
         self._root = PatternNode(BasePattern.EMPTY)
+
+    @property
+    def url_meta(self):
+        return self._url_meta
 
     @property
     def root_node(self):

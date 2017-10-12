@@ -23,8 +23,24 @@ class JsonFormatter(Formatter):
 
 class ETEFormatter(Formatter):
     def format(self, pattern_tree):
+        url_meta = pattern_tree.url_meta
+
         def f(pattern_node):
-            return ' {pattern_string}({count}) '.format(count=pattern_node.count,pattern_string=pattern_node)
+            sep = ''
+            query_key = ''
+            if url_meta.path_depth < pattern_node.level <= (url_meta.path_depth + url_meta.query_depth):
+                sep = '&'
+                if pattern_node.level == url_meta.path_depth + 1:
+                    sep = '[\\?]'
+                query_key = url_meta.query_keys[pattern_node.level -
+                                                url_meta.path_depth - 1]
+            elif pattern_node.level == url_meta.path_depth + url_meta.query_depth + 1:
+                sep = '#'
+            return ' {sep}{query_key}{pattern_string}({count}) '.format(
+                count=pattern_node.count,
+                pattern_string=pattern_node,
+                query_key=query_key,
+                sep=sep)
         ete_tree = get_ete_tree(pattern_tree.root_node, format=f)
         print(ete_tree.get_ascii(show_internal=True))
 

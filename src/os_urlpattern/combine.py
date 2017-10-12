@@ -82,17 +82,6 @@ class _Bag(object):
             obj.set_pattern(pattern)
 
 
-class CombineStrategy(object):
-    def __init__(self, config):
-        self._min_combine_num = config.getint('make', 'min_combine_num')
-
-    def add(self, bag):
-        pass
-
-    def process(self):
-        pass
-
-
 class LengthCombiner(Combiner):
     def __init__(self, combiner_manager, current_level, **kwargs):
         super(LengthCombiner, self).__init__(
@@ -129,6 +118,7 @@ class LengthCombiner(Combiner):
                 length_keep[length] = bag
             else:
                 length_unknow[length] = bag
+
         if len(length_unknow) >= self._min_combine_num:
             self._set_pattern(self._length_bags, use_base=True)
         else:
@@ -243,9 +233,9 @@ class BasePatternCombiner(Combiner):
                 self._combine_mixed_pattern(self._base_pattern_bags)
 
 
-class MultilevelCombiner(Combiner):
+class MultiLevelCombiner(Combiner):
     def __init__(self, combiner_manager, current_level, **kwargs):
-        super(MultilevelCombiner, self).__init__(
+        super(MultiLevelCombiner, self).__init__(
             combiner_manager, current_level, **kwargs)
         part_num = kwargs['part_num']
         self._url_meta = URLMeta(part_num, [], False)
@@ -263,7 +253,8 @@ class MultilevelCombiner(Combiner):
             if node.piece in piece_pattern_dict:
                 node.set_pattern(piece_pattern_dict[node.piece])
 
-class BaseMultiLevelCombiner(MultilevelCombiner):
+
+class BaseMultiLevelCombiner(MultiLevelCombiner):
     def add_bag(self, bag):
         for node in bag.objs:
             pp = node.piece_pattern.base_piece_patterns
@@ -271,7 +262,8 @@ class BaseMultiLevelCombiner(MultilevelCombiner):
                 pp, node.count, False)
             self.add_node(node)
 
-class MixedMultiLevelCombiner(MultilevelCombiner):
+
+class MixedMultiLevelCombiner(MultiLevelCombiner):
     def add_bag(self, bag):
         for node in bag.objs:
             pp = node.piece_pattern.mixed_piece_patterns
