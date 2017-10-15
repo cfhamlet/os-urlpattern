@@ -4,7 +4,7 @@ from pattern import get_pattern_from_cache
 
 class PiecePatternNode(object):
     __slots__ = ['_parrent', '_children', '_count',
-                 '_pattern', '_piece_pattern']
+                 '_pattern', '_piece_pattern', '_current_level']
 
     def __init__(self, piece_pattern, pattern=None):
         self._parrent = None
@@ -13,15 +13,11 @@ class PiecePatternNode(object):
         self._piece_pattern = piece_pattern
         self._pattern = get_pattern_from_cache(
             self.piece) if pattern is None else pattern
+        self._current_level = 0
 
     @property
     def current_level(self):
-        level = 0
-        p = self.parrent
-        while p:
-            level += 1
-            p = p.parrent
-        return level
+        return self._current_level
 
     def use_piece_as_pattern(self):
         self._pattern = get_pattern_from_cache(self.piece)
@@ -80,6 +76,7 @@ class PiecePatternNode(object):
         if piece not in self._children:
             child = PiecePatternNode(piece_pattern, pattern)
             child.set_parrent(self)
+            child._current_level = self._current_level + 1
             self._children[piece] = child
             is_new = True
         child = self._children[piece]

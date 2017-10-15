@@ -28,13 +28,13 @@ class ETEFormatter(Formatter):
         def f(pattern_node):
             sep = ''
             query_key = ''
-            if url_meta.path_depth < pattern_node.level <= (url_meta.path_depth + url_meta.query_depth):
+            if url_meta.path_depth < pattern_node.current_level <= (url_meta.path_depth + url_meta.query_depth):
                 sep = '&'
-                if pattern_node.level == url_meta.path_depth + 1:
+                if pattern_node.current_level == url_meta.path_depth + 1:
                     sep = '[\\?]'
-                query_key = url_meta.query_keys[pattern_node.level -
+                query_key = url_meta.query_keys[pattern_node.current_level -
                                                 url_meta.path_depth - 1]
-            elif pattern_node.level == url_meta.path_depth + url_meta.query_depth + 1:
+            elif pattern_node.current_level == url_meta.path_depth + url_meta.query_depth + 1:
                 sep = '#'
             return ' {sep}{query_key}{pattern_string}({count}) '.format(
                 count=pattern_node.count,

@@ -32,11 +32,11 @@ class PatternNode(object):
         self._children = {}
         self._parrent = None
         self._count = 0
-        self._level = 0
+        self._current_level = 0
 
     @property
-    def level(self):
-        return self._level
+    def current_level(self):
+        return self._current_level
 
     @property
     def pattern(self):
@@ -63,7 +63,7 @@ class PatternNode(object):
         if pattern not in self._children:
             child = PatternNode(pattern)  # , part_pattern.base_pattern)
             child.set_parrent(self)
-            child._level = self.level + 1
+            child._current_level = self._current_level + 1
             self._children[pattern] = child
 
         self._children[pattern].incr_count(count)
