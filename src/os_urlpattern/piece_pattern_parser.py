@@ -1,7 +1,6 @@
 import StringIO
 import copy
-from definition import BasePatternRule, CHAR_RULE_DICT, SIGN_RULE_SET, \
-    BASE_ASCII_RULE_SET, DIGIT_AND_ASCII_RULE_SET
+from definition import BasePatternRule, CHAR_RULE_DICT, SIGN_RULE_SET, DIGIT_AND_ASCII_RULE_SET
 from pattern import get_pattern_from_cache
 
 MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
@@ -19,6 +18,10 @@ class PiecePattern(object):
         self._base_piece_patterns = None
         self._mixed_pattern = None
         self._mixed_piece_patterns = None
+
+    @property
+    def rules(self):
+        return self._rules
 
     @property
     def piece_length(self):
