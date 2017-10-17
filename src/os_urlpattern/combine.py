@@ -64,6 +64,7 @@ class LengthCombiner(Combiner):
     def __init__(self, config, meta_info, **kwargs):
         super(LengthCombiner, self).__init__(config, meta_info, **kwargs)
         self._length_bags = {}
+        self._force_combine = kwargs.get('force_combine', False)
 
     def add_bag(self, bag):
         length = bag.objs[0].piece_pattern.piece_length
@@ -82,19 +83,23 @@ class LengthCombiner(Combiner):
             bag.set_pattern(pattern)
 
     def combine(self):
-        length_keep = {}
-        length_unknow = {}
-        _num = 0
-        for length, bag in self._length_bags.iteritems():
-            if bag.num >= self._min_combine_num:
-                length_keep[length] = bag
-            else:
-                length_unknow[length] = bag
-                _num += bag.num
+        if self._force_combine:
+            use_base = False if len(self._length_bags) == 1 else True
+            self._set_pattern(self._length_bags, use_base=use_base)
+        else:
+            length_keep = {}
+            length_unknow = {}
+            _num = 0
+            for length, bag in self._length_bags.iteritems():
+                if bag.num >= self._min_combine_num:
+                    length_keep[length] = bag
+                else:
+                    length_unknow[length] = bag
+                    _num += bag.num
 
-        self._set_pattern(length_keep)
-        if _num >= self._min_combine_num:
-            self._set_pattern(length_unknow, use_base=True)
+            self._set_pattern(length_keep)
+            if _num >= self._min_combine_num:
+                self._set_pattern(length_unknow, use_base=True)
 
 
 class MixedPatternCombiner(Combiner):
@@ -110,13 +115,17 @@ class MixedPatternCombiner(Combiner):
 
     def _combine_mixed_pattern(self, pattern_bag_dict):
         for pattern_bag in pattern_bag_dict.itervalues():
-            node = pattern_bag.get_inner_obj()
-            part_num = node.piece_pattern.mixed_part_num
-            combiner = MixedMultiLevelCombiner(
-                self.config, self.meta_info, part_num=part_num)
-            for piece_bag in pattern_bag.objs:
-                combiner.add_bag(piece_bag)
-            combiner.combine()
+            self._combine_mixed_pattern_bag(pattern_bag)
+
+    def _combine_mixed_pattern_bag(self, pattern_bag, force_combine=False):
+        node = pattern_bag.get_inner_obj()
+        part_num = node.piece_pattern.mixed_part_num
+        combiner = MixedMultiLevelCombiner(
+            self.config, self.meta_info,
+            part_num=part_num, force_combine=force_combine)
+        for piece_bag in pattern_bag.objs:
+            combiner.add_bag(piece_bag)
+        combiner.combine()
 
     def _combine_fuzzy_pattern(self, pattern_bag_dict):
         for pattern_bag in pattern_bag_dict.itervalues():
@@ -137,12 +146,18 @@ class MixedPatternCombiner(Combiner):
         self._combine_mixed_pattern(high_prob)
         for h, pattern_bag in high_prob.iteritems():
             bag = _Bag()
+            patterned = False
             for piece_bag in pattern_bag.objs:
                 if piece_bag.get_inner_obj().piece_eq_pattern():
                     bag.add(piece_bag)
-            if bag.num > 0 and bag.num < self._min_combine_num:
-                low_prob[h] = bag
-                _num += bag.num
+                else:
+                    patterned = True
+            if not patterned and bag.num > 0:
+                if bag.num < self._min_combine_num:
+                    low_prob[h] = bag
+                    _num += bag.num
+                else:
+                    self._combine_mixed_pattern_bag(bag, True)
         if len(low_prob) > 1 and _num >= self._min_combine_num:
             self._combine_fuzzy_pattern(low_prob)
 
@@ -160,12 +175,16 @@ class BasePatternCombiner(Combiner):
 
     def _combine_base_pattern(self, pattern_bag_dict):
         for pattern_bag in pattern_bag_dict.itervalues():
-            part_num = pattern_bag.get_inner_obj().piece_pattern.base_part_num
-            combiner = BaseMultiLevelCombiner(
-                self.config, self.meta_info, part_num=part_num)
-            for piece_bag in pattern_bag.objs:
-                combiner.add_bag(piece_bag)
-            combiner.combine()
+            self._combine_base_pattern_bag(pattern_bag)
+
+    def _combine_base_pattern_bag(self, pattern_bag, force_combine=False):
+        part_num = pattern_bag.get_inner_obj().piece_pattern.base_part_num
+        combiner = BaseMultiLevelCombiner(
+            self.config, self.meta_info,
+            part_num=part_num, force_combine=force_combine)
+        for piece_bag in pattern_bag.objs:
+            combiner.add_bag(piece_bag)
+        combiner.combine()
 
     def _combine_mixed_pattern(self, pattern_bag_dict):
         combiner = MixedPatternCombiner(self.config, self.meta_info)
@@ -188,12 +207,18 @@ class BasePatternCombiner(Combiner):
         self._combine_base_pattern(high_prob)
         for h, pattern_bag in high_prob.iteritems():
             bag = _Bag()
+            patterned = False
             for piece_bag in pattern_bag.objs:
                 if piece_bag.get_inner_obj().piece_eq_pattern():
                     bag.add(piece_bag)
-            if bag.num > 0 and bag.num < self._min_combine_num:
-                low_prob[h] = bag
-                _num += bag.num
+                else:
+                    patterned = True
+            if not patterned and bag.num > 0:
+                if bag.num < self._min_combine_num:
+                    low_prob[h] = bag
+                    _num += bag.num
+                else:
+                    self._combine_base_pattern_bag(bag, True)
 
         if len(low_prob) > 1 and _num >= self._min_combine_num:
             self._combine_mixed_pattern(low_prob)
@@ -202,13 +227,14 @@ class BasePatternCombiner(Combiner):
 class MultiLevelCombiner(Combiner):
     def __init__(self, config, meta_info, **kwargs):
         super(MultiLevelCombiner, self).__init__(config, meta_info, **kwargs)
-        part_num = kwargs['part_num']
-        self._url_meta = URLMeta(part_num, [], False)
+        self._kwargs = kwargs
+        self._url_meta = URLMeta(self._kwargs.pop('part_num'), [], False)
         self._piece_pattern_tree = PiecePatternTree()
         self._piece_bags = []
 
     def combine(self):
-        combine(self.config, self._url_meta, self._piece_pattern_tree)
+        combine(self.config, self._url_meta,
+                self._piece_pattern_tree, **self._kwargs)
         piece_pattern_dict = {}
         pattern_counter = {}
         for path in self._piece_pattern_tree.dump_paths():
@@ -275,6 +301,7 @@ class CombineProcessor(object):
         self._meta_info = meta_info
         self._piece_node_bag = {}
         self._combiner_class = None
+        self._kwargs = kwargs
 
     def nodes(self):
         for bag in self._piece_node_bag.itervalues():
@@ -308,7 +335,7 @@ class CombineProcessor(object):
             return
 
         combiner_class = self._get_combiner_class()
-        combiner = combiner_class(self.config, self.meta_info)
+        combiner = combiner_class(self.config, self.meta_info, **self._kwargs)
 
         for bag in self._piece_node_bag.itervalues():
             if bag.count < self._min_combine_num:
@@ -324,7 +351,7 @@ class CombineProcessor(object):
             n_hash = hash(node.pattern)
             if n_hash not in next_level_processors:
                 next_level_processors[n_hash] = CombineProcessor(
-                    self.config, self.meta_info.get_next_level_meta_info())
+                    self.config, self.meta_info.get_next_level_meta_info(), **self._kwargs)
             for child in node.children:
                 next_level_processors[n_hash].add_node(child)
         for processor in next_level_processors.itervalues():
@@ -333,6 +360,6 @@ class CombineProcessor(object):
 
 def combine(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
-    processor = CombineProcessor(config, meta_info)
+    processor = CombineProcessor(config, meta_info, **kwargs)
     processor.add_node(piece_pattern_tree.root)
     processor.process()

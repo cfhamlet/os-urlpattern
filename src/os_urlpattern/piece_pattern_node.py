@@ -23,21 +23,13 @@ class PiecePatternNode(object):
         self._pattern = get_pattern_from_cache(self.piece)
 
     def piece_eq_pattern(self):
-        return True if self.piece == self._pattern.pattern_string else False
+        return self.piece == self._pattern.pattern_string
 
     def set_pattern(self, pattern):
         change = not (self._pattern == pattern)
         if change:
             self._pattern = pattern
         return change
-
-    @property
-    def base_pattern(self):
-        return self._piece_pattern.base_pattern
-
-    @property
-    def fuzzy_pattern(self):
-        return self._piece_pattern.fuzzy_pattern
 
     @property
     def pattern(self):
