@@ -164,11 +164,13 @@ class MixedPatternCombiner(Combiner):
     def _combine_fuzzy_pattern(self, pattern_bag_dict):
         if self.meta_info.is_last_path_level():
             self._combine_fuzzy_pattern_with_last_dot_split(pattern_bag_dict)
+        _bag = _Bag()
         for pattern_bag in pattern_bag_dict.itervalues():
             for piece_bag in pattern_bag.objs:
-                node = piece_bag.get_inner_obj()
-                if node.piece_eq_pattern():
-                    piece_bag.set_pattern(node.piece_pattern.fuzzy_pattern)
+                if piece_bag.get_inner_obj().piece_eq_pattern():
+                    _bag.add(piece_bag)
+        if _bag.num >= self._min_combine_num:
+            _bag.set_pattern(_bag.get_inner_obj().piece_pattern.fuzzy_pattern)
 
     def combine(self):
         low_prob = {}
