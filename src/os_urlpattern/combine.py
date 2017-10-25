@@ -74,9 +74,10 @@ class LengthCombiner(Combiner):
         self._length_bags[length].add(bag)
 
     def _set_pattern(self, length_bags, use_base=False):
+        only_one = len(length_bags) == 1
         for length, bag in length_bags.iteritems():
             pattern = None
-            if use_base:
+            if use_base and not only_one:
                 pattern = bag.get_inner_obj().piece_pattern.base_pattern
             else:
                 pattern = bag.get_inner_obj().piece_pattern.exact_num_pattern(
@@ -85,8 +86,7 @@ class LengthCombiner(Combiner):
 
     def combine(self):
         if self._force_combine:
-            use_base = False if len(self._length_bags) == 1 else True
-            self._set_pattern(self._length_bags, use_base=use_base)
+            self._set_pattern(self._length_bags, use_base=True)
         else:
             length_keep = {}
             length_unknow = {}
@@ -186,13 +186,10 @@ class MixedPatternCombiner(Combiner):
         self._combine_mixed_pattern(high_prob)
         for h, pattern_bag in high_prob.iteritems():
             bag = _Bag()
-            patterned = False
             for piece_bag in pattern_bag.objs:
                 if piece_bag.get_inner_obj().piece_eq_pattern():
                     bag.add(piece_bag)
-                else:
-                    patterned = True
-            if not patterned and bag.num > 0:
+            if bag.num > 0:
                 if bag.num < self._min_combine_num:
                     low_prob[h] = bag
                     _num += bag.num
@@ -246,17 +243,13 @@ class BasePatternCombiner(Combiner):
             else:
                 low_prob[h] = bag
                 _num += bag.num
-
         self._combine_base_pattern(high_prob)
         for h, pattern_bag in high_prob.iteritems():
             bag = _Bag()
-            patterned = False
             for piece_bag in pattern_bag.objs:
                 if piece_bag.get_inner_obj().piece_eq_pattern():
                     bag.add(piece_bag)
-                else:
-                    patterned = True
-            if not patterned and bag.num > 0:
+            if bag.num > 0:
                 if bag.num < self._min_combine_num:
                     low_prob[h] = bag
                     _num += bag.num
@@ -295,7 +288,7 @@ class MultiLevelCombiner(Combiner):
             piece_pattern_dict[piece] = pattern
             if pattern not in pattern_counter:
                 pattern_counter[pattern] = 0
-            pattern_counter[pattern] += path[-1].count
+            pattern_counter[pattern] += 1
         for piece_bag in self._piece_bags:
             node = piece_bag.get_inner_obj()
             if node.piece in piece_pattern_dict:
@@ -335,6 +328,7 @@ class CombineProcessor(object):
         self._piece_node_bag = {}
         self._combiner_class = None
         self._kwargs = kwargs
+        self._force_combine = kwargs.get('force_combine', False)
 
     def nodes(self):
         for bag in self._piece_node_bag.itervalues():
@@ -371,7 +365,7 @@ class CombineProcessor(object):
         combiner = combiner_class(self.config, self.meta_info, **self._kwargs)
 
         for bag in self._piece_node_bag.itervalues():
-            if bag.count < self._min_combine_num:
+            if bag.count < self._min_combine_num or self._force_combine:
                 combiner.add_bag(bag)
         combiner.combine()
 

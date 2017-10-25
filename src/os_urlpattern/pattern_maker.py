@@ -3,7 +3,6 @@ from os_urlpattern.urlparse_utils import parse_url
 from os_urlpattern.piece_pattern_parser import PiecePatternParser
 from os_urlpattern.piece_pattern_tree import PiecePatternTree
 from os_urlpattern.combine import combine
-from os_urlpattern.merge import merge
 from os_urlpattern.pattern_tree import PatternTree
 
 
@@ -55,6 +54,5 @@ class Maker(object):
     def make(self):
         pattern_tree = PatternTree(self._url_meta)
         combine(self._config, self._url_meta, self._piece_pattern_tree)
-        merge(self._config, self._piece_pattern_tree)
         self._path_dump_and_load(self._piece_pattern_tree, pattern_tree, 1)
         return pattern_tree

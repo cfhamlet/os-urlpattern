@@ -61,7 +61,7 @@ class PatternNode(object):
 
     def add_child(self, pattern, count):
         if pattern not in self._children:
-            child = PatternNode(pattern)  # , part_pattern.base_pattern)
+            child = PatternNode(pattern)
             child.set_parrent(self)
             child._current_level = self._current_level + 1
             self._children[pattern] = child
