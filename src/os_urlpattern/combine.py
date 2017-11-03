@@ -320,6 +320,49 @@ class MetaInfo(object):
         return MetaInfo(self.url_meta, self._current_level + 1)
 
 
+class CombinePredictor(object):
+    def __init__(self, combine_processor):
+        self._combine_processor = combine_processor
+        self._min_combine_num = combine_processor.config.getint(
+            'make', 'min_combine_num')
+        self._count_cluster = {}
+
+    def preprocess(self):
+        if self._combine_processor.meta_info.is_last_level():
+            return
+        combine_processor = CombineProcessor(
+            self._combine_processor.config,
+            self._combine_processor.meta_info.get_next_level_meta_info(),
+            use_predictor=False)
+        for node in self._combine_processor.nodes():
+            for child in node.children:
+                combine_processor.add_node(child)
+        combine_processor._process()
+
+        pattern_cluster = {}
+        for node in self._combine_processor.nodes():
+            for child in node.children:
+                pattern = child.pattern
+                if pattern not in pattern_cluster:
+                    pattern_cluster[pattern] = set()
+                pattern_cluster[pattern].add(node)
+
+        for node in self._combine_processor.nodes():
+            piece = node.piece_pattern.piece
+            max_num = 0
+            for child in node.children:
+                pattern = child.pattern
+                n = len(pattern_cluster[pattern])
+                max_num = max(max_num, n)
+            self._count_cluster[piece] = max_num
+
+    def skip_combine(self, bag):
+        piece = bag.objs[0].piece_pattern.piece
+        if bag.count >= self._min_combine_num and self._count_cluster.get(piece, self._min_combine_num) < self._min_combine_num:
+            return True
+        return False
+
+
 class CombineProcessor(object):
     def __init__(self, config, meta_info, **kwargs):
         self._config = config
@@ -360,12 +403,15 @@ class CombineProcessor(object):
     def _process(self):
         if len(self._piece_node_bag) == 1:
             return
+        combine_predictor = CombinePredictor(self)
+        if self._kwargs.get('use_predictor', True):
+            combine_predictor.preprocess()
 
         combiner_class = self._get_combiner_class()
         combiner = combiner_class(self.config, self.meta_info, **self._kwargs)
 
         for bag in self._piece_node_bag.itervalues():
-            if bag.count < self._min_combine_num or self._force_combine:
+            if self._force_combine or not combine_predictor.skip_combine(bag):
                 combiner.add_bag(bag)
         combiner.combine()
 
