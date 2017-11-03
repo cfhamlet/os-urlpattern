@@ -337,7 +337,7 @@ class CombinePredictor(object):
         for node in self._combine_processor.nodes():
             for child in node.children:
                 combine_processor.add_node(child)
-        combine_processor._process()
+        combine_processor.combine()
 
         pattern_cluster = {}
         for node in self._combine_processor.nodes():
@@ -358,7 +358,8 @@ class CombinePredictor(object):
 
     def skip_combine(self, bag):
         piece = bag.objs[0].piece_pattern.piece
-        if bag.count >= self._min_combine_num and self._count_cluster.get(piece, self._min_combine_num) < self._min_combine_num:
+        if bag.count >= self._min_combine_num \
+                and self._count_cluster.get(piece, 0) < self._min_combine_num:
             return True
         return False
 
@@ -400,12 +401,14 @@ class CombineProcessor(object):
                 combine_class = BasePatternCombiner
             return combine_class
 
-    def _process(self):
+    def combine(self):
         if len(self._piece_node_bag) == 1:
             return
         combine_predictor = CombinePredictor(self)
         if self._kwargs.get('use_predictor', True):
             combine_predictor.preprocess()
+        else:
+            self._kwargs.pop('use_predictor')
 
         combiner_class = self._get_combiner_class()
         combiner = combiner_class(self.config, self.meta_info, **self._kwargs)
@@ -416,7 +419,7 @@ class CombineProcessor(object):
         combiner.combine()
 
     def process(self):
-        self._process()
+        self.combine()
         if self.meta_info.is_last_level():
             return
         next_level_processors = {}
