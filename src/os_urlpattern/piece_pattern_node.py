@@ -35,6 +35,14 @@ class PiecePatternNode(object):
     def pattern(self):
         return self._pattern
 
+    def get_parrent(self, up_count=1):
+        parrent = self.parrent
+        while up_count > 1:
+            parrent = parrent.parrent
+            up_count -= 1
+
+        return parrent
+
     @property
     def piece(self):
         return self._piece_pattern.piece

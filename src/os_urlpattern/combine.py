@@ -327,34 +327,41 @@ class CombinePredictor(object):
             'make', 'min_combine_num')
         self._count_cluster = {}
 
-    def preprocess(self):
-        if self._combine_processor.meta_info.is_last_level():
-            return
-        combine_processor = CombineProcessor(
-            self._combine_processor.config,
-            self._combine_processor.meta_info.get_next_level_meta_info(),
+    def _get_next_level_processor(self, base_processor):
+        return CombineProcessor(
+            base_processor.config,
+            base_processor.meta_info.get_next_level_meta_info(),
             use_predictor=False)
-        for node in self._combine_processor.nodes():
-            for child in node.children:
-                combine_processor.add_node(child)
-        combine_processor.combine()
+
+    def preprocess(self):
+        if self._combine_processor.meta_info.is_last_level() \
+                or len(self._combine_processor._piece_node_bag) < self._min_combine_num:
+            return
+        p_processor = self._combine_processor
+        n_processor = self._get_next_level_processor(p_processor)
+        count = 0
+        while not p_processor.meta_info.is_last_level():
+            count += 1
+            for node in p_processor.nodes():
+                for child in node.children:
+                    n_processor.add_node(child)
+            if len(n_processor._piece_node_bag) < self._min_combine_num:
+                p_processor = n_processor
+                n_processor = self._get_next_level_processor(p_processor)
+            else:
+                break
+        n_processor.combine()
 
         pattern_cluster = {}
-        for node in self._combine_processor.nodes():
-            for child in node.children:
-                pattern = child.pattern
-                if pattern not in pattern_cluster:
-                    pattern_cluster[pattern] = set()
-                pattern_cluster[pattern].add(node)
-
-        for node in self._combine_processor.nodes():
-            piece = node.piece_pattern.piece
-            max_num = 0
-            for child in node.children:
-                pattern = child.pattern
-                n = len(pattern_cluster[pattern])
-                max_num = max(max_num, n)
-            self._count_cluster[piece] = max_num
+        for node in n_processor.nodes():
+            pattern = node.pattern
+            if pattern not in pattern_cluster:
+                pattern_cluster[pattern] = set()
+            parrent = node.get_parrent(count)
+            pattern_cluster[pattern].add(parrent)
+            self._count_cluster[parrent.piece] = pattern_cluster[pattern]
+        for p in self._count_cluster:
+            self._count_cluster[p] = len(self._count_cluster[p])
 
     def skip_combine(self, bag):
         piece = bag.objs[0].piece_pattern.piece
@@ -402,7 +409,7 @@ class CombineProcessor(object):
             return combine_class
 
     def combine(self):
-        if len(self._piece_node_bag) == 1:
+        if len(self._piece_node_bag) <= 1:
             return
         combine_predictor = CombinePredictor(self)
         if self._kwargs.get('use_predictor', True):
