@@ -92,11 +92,11 @@ class LengthCombiner(Combiner):
             length_unknow = {}
             _num = 0
             for length, bag in self._length_bags.iteritems():
-                if bag.num >= self._min_combine_num and not self.predictor.skip_length_combine(bag):
-                    length_keep[length] = bag
-                else:
+                if self.predictor.skip_length_combine(bag):
                     length_unknow[length] = bag
                     _num += bag.num
+                else:
+                    length_keep[length] = bag
 
             self._set_pattern(length_keep)
             if _num >= self._min_combine_num:
@@ -373,16 +373,18 @@ class CombinePredictor(object):
             self._count_cluster[p] = len(self._pattern_cluster[p])
 
     def skip_length_combine(self, bag):
+        if bag.num < self._min_combine_num:
+            return True
         if self._combine_processor.meta_info.is_last_level():
-            pass
+            return True
 
-        if not self._count_cluster:
-            return False
+        if not self._pattern_cluster:
+            return True
         p = set([b.get_inner_obj().pattern for b in bag.objs])
         pp = self._pattern_cluster[bag.get_inner_obj().piece]
-        if not (pp - p):
-            return False
-        return True
+        if pp - p:
+            return True
+        return False
 
     def skip_piece_combine(self, bag):
         if self._combine_processor.meta_info.is_last_level():
