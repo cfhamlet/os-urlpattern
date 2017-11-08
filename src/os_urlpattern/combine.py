@@ -12,18 +12,21 @@ class _Bag(object):
     def get_inner_obj(self):
         obj = self._objs[0]
         while isinstance(obj, _Bag):
-            obj = obj.objs[0]
+            obj = obj._objs[0]
         return obj
 
     def _iter_inner_objs(self, obj):
         if isinstance(obj, _Bag):
             for o in obj.iter_objs():
-                yield self._iter_inner_objs(o)
+                for b in self._iter_inner_objs(o):
+                    yield b
+
         else:
             yield obj
 
     def iter_inner_objs(self):
-        yield self._iter_inner_objs(self)
+        for obj in self._iter_inner_objs(self):
+            yield obj
 
     def iter_objs(self):
         return iter(self._objs)
@@ -101,7 +104,7 @@ class PieceCombiner(Combiner):
 
         for bag in self._piece_node_bag.itervalues():
             if not self._combine_processor.keep_piece(bag):
-                combiner.add_bag(bag)
+                combiner.add(bag)
         combiner.combine()
 
 
@@ -162,7 +165,7 @@ class LastDotSplitFuzzyPatternCombiner(Combiner):
             self._combiners[h] = MultiLevelCombiner(
                 self._combine_processor, part_num=piece_pattern.part_num,
                 pp_agent_class=LastDotSplitPiecePattern)
-        self._combiners[h].add_bag(bag)
+        self._combiners[h].add(bag)
 
     def combine(self):
         for combiner in self._combiners.itervalues():
@@ -242,7 +245,7 @@ class MixedPatternCombiner(Combiner):
 
 
 class BasePatternCombiner(Combiner):
-    def __init__(self, combine_processor, *kwargs):
+    def __init__(self, combine_processor, **kwargs):
         super(BasePatternCombiner, self).__init__(combine_processor, ** kwargs)
         self._base_pattern_bags = {}
 
@@ -265,7 +268,7 @@ class BasePatternCombiner(Combiner):
             part_num=piece_pattern.part_num, force_combine=force_combine,
             pp_agent_class=pp_agent_class)
         for piece_bag in pattern_bag.iter_objs():
-            combiner.add_bag(piece_bag)
+            combiner.add(piece_bag)
         combiner.combine()
 
     def _combine_mixed_pattern(self, pattern_bag_dict):
@@ -311,7 +314,7 @@ class MultiLevelCombiner(Combiner):
         self._piece_bags = []
         self._pp_agent_class = self._kwargs.pop('pp_agent_class')
 
-    def add_bag(self, bag):
+    def add(self, bag):
         self._piece_bags.append(bag)
         for node in bag.iter_objs():
             pps = self._pp_agent_class(node.piece_pattern).piece_patterns
@@ -435,7 +438,9 @@ class CombineProcessor(object):
         self._piece_combiner.add(node)
 
     def _get_next_level_processor(self, meta_info):
-        return CombineProcessor(self.config, meta_info.get_next_level_meta_info(), self._force_combine)
+        return CombineProcessor(self.config,
+                                meta_info.get_next_level_meta_info(),
+                                self._force_combine)
 
     def _preprocess(self):
         self._pattern_cluster = {}
