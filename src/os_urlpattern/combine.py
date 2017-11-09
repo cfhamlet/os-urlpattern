@@ -416,8 +416,8 @@ class CombineProcessor(object):
             lp = set(
                 [piece_bag.get_inner_obj().pattern for piece_bag in length_bag.iter_objs()])
             pp = self._pattern_cluster[length_bag.get_inner_obj().piece]
-            if pp - lp:
-                return False
+            if not (pp - lp):
+                return True
         return False
 
     @property
@@ -446,7 +446,7 @@ class CombineProcessor(object):
             return
         self.combine(preprocess=False)
         self._pattern_cluster = {}
-        if self.pattern_num() < self._min_combine_num:
+        if self.pattern_num() <= 1:
             return
         p_processor = self
         n_processor = self._get_next_level_processor(self.meta_info)
