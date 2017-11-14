@@ -36,6 +36,22 @@ class MixedPiecePattern(PiecePatternAgent):
         return self._piece_pattern.mixed_part_num
 
 
+class FuzzyPattern(PiecePatternAgent):
+    @property
+    def piece_patterns(self):
+        fuzzy_rule = None
+        if len(self._piece_pattern.rules) == 1:
+            fuzzy_rule = self._piece_pattern.rules[0]
+        else:
+            uniq_rules = sorted(set(self._piece_pattern.rules))
+            fuzzy_rule = ''.join(uniq_rules)
+        return [PiecePattern([self._piece_pattern.piece], [fuzzy_rule])]
+
+    @property
+    def part_num(self):
+        return 1
+
+
 class LastDotSplitPiecePattern(PiecePatternAgent):
     def __init__(self, piece_pattern):
         super(LastDotSplitPiecePattern, self).__init__(piece_pattern)
