@@ -1,7 +1,7 @@
 from pattern import get_pattern_from_cache
 from url_meta import URLMeta
 from piece_pattern_tree import PiecePatternTree
-from piece_pattern_agent import BasePiecePattern, MixedPiecePattern, LastDotSplitPiecePattern, FuzzyPattern
+from piece_pattern_agent import BasePiecePattern, MixedPiecePattern, LastDotSplitPiecePattern, FuzzyPiecePattern
 
 
 class _Bag(object):
@@ -131,22 +131,19 @@ class LengthCombiner(Combiner):
             bag.set_pattern(pattern)
 
     def combine(self):
-        if self._combine_processor.force_combine:
-            self._set_pattern(self._length_bags, use_base=True)
-        else:
-            length_keep = {}
-            length_unknow = {}
-            _num = 0
-            for length, bag in self._length_bags.iteritems():
-                if self._combine_processor.keep_length(bag):
-                    length_keep[length] = bag
-                else:
-                    length_unknow[length] = bag
-                    _num += bag.num
+        length_keep = {}
+        length_unknow = {}
+        _num = 0
+        for length, bag in self._length_bags.iteritems():
+            if self._combine_processor.keep_length(bag):
+                length_keep[length] = bag
+            else:
+                length_unknow[length] = bag
+                _num += bag.num
 
-            self._set_pattern(length_keep)
-            if _num >= self._min_combine_num:
-                self._set_pattern(length_unknow, use_base=True)
+        self._set_pattern(length_keep)
+        if _num >= self._min_combine_num:
+            self._set_pattern(length_unknow, use_base=True)
 
 
 class LastDotSplitFuzzyPatternCombiner(Combiner):
@@ -177,7 +174,7 @@ class FuzzyPatternCombiner(Combiner):
         super(FuzzyPatternCombiner, self).__init__(
             combine_processor, **kwargs)
         self._combiner = MultiLevelCombiner(
-            self._combine_processor, part_num=1, pp_agent_class=FuzzyPattern)
+            self._combine_processor, part_num=1, pp_agent_class=FuzzyPiecePattern)
 
     def add(self, bag):
         self._combiner.add(bag)
@@ -276,14 +273,13 @@ class BasePatternCombiner(Combiner):
         for pattern_bag in pattern_bag_dict.itervalues():
             self._combine_base_pattern_bag(pattern_bag)
 
-    def _combine_base_pattern_bag(self, pattern_bag, force_combine=False):
+    def _combine_base_pattern_bag(self, pattern_bag):
         pp_agent_class = BasePiecePattern
         piece_pattern = pp_agent_class(
             pattern_bag.get_inner_obj().piece_pattern)
         combiner = MultiLevelCombiner(
             self._combine_processor,
             part_num=piece_pattern.part_num,
-            force_combine=force_combine,
             pp_agent_class=pp_agent_class)
         for piece_bag in pattern_bag.iter_objs():
             combiner.add(piece_bag)
@@ -296,31 +292,35 @@ class BasePatternCombiner(Combiner):
                 combiner.add(piece_bag)
         combiner.combine()
 
+    def _combine(self, pattern_bag_dict):
+        pass
+
     def combine(self):
-        low_prob = {}
-        high_prob = {}
+        bpattern_keep = {}
+        bpattern_unkown = {}
         _num = 0
         for h, bag in self._base_pattern_bags.iteritems():
-            if bag.num >= self._min_combine_num:
-                high_prob[h] = bag
+            if self._combine_processor.keep_bpattern(bag):
+                bpattern_keep[h] = bag
             else:
-                low_prob[h] = bag
+                bpattern_unkown[h] = bag
                 _num += bag.num
-        self._combine_base_pattern(high_prob)
-        for h, pattern_bag in high_prob.iteritems():
-            bag = _Bag()
-            for piece_bag in pattern_bag.iter_objs():
-                if piece_bag.get_inner_obj().piece_eq_pattern():
-                    bag.add(piece_bag)
-            if bag.num > 0:
-                if bag.num < self._min_combine_num:
-                    low_prob[h] = bag
-                    _num += bag.num
-                else:
-                    self._combine_base_pattern_bag(bag, True)
+        self._combine_base_pattern(bpattern_keep)
+        # for h, pattern_bag in high_prob.iteritems():
+        #     bag = _Bag()
+        #     for piece_bag in pattern_bag.iter_objs():
+        #         if piece_bag.get_inner_obj().piece_eq_pattern():
+        #             bag.add(piece_bag)
+        #     if bag.num > 0:
+        #         if bag.num < self._min_combine_num:
+        #             low_prob[h] = bag
+        #             _num += bag.num
+        #         else:
+        #             self._combine_base_pattern_bag(bag, True)
 
-        if len(low_prob) > 1 and _num >= self._min_combine_num:
-            self._combine_mixed_pattern(low_prob)
+        # if len(low_prob) > 1 and _num >= self._min_combine_num:
+        if _num >= self._min_combine_num:
+            self._combine(bpattern_unkown)
 
 
 class MultiLevelCombiner(Combiner):
@@ -331,18 +331,17 @@ class MultiLevelCombiner(Combiner):
         self._piece_pattern_tree = PiecePatternTree()
         self._piece_bags = []
         self._pp_agent_class = self._kwargs.pop('pp_agent_class')
-        self._force_combine = self._kwargs.get('force_combine', False)
 
-    def add(self, bag):
-        self._piece_bags.append(bag)
-        for node in bag.iter_objs():
-            pps = self._pp_agent_class(node.piece_pattern).piece_patterns
-            self._piece_pattern_tree.add_piece_patterns(
-                pps, node.count, False)
+    def add(self, piece_bag):
+        self._piece_bags.append(piece_bag)
+        node = piece_bag.get_inner_obj()
+        pps = self._pp_agent_class(node.piece_pattern).piece_patterns
+        self._piece_pattern_tree.add_piece_patterns(
+            pps, piece_bag.count)  # , False)
 
     def combine(self):
         combine(self.config, self._url_meta,
-                self._piece_pattern_tree, self._force_combine)
+                self._piece_pattern_tree, True)
         piece_pattern_dict = {}
         pattern_counter = {}
         for path in self._piece_pattern_tree.dump_paths():
@@ -362,13 +361,18 @@ class MultiLevelCombiner(Combiner):
 
 
 class MetaInfo(object):
-    def __init__(self, url_meta, current_level):
+    def __init__(self, url_meta, current_level, innner=False):
         self._url_meta = url_meta
         self._current_level = current_level
+        self._inner = innner
 
     @property
     def current_level(self):
         return self._current_level
+
+    @property
+    def is_inner(self):
+        return self._inner
 
     @property
     def url_meta(self):
@@ -380,18 +384,18 @@ class MetaInfo(object):
     def is_last_path_level(self):
         return self.url_meta.path_depth == self._current_level
 
-    def get_next_level_meta_info(self):
-        return MetaInfo(self.url_meta, self._current_level + 1)
+    def next_level_meta_info(self):
+        return MetaInfo(self.url_meta, self._current_level + 1, self._inner)
 
 
 class CombineProcessor(object):
-    def __init__(self, config, meta_info, force_combine=False):
+    def __init__(self, config, meta_info, preprocessing=False):
         self._config = config
         self._min_combine_num = self.config.getint('make', 'min_combine_num')
         self._meta_info = meta_info
         self._piece_combiner = PieceCombiner(self)
-        self._force_combine = force_combine
-        self._pattern_cluster = None
+        self._pattern_cluster = {}
+        self._preprocessing = preprocessing
 
     def iter_nodes(self):
         return self._piece_combiner.iter_nodes()
@@ -406,42 +410,32 @@ class CombineProcessor(object):
         return len(pattern_set)
 
     def keep_piece(self, piece_bag):
-        if self._force_combine:
+        if piece_bag.count < self._min_combine_num:
             return False
-        if self._pattern_cluster is None:  # preprocess
-            if piece_bag.count >= self._min_combine_num:
-                return True
+        if self._preprocessing:
+            return True
         else:
-            if self.meta_info.is_last_level():
-                if piece_bag.count >= self._min_combine_num and piece_bag.num <= 1:
+            piece = piece_bag.get_inner_obj().piece
+            if piece in self._pattern_cluster:
+                n = len(self._pattern_cluster[piece])
+                if n <= 1:
                     return True
-            else:
-                if piece_bag.count >= self._min_combine_num:
-                    piece = piece_bag.get_inner_obj().piece
-                    if piece in self._pattern_cluster:
-                        n = len(self._pattern_cluster[piece])
-                        if n <= 1:
-                            return True
         return False
 
     def keep_length(self, length_bag):
-        if self._force_combine or length_bag.num < self._min_combine_num:
+        if length_bag.num < self._min_combine_num:
             return False
-        if self._pattern_cluster is None:
+        if self._preprocessing:
             return True
         else:
-            if not self._pattern_cluster:
-                return False
-            lp = set(
-                [piece_bag.get_inner_obj().pattern for piece_bag in length_bag.iter_objs()])
-            pp = self._pattern_cluster[length_bag.get_inner_obj().piece]
-            if not (pp - lp):
-                return True
+            piece = length_bag.get_inner_obj().piece
+            if piece in self._pattern_cluster:
+                patterns = set(
+                    [piece_bag.get_inner_obj().pattern for piece_bag in length_bag.iter_objs()])
+                related_patterns = self._pattern_cluster[piece]
+                if not (related_patterns - patterns):
+                    return True
         return False
-
-    @property
-    def force_combine(self):
-        return self._force_combine
 
     @property
     def meta_info(self):
@@ -451,31 +445,27 @@ class CombineProcessor(object):
     def config(self):
         return self._config
 
-    def add_node(self, node):
-        self._piece_combiner.add(node)
+    def add_node(self, node, add_child=False):
+        if add_child:
+            for child in node.children:
+                self._piece_combiner.add(child)
+        else:
+            self._piece_combiner.add(node)
 
     def _get_next_level_processor(self, meta_info):
         return CombineProcessor(self.config,
-                                meta_info.get_next_level_meta_info(),
-                                self._force_combine)
+                                meta_info.next_level_meta_info(),
+                                self._preprocessing)
 
-    def _preprocess(self):
-        if self.meta_info.is_last_level():
-            self._pattern_cluster = {}
-            return
-        self.combine(preprocess=False)
-        self._pattern_cluster = {}
-        if self.pattern_num() <= 1:
-            return
+    def _do_preprocess(self):
         p_processor = self
         n_processor = self._get_next_level_processor(self.meta_info)
-        count = 0
+        level = 0
         while not p_processor.meta_info.is_last_level():
-            count += 1
+            level += 1
             for node in p_processor.iter_nodes():
-                for child in node.children:
-                    n_processor.add_node(child)
-            n_processor.combine(preprocess=False)
+                n_processor.add_node(node, True)
+            n_processor.combine()
             if n_processor.pattern_num() <= 1 and not n_processor.meta_info.is_last_level():
                 p_processor = n_processor
                 n_processor = self._get_next_level_processor(
@@ -488,7 +478,7 @@ class CombineProcessor(object):
             pattern = node.pattern
             if pattern not in pattern_cluster:
                 pattern_cluster[pattern] = set()
-            parrent = node.get_parrent(count)
+            parrent = node.get_parrent(level)
             pattern_cluster[pattern].add(parrent.pattern)
             if parrent.piece not in self._pattern_cluster:
                 self._pattern_cluster[parrent.piece] = {
@@ -500,12 +490,20 @@ class CombineProcessor(object):
             self._pattern_cluster[p] = set.union(
                 *self._pattern_cluster[p].values())
 
-    def combine(self, preprocess=True):
+    def _preprocess(self):
+        if self._preprocessing:
+            return
+        self._preprocessing = True
+        if not self.meta_info.is_last_level():
+            self.combine()
+            if self.pattern_num() > 1:
+                self._do_preprocess()
+        self._preprocessing = False
+
+    def combine(self):
         if self._piece_combiner.piece_num() <= 1:
             return
-        if not self._force_combine and preprocess:
-            self._preprocess()
-
+        self._preprocess()
         self._piece_combiner.combine()
 
     def process(self):
@@ -513,19 +511,18 @@ class CombineProcessor(object):
         if self.meta_info.is_last_level():
             return
         next_level_processors = {}
-        for node in self._piece_combiner.iter_nodes():
+        for node in self.iter_nodes():
             n_hash = hash(node.pattern)
             if n_hash not in next_level_processors:
                 next_level_processors[n_hash] = self._get_next_level_processor(
                     self.meta_info)
-            for child in node.children:
-                next_level_processors[n_hash].add_node(child)
+            next_level_processors[n_hash].add_node(node, True)
         for processor in next_level_processors.itervalues():
             processor.process()
 
 
-def combine(config, url_meta, piece_pattern_tree, force_combine=False):
-    meta_info = MetaInfo(url_meta, 0)
-    processor = CombineProcessor(config, meta_info, force_combine)
+def combine(config, url_meta, piece_pattern_tree, inner=False):
+    meta_info = MetaInfo(url_meta, 0, inner)
+    processor = CombineProcessor(config, meta_info)
     processor.add_node(piece_pattern_tree.root)
     processor.process()

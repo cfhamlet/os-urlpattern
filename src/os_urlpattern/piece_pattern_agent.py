@@ -36,7 +36,7 @@ class MixedPiecePattern(PiecePatternAgent):
         return self._piece_pattern.mixed_part_num
 
 
-class FuzzyPattern(PiecePatternAgent):
+class FuzzyPiecePattern(PiecePatternAgent):
     @property
     def piece_patterns(self):
         fuzzy_rule = None
