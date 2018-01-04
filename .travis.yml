@@ -5,11 +5,12 @@ python:
 install:
 - pip install -e .
 - pip install pytest
+- pip install pytest-env
 - pip install coverage
 - pip install codecov
 script:
 - coverage erase
-- coverage run -m py.test
+- coverage run -m pytest
 - coverage combine
 after_success:
 - codecov

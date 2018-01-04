@@ -27,6 +27,9 @@ class PatternPath(object):
 
 
 class PatternNode(object):
+    __slots__ = ['_pattern', '_children',
+                 '_parrent', '_count', '_current_level']
+
     def __init__(self, pattern):  # , base_pattern):
         self._pattern = pattern
         self._children = {}
