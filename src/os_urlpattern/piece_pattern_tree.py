@@ -1,11 +1,11 @@
 import math
 from piece_pattern_node import PiecePatternNode
-from piece_pattern_parser import EMPTY_PIECE_PATTERN
+from piece_parser import EMPTY_PARSED_PIECE
 
 
 class PiecePatternTree(object):
     def __init__(self):
-        self._root = PiecePatternNode(EMPTY_PIECE_PATTERN)
+        self._root = PiecePatternNode(EMPTY_PARSED_PIECE)
 
     @property
     def root(self):
@@ -15,13 +15,13 @@ class PiecePatternTree(object):
     def count(self):
         return self._root.count
 
-    def add_piece_patterns(self, piece_patterns, count=1, uniq_path=True):
+    def add_from_parsed_pieces(self, parsed_pieces, count=1, uniq_path=True):
         node = self._root
         node.incr_count(count)
         is_new = None
-        for piece_pattern in piece_patterns:
-            node, is_new = node.add_child_node_from_piece_pattern(
-                piece_pattern, count)
+        for parsed_piece in parsed_pieces:
+            node, is_new = node.add_child_node_from_parsed_piece(
+                parsed_piece, count)
         if uniq_path and not is_new:
             node.incr_count(0 - count, True)
         return is_new

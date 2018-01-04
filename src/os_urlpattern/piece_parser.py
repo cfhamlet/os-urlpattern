@@ -2,7 +2,7 @@ import StringIO
 from definition import CHAR_RULE_DICT, SIGN_RULE_SET
 
 
-class PieceRule(object):
+class ParsedPiece(object):
     __slots__ = ['_pieces', '_rules', '_piece', '_piece_length']
 
     def __init__(self, pieces, rules):
@@ -44,7 +44,7 @@ class PieceRule(object):
         return self._piece_length
 
     def __eq__(self, o):
-        if not isinstance(o, PieceRule):
+        if not isinstance(o, ParsedPiece):
             return False
         return self.piece == o.piece
 
@@ -57,11 +57,13 @@ class PieceRule(object):
     def __str__(self):
         return str(zip(self.pieces, self.rules))
 
+    __repr__ = __str__
 
-EMPTY_PIECE_RULE = PieceRule((), ())
+
+EMPTY_PARSED_PIECE = ParsedPiece((), ())
 
 
-class PieceRuleParser(object):
+class PieceParser(object):
     def __init__(self):
         self._cache = {}
         self._rule_list = []
@@ -76,7 +78,7 @@ class PieceRuleParser(object):
             return self._cache[string]
         self._reset()
         self._pre_process(string)
-        pp = self._create_piece_rule()
+        pp = self._create_parsed_piece()
         self._cache[string] = pp
         return pp
 
@@ -108,7 +110,7 @@ class PieceRuleParser(object):
             return self._exact_num(rule, len(letter))
         return letter
 
-    def _create_piece_rule(self):
-        piece_rule = PieceRule(
+    def _create_parsed_piece(self):
+        piece_rule = ParsedPiece(
             tuple(self._piece_list), tuple(self._rule_list))
         return piece_rule

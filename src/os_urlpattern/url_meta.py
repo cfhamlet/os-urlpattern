@@ -29,7 +29,7 @@ class URLMeta(object):
         if self._has_fragment:
             s.write('#')
         s.seek(0)
-        self._hash_code = hashlib.md5(s.read()).hexdigest().upper()
+        self._hash_code = hashlib.md5(s.read()).hexdigest()
         return self._hash_code
 
     @property

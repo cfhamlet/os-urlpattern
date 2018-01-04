@@ -2,6 +2,8 @@ import re
 
 
 class Pattern(object):
+    __slots__ = ['_pattern_string', '_pattern_regex']
+
     def __init__(self, pattern_string):
         self._pattern_string = pattern_string
         self._pattern_regex = None

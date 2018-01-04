@@ -4,13 +4,13 @@ from pattern import get_pattern_from_cache
 
 class PiecePatternNode(object):
     __slots__ = ['_parrent', '_children', '_count',
-                 '_pattern', '_piece_pattern', '_current_level']
+                 '_pattern', '_parsed_piece', '_current_level']
 
-    def __init__(self, piece_pattern, pattern=None):
+    def __init__(self, parsed_piece, pattern=None):
         self._parrent = None
         self._children = None
         self._count = 0
-        self._piece_pattern = piece_pattern
+        self._parsed_piece = parsed_piece
         self._pattern = get_pattern_from_cache(
             self.piece) if pattern is None else pattern
         self._current_level = 0
@@ -18,9 +18,6 @@ class PiecePatternNode(object):
     @property
     def current_level(self):
         return self._current_level
-
-    def use_piece_as_pattern(self):
-        self._pattern = get_pattern_from_cache(self.piece)
 
     def piece_eq_pattern(self):
         return self.piece == self._pattern.pattern_string
@@ -45,11 +42,11 @@ class PiecePatternNode(object):
 
     @property
     def piece(self):
-        return self._piece_pattern.piece
+        return self._parsed_piece.piece
 
     @property
-    def piece_pattern(self):
-        return self._piece_pattern
+    def parsed_piece(self):
+        return self._parsed_piece
 
     @property
     def children(self):
@@ -68,13 +65,13 @@ class PiecePatternNode(object):
             node.incr_count(count)
             node = node.parrent
 
-    def add_child_node_from_piece_pattern(self, piece_pattern, count, pattern=None):
+    def add_child_node_from_parsed_piece(self, parsed_piece, count, pattern=None):
         if self._children is None:
             self._children = {}
-        piece = piece_pattern.piece
+        piece = parsed_piece.piece
         is_new = False
         if piece not in self._children:
-            child = PiecePatternNode(piece_pattern, pattern)
+            child = PiecePatternNode(parsed_piece, pattern)
             child.set_parrent(self)
             child._current_level = self._current_level + 1
             self._children[piece] = child
@@ -84,7 +81,7 @@ class PiecePatternNode(object):
         return child, is_new
 
     def __str__(self):
-        return ' '.join((str(self._piece_pattern), str(self.pattern)))
+        return ' '.join((self.piece, str(self.pattern)))
 
     def set_parrent(self, parrent):
         if not self._parrent:

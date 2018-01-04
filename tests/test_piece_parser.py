@@ -1,5 +1,5 @@
 from os_urlpattern.pattern import Pattern
-from os_urlpattern.piece_parser import PieceRuleParser
+from os_urlpattern.piece_parser import PieceParser
 
 
 def _test_parse(parser, data):
@@ -11,7 +11,7 @@ def _test_parse(parser, data):
 
 
 def test_parse():
-    parser = PieceRuleParser()
+    parser = PieceParser()
     data = [
         ('abc', ('abc',), ('a-z',)),
         ('abc.exe', ('abc', '[\\.]', 'exe'), ('a-z', '\\.', 'a-z')),
