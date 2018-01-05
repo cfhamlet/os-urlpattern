@@ -1,6 +1,5 @@
 import hashlib
-from os_urlpattern.urlparse_utils import parse_url
-from os_urlpattern.piece_parser import PieceParser
+from os_urlpattern.urlparse_utils import parse_url, struct_id, PieceParser
 from os_urlpattern.piece_pattern_tree import PiecePatternTree
 from os_urlpattern.combine import combine
 from os_urlpattern.pattern_tree import PatternTree
@@ -12,19 +11,13 @@ class PatternMaker(object):
         self._parser = PieceParser()
         self._makers = {}
 
-    def _struct_hash(self, url_meta, parsed_pieces):
-        meta_hash = url_meta.hashcode
-        pieces_hash = hashlib.md5(
-            '/'.join([''.join(sorted(set(p.rules))) for p in parsed_pieces])).hexdigest()
-        return '-'.join((meta_hash, pieces_hash))
-
     def load(self, url):
         url_meta, pieces = parse_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
-        struct_hash = self._struct_hash(url_meta, parsed_pieces)
-        if struct_hash not in self._makers:
-            self._makers[struct_hash] = Maker(self._config, url_meta)
-        return self._makers[struct_hash].load(parsed_pieces)
+        sid = struct_id(url_meta, parsed_pieces)
+        if sid not in self._makers:
+            self._makers[sid] = Maker(self._config, url_meta)
+        return self._makers[sid].load(parsed_pieces)
 
     def process(self):
         for maker in self._makers.values():

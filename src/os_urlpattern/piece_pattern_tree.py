@@ -1,6 +1,6 @@
 import math
 from piece_pattern_node import PiecePatternNode
-from piece_parser import EMPTY_PARSED_PIECE
+from urlparse_utils import EMPTY_PARSED_PIECE
 
 
 class PiecePatternTree(object):

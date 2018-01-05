@@ -1,5 +1,5 @@
 from os_urlpattern.pattern import Pattern
-from os_urlpattern.piece_parser import PieceParser
+from os_urlpattern.urlparse_utils import PieceParser
 
 
 def _test_parse(parser, data):
