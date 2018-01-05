@@ -160,6 +160,19 @@ def parse_query_string(query_string):
     return kv_list[True], kv_list[False]
 
 
+_URL_META_CACHE = {}
+
+
+def _get_url_meta(path_depth, key_list, has_fragment):
+    k = hash(''.join((str(path_depth),
+                      '?', str(len(key_list)), '&'.join(key_list),
+                      '#', '1' if has_fragment else '0')))
+    if k not in _URL_META_CACHE:
+        _URL_META_CACHE[k] = URLMeta(path_depth, key_list, has_fragment)
+
+    return _URL_META_CACHE[k]
+
+
 def parse_url_structure(result, norm_query_key=True):
     pieces = filter_useless_part(result.path.split('/')[1:])
     path_depth = len(pieces)
@@ -176,7 +189,7 @@ def parse_url_structure(result, norm_query_key=True):
     has_fragment = True if (
         result.fragment or result.blank_fragment) else False
 
-    url_meta = URLMeta(path_depth, key_list, has_fragment)
+    url_meta = _get_url_meta(path_depth, key_list, has_fragment)
     pieces.extend(value_list)
     if has_fragment:
         pieces.append(result.fragment)
@@ -279,29 +292,29 @@ class ParsedPiece(object):
     __repr__ = __str__
 
 
-EMPTY_PARSED_PIECE = ParsedPiece((), ())
+EMPTY_PARSED_PIECE = ParsedPiece([], [])
 
 
 class PieceParser(object):
     def __init__(self):
         self._cache = {}
-        self._rule_list = []
-        self._piece_list = []
+        self._rule_list = None
+        self._piece_list = None
+        self._reset()
 
     def _reset(self):
-        self._rule_list[:] = []
-        self._piece_list[:] = []
+        self._rule_list = []
+        self._piece_list = []
 
     def parse(self, piece):
         if piece not in self._cache:
             self._reset()
             self._pre_process(piece)
-            pp = self._create_parsed_piece()
-            self._cache[piece] = pp
+            self._cache[piece] = self._create_parsed_piece()
         return self._cache[piece]
 
-    def _pre_process(self, string):
-        for c in string:
+    def _pre_process(self, piece):
+        for c in piece:
             self._define(c)
         for idx, buf in enumerate(self._piece_list):
             buf.seek(0)
@@ -324,8 +337,7 @@ class PieceParser(object):
         return letter
 
     def _create_parsed_piece(self):
-        piece_rule = ParsedPiece(
-            tuple(self._piece_list), tuple(self._rule_list))
+        piece_rule = ParsedPiece(self._piece_list, self._rule_list)
         return piece_rule
 
 

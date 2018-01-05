@@ -3,13 +3,13 @@ import hashlib
 
 
 class URLMeta(object):
-    __slots__ = ['_path_depth', '_query_keys', '_has_fragment', '_hash_code']
+    __slots__ = ['_path_depth', '_query_keys', '_has_fragment', '_hashcode']
 
     def __init__(self, path_depth, query_keys, has_fragment):
         self._path_depth = path_depth
         self._query_keys = query_keys
         self._has_fragment = has_fragment
-        self._hash_code = None
+        self._hashcode = None
 
     def __hash__(self):
         return hash(self.hashcode)
@@ -19,18 +19,17 @@ class URLMeta(object):
 
     @property
     def hashcode(self):
-        if self._hash_code is not None:
-            return self._hash_code
-        s = StringIO.StringIO()
-        s.write(self._path_depth)
-        if self._query_keys:
-            s.write('?')
-            s.write('&'.join(self._query_keys))
-        if self._has_fragment:
-            s.write('#')
-        s.seek(0)
-        self._hash_code = hashlib.md5(s.read()).hexdigest()
-        return self._hash_code
+        if self._hashcode is None:
+            s = StringIO.StringIO()
+            s.write(self._path_depth)
+            if self._query_keys:
+                s.write('?')
+                s.write('&'.join(self._query_keys))
+            if self._has_fragment:
+                s.write('#')
+            s.seek(0)
+            self._hashcode = hashlib.md5(s.read()).hexdigest()
+        return self._hashcode
 
     @property
     def depths(self):
