@@ -5,6 +5,7 @@ from os_urlpattern.urlparse_utils import parse_url
 from os_urlpattern.urlparse_utils import parse_query_string
 from os_urlpattern.exceptions import IrregularURLException
 from os_urlpattern.urlparse_utils import normalize_str
+from os_urlpattern.urlparse_utils import PieceParser
 
 
 def test_normalize_str():
@@ -93,3 +94,20 @@ def test_filter_useless_part():
     ]
     for s, expect in data:
         assert filter_useless_part(s.split('/')) == expect
+
+
+def test_piece_parser():
+    parser = PieceParser()
+    data = [
+        ('abc', ('abc',), ('a-z',)),
+        ('abc.exe', ('abc', '[\\.]', 'exe'), ('a-z', '\\.', 'a-z')),
+        ('%' * 10, ('[%]{10}',), ('%',)),
+        ('abc1D..exe',  ('abc', '1', 'D',
+                         '[\\.]{2}', 'exe'), ('a-z', '0-9', 'A-Z', '\\.', 'a-z')),
+        ('@<>..', ('[@]', '[<]', '[>]', '[\\.]{2}'), ('@', '<', '>', '\\.')),
+    ]
+    for piece, expected_pieces, expected_rules in data:
+        parsed = parser.parse(piece)
+        assert parsed.rules == expected_rules
+        assert parsed.pieces == expected_pieces
+        assert parsed.piece_length == len(piece)
