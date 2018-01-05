@@ -215,13 +215,20 @@ def join(url_meta,  path_patterns, query_patterns, fragment_patterns):
 
 
 class ParsedPiece(object):
-    __slots__ = ['_pieces', '_rules', '_piece', '_piece_length']
+    __slots__ = ['_pieces', '_rules', '_piece', '_piece_length', '_fuzzy_rule']
 
     def __init__(self, pieces, rules):
         self._pieces = pieces
         self._rules = rules
         self._piece = None
         self._piece_length = -1
+        self._fuzzy_rule = None
+
+    @property
+    def fuzzy_rule(self):
+        if not self._fuzzy_rule:
+            self._fuzzy_rule = ''.join(sorted(set(self.rules)))
+        return self._fuzzy_rule
 
     @property
     def rules(self):
@@ -285,14 +292,13 @@ class PieceParser(object):
         self._rule_list[:] = []
         self._piece_list[:] = []
 
-    def parse(self, string):
-        if string in self._cache:
-            return self._cache[string]
-        self._reset()
-        self._pre_process(string)
-        pp = self._create_parsed_piece()
-        self._cache[string] = pp
-        return pp
+    def parse(self, piece):
+        if piece not in self._cache:
+            self._reset()
+            self._pre_process(piece)
+            pp = self._create_parsed_piece()
+            self._cache[piece] = pp
+        return self._cache[piece]
 
     def _pre_process(self, string):
         for c in string:
@@ -326,5 +332,5 @@ class PieceParser(object):
 def struct_id(url_meta, parsed_pieces):
     meta_hash = url_meta.hashcode
     pieces_hash = hashlib.md5(
-        '/'.join([''.join(sorted(set(p.rules))) for p in parsed_pieces])).hexdigest()
+        '/'.join([p.fuzzy_rule for p in parsed_pieces])).hexdigest()
     return '-'.join((meta_hash, pieces_hash))
