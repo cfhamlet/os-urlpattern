@@ -160,19 +160,6 @@ def parse_query_string(query_string):
     return kv_list[True], kv_list[False]
 
 
-_URL_META_CACHE = {}
-
-
-def _get_url_meta(path_depth, key_list, has_fragment):
-    k = hash(''.join((str(path_depth),
-                      '?', str(len(key_list)), '&'.join(key_list),
-                      '#', '1' if has_fragment else '0')))
-    if k not in _URL_META_CACHE:
-        _URL_META_CACHE[k] = URLMeta(path_depth, key_list, has_fragment)
-
-    return _URL_META_CACHE[k]
-
-
 def parse_url_structure(result, norm_query_key=True):
     pieces = filter_useless_part(result.path.split('/')[1:])
     path_depth = len(pieces)
@@ -189,7 +176,7 @@ def parse_url_structure(result, norm_query_key=True):
     has_fragment = True if (
         result.fragment or result.blank_fragment) else False
 
-    url_meta = _get_url_meta(path_depth, key_list, has_fragment)
+    url_meta = URLMeta(path_depth, key_list, has_fragment)
     pieces.extend(value_list)
     if has_fragment:
         pieces.append(result.fragment)
