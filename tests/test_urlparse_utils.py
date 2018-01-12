@@ -6,6 +6,7 @@ from os_urlpattern.urlparse_utils import parse_query_string
 from os_urlpattern.exceptions import IrregularURLException
 from os_urlpattern.urlparse_utils import normalize_str
 from os_urlpattern.urlparse_utils import PieceParser
+from os_urlpattern.urlparse_utils import pack
 
 
 def test_normalize_str():
@@ -29,13 +30,15 @@ def test_parse_url():
         ('http://www.test.com/', [''], [('query_depth', 0)]),
         ('http://www.test.com/?', ['', ''], [('query_depth', 1)]),
         ('http://www.test.com/abc/def?k=v#xxx', ['abc', 'def', 'v', 'xxx'], [
-         ('query_depth', 1), ('has_fragment', True), ('depths', (2, 1, 1))])
+         ('query_depth', 1), ('has_fragment', True), ('depths', (2, 1, 1))]),
     ]
     for url, p, m in data:
         url_meta, parts = parse_url(url)
         assert parts == p
         for k, v in m:
             assert getattr(url_meta, k) == v
+    with pytest.raises(AssertionError):
+        parse_url('http://www.g.com')
 
 
 def test_parse_query_string():
@@ -99,15 +102,29 @@ def test_filter_useless_part():
 def test_piece_parser():
     parser = PieceParser()
     data = [
-        ('abc', ('abc',), ('a-z',)),
-        ('abc.exe', ('abc', '[\\.]', 'exe'), ('a-z', '\\.', 'a-z')),
-        ('%' * 10, ('[%]{10}',), ('%',)),
-        ('abc1D..exe',  ('abc', '1', 'D',
-                         '[\\.]{2}', 'exe'), ('a-z', '0-9', 'A-Z', '\\.', 'a-z')),
-        ('@<>..', ('[@]', '[<]', '[>]', '[\\.]{2}'), ('@', '<', '>', '\\.')),
+        ('abc', ['abc', ], ['a-z', ]),
+        ('abc.exe', ['abc', '[\\.]', 'exe'], ['a-z', '\\.', 'a-z']),
+        ('%' * 10, ['[%]{10}', ], ['%', ]),
+        ('abc1D..exe',  ['abc', '1', 'D',
+                         '[\\.]{2}', 'exe'], ['a-z', '0-9', 'A-Z', '\\.', 'a-z']),
+        ('@<>..', ['[@]', '[<]', '[>]', '[\\.]{2}'], ['@', '<', '>', '\\.']),
     ]
     for piece, expected_pieces, expected_rules in data:
         parsed = parser.parse(piece)
         assert parsed.rules == expected_rules
         assert parsed.pieces == expected_pieces
         assert parsed.piece_length == len(piece)
+
+
+def test_unpack_pack():
+    data = [
+        ('http://www.g.com/', '/'),
+        ('http://www.g.com/abc', '/abc'),
+        ('http://www.g.com/abc?a=1#c', '/abc[\\?]a=1#c'),
+        ('http://www.g.com/abc???a=1#c', '/abc[\\?][\\?]{2}a=1#c'),
+        ('http://www.g.com/abc?=1#c', '/abc[\\?]=1#c'),
+        ('http://www.g.com/abc?a=1#', '/abc[\\?]a=1#'),
+        ('http://www.g.com/abc?a=1&b=2#', '/abc[\\?]a=1&b=2#'),
+    ]
+    for url, expected in data:
+        assert pack(*parse_url(url)) == expected

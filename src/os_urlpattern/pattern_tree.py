@@ -1,6 +1,6 @@
 import hashlib
 import json
-from os_urlpattern.urlparse_utils import split, join
+from os_urlpattern.urlparse_utils import pack
 
 
 class PatternPath(object):
@@ -20,9 +20,8 @@ class PatternPath(object):
     @property
     def pattern_path_string(self):
         if self._pattern_path_string is None:
-            parts = split(self._url_meta, [
-                p.pattern for p in self._pattern_node_path[1:]])
-            self._pattern_path_string = join(self._url_meta, *parts)
+            self._pattern_path_string = pack(
+                self._url_meta, [p.pattern for p in self._pattern_node_path[1:]])
         return self._pattern_path_string
 
 

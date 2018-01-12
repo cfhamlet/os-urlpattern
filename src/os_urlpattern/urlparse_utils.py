@@ -160,7 +160,7 @@ def parse_query_string(query_string):
     return kv_list[True], kv_list[False]
 
 
-def parse_url_structure(result, norm_query_key=True):
+def unpack(result, norm_query_key=True):
     pieces = filter_useless_part(result.path.split('/')[1:])
     path_depth = len(pieces)
     assert path_depth > 0
@@ -185,31 +185,50 @@ def parse_url_structure(result, norm_query_key=True):
 
 def parse_url(url):
     result = analyze_url(url)
-    return parse_url_structure(result, True)
+    return unpack(result, True)
 
 
-def split(url_meta, pattern_path):
+def pack(url_meta, paths):
+    s = StringIO.StringIO()
+    s.write('/')
+    idx = url_meta.path_depth + url_meta.query_depth
+    p = '/'.join([str(p) for p in paths[0:url_meta.path_depth]])
+    s.write(p)
+    if url_meta.query_depth > 0:
+        s.write('[\\?]')
+        kv = zip(url_meta.query_keys,
+                 [str(p) for p in paths[url_meta.path_depth:idx]])
+        s.write('&'.join([''.join((str(k), str(v))) for k, v in kv]))
+
+    if url_meta.has_fragment:
+        s.write('#')
+        s.write(''.join([str(p) for p in paths[idx:]]))
+    s.seek(0)
+    return s.read()
+
+
+def split(url_meta, path):
     s = 0
     l = []
     for i in url_meta.depths:
         e = s + i
-        l.append([p for p in pattern_path[s:e]])
+        l.append([p for p in path[s:e]])
         s = e
     return l
 
 
-def join(url_meta,  path_patterns, query_patterns, fragment_patterns):
+def join(url_meta,  paths, query_values, fragments):
     s = StringIO.StringIO()
     s.write('/')
-    p = '/'.join([str(p) for p in path_patterns])
+    p = '/'.join([str(p) for p in paths])
     s.write(p)
-    if query_patterns:
+    if query_values:
         s.write('[\\?]')
         s.write('&'.join(["".join((str(k), str(v)))
-                          for k, v in zip(url_meta.query_keys, query_patterns)]))
-    if fragment_patterns:
+                          for k, v in zip(url_meta.query_keys, query_values)]))
+    if fragments:
         s.write('#')
-        s.write(''.join(str(p) for p in fragment_patterns))
+        s.write(''.join(str(p) for p in fragments))
     s.seek(0)
     return s.read()
 
