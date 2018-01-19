@@ -3,10 +3,11 @@ from os_urlpattern.urlparse_utils import filter_useless_part
 from os_urlpattern.urlparse_utils import analyze_url
 from os_urlpattern.urlparse_utils import parse_url
 from os_urlpattern.urlparse_utils import parse_query_string
-from os_urlpattern.exceptions import IrregularURLException
 from os_urlpattern.urlparse_utils import normalize_str
 from os_urlpattern.urlparse_utils import PieceParser
 from os_urlpattern.urlparse_utils import pack
+from os_urlpattern.urlparse_utils import URLMeta
+from os_urlpattern.exceptions import IrregularURLException
 
 
 def test_normalize_str():
@@ -128,3 +129,13 @@ def test_unpack_pack():
     ]
     for url, expected in data:
         assert pack(*parse_url(url)) == expected
+
+
+def test_url_meta():
+    url_meta1 = URLMeta(1, ['key1', 'key2'], False)
+    assert url_meta1.depth == 3
+    url_meta2 = URLMeta(1, ['key1', 'key2'], True)
+    assert url_meta2.depth == 4
+    assert hash(url_meta1) != hash(url_meta2)
+    url_meta3 = URLMeta(1, ['key1', 'key2'], False)
+    assert hash(url_meta1) == hash(url_meta3)
