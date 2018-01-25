@@ -7,7 +7,7 @@ from os_urlpattern.urlparse_utils import normalize_str
 from os_urlpattern.urlparse_utils import PieceParser
 from os_urlpattern.urlparse_utils import pack
 from os_urlpattern.urlparse_utils import URLMeta
-from os_urlpattern.exceptions import IrregularURLException
+from os_urlpattern.urlparse_utils import IrregularURLException
 
 
 def test_normalize_str():
@@ -53,26 +53,31 @@ def test_parse_query_string():
     for q, k, v in data:
         assert parse_query_string(q) == (k, v)
 
-    data = ['a&', 'a&&b', 'a=1&', '']
+    data = ['a&', 'a&&b', 'a=1&']
 
     for i in data:
         with pytest.raises(IrregularURLException):
             parse_query_string(i)
 
+
 def test_analyze_url():
     data = [
         ['http://www.g.com/test', ('path', '/test'),
-         ('blank_query', False), ('blank_fragment', False)],
+         ('query', None), ('fragment', None)],
         ['http://www.g.com/test?',
-            ('blank_query', True), ('blank_fragment', False)],
+            ('query', ''), ('fragment', None)],
         ['http://www.g.com/test?#',
-            ('blank_query', True), ('blank_fragment', True)],
+            ('query', ''), ('fragment', '')],
+        ['http://www.g.com/test?#abc',
+            ('query', ''), ('fragment', 'abc')],
+        ['http://www.g.com/test#abc',
+            ('query', None), ('fragment', 'abc')],
         ['http://www.g.com/test?a#',
-            ('blank_query', False), ('blank_fragment', True)],
+            ('query', 'a'), ('fragment', '')],
         ['http://www.g.com/test?a##',
-            ('blank_query', False), ('blank_fragment', False)],
+            ('query', 'a'), ('fragment', '#')],
         ['http://www.g.com/test#?',
-            ('blank_query', False), ('blank_fragment', False)],
+            ('query', None), ('fragment', '?')],
     ]
     for check in data:
         url = check[0]

@@ -1,51 +1,12 @@
 import StringIO
 import hashlib
-from exceptions import IrregularURLException
-from urlparse import urlparse
+from urlparse import urlparse, ParseResult
 from definition import QUERY_PART_RESERVED_CHARS, EMPTY_LIST, BLANK_LIST
 from definition import ASCII_DIGIT_SET, CHAR_RULE_DICT, SIGN_RULE_SET
 
 
-class AnalyseResult(object):
-    __slots__ = ['_base_url', '_result', '_base_url_length',
-                 '_blank_query', '_blank_fragment']
-
-    def __init__(self, url):
-        self._base_url = url
-        self._result = None
-        self._base_url_length = len(url)
-        self._blank_query = False
-        self._blank_fragment = False
-        self._analyse()
-
-    def _analyse(self):
-        self._result = urlparse(self._base_url)
-        if not self._result.fragment:
-            if self._base_url[-1] == '#':
-                self._blank_fragment = True
-                if not self._result.query:
-                    if self._base_url[-2] == '?':
-                        self._blank_query = True
-            elif not self._result.query and self._base_url[-1] == '?':
-                self._blank_query = True
-        elif not self._result.query:
-            index = self._base_url.find('#')
-            if self._base_url[index - 1] == '?':
-                self._blank_query = True
-
-    def __getattr__(self, attr):
-        try:
-            super(AnalyseResult, self).__getattr__()
-        except AttributeError:
-            return getattr(self._result, attr)
-
-    @property
-    def blank_query(self):
-        return self._blank_query
-
-    @property
-    def blank_fragment(self):
-        return self._blank_fragment
+class IrregularURLException(Exception):
+    pass
 
 
 class URLMeta(object):
@@ -159,7 +120,18 @@ def normalize_str(raw_string, reserved_chars=None):
 
 
 def analyze_url(url):
-    return AnalyseResult(url)
+    scheme, netloc, path, params, query, fragment = urlparse(url)
+    if not fragment:
+        if url[-1] != '#':
+            fragment = None
+            if not query and url[-1] != '?':
+                query = None
+        elif not query and url[-2] != '?':
+            query = None
+    elif not query:
+        if url[len(url) - len(fragment) - 2] != '?':
+            query = None
+    return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
 def filter_useless_part(parts):
@@ -178,7 +150,11 @@ def filter_useless_part(parts):
 
 
 def parse_query_string(query_string):
-    if not query_string or query_string.endswith('&'):
+    if query_string is None:
+        return EMPTY_LIST, EMPTY_LIST
+    elif query_string == '':
+        return BLANK_LIST, BLANK_LIST
+    elif query_string.endswith('&'):
         raise IrregularURLException('Invalid url query')
     kv_type = True  # qkey True, qvalue False
     last_c = None
@@ -207,10 +183,11 @@ def parse_query_string(query_string):
             s = kv_buf[kv_type]
             s.write(i)
         last_c = i
+
     s = kv_buf[kv_type]
     s.seek(0)
     kv_list[kv_type].append(s.read())
-    if kv_type:
+    if kv_type:  # treat as value-less
         kv_list[False].append('')
 
     # only one query without value, treat as key-less
@@ -224,16 +201,10 @@ def unpack(result, norm_query_key=True):
     path_depth = len(pieces)
     assert path_depth > 0
 
-    if result.blank_query:
-        key_list = value_list = BLANK_LIST
-    elif not result.query:
-        key_list = value_list = EMPTY_LIST
-    else:
-        key_list, value_list = parse_query_string(result.query)
-        if norm_query_key:
-            key_list = normalize_str_list(key_list, QUERY_PART_RESERVED_CHARS)
-    has_fragment = True if (
-        result.fragment or result.blank_fragment) else False
+    key_list, value_list = parse_query_string(result.query)
+    if norm_query_key:
+        key_list = normalize_str_list(key_list, QUERY_PART_RESERVED_CHARS)
+    has_fragment = False if result.fragment is None else True
 
     url_meta = URLMeta(path_depth, key_list, has_fragment)
     pieces.extend(value_list)
