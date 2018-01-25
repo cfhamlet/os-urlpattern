@@ -213,11 +213,6 @@ def unpack(result, norm_query_key=True):
     return url_meta, pieces
 
 
-def parse_url(url):
-    result = analyze_url(url)
-    return unpack(result, True)
-
-
 def pack(url_meta, paths):
     s = StringIO.StringIO()
     s.write('/')
@@ -237,30 +232,9 @@ def pack(url_meta, paths):
     return s.read()
 
 
-def split(url_meta, path):
-    s = 0
-    l = []
-    for i in url_meta.depths:
-        e = s + i
-        l.append([p for p in path[s:e]])
-        s = e
-    return l
-
-
-def join(url_meta,  paths, query_values, fragments):
-    s = StringIO.StringIO()
-    s.write('/')
-    p = '/'.join([str(p) for p in paths])
-    s.write(p)
-    if query_values:
-        s.write('[\\?]')
-        s.write('&'.join(["".join((str(k), str(v)))
-                          for k, v in zip(url_meta.query_keys, query_values)]))
-    if fragments:
-        s.write('#')
-        s.write(''.join(str(p) for p in fragments))
-    s.seek(0)
-    return s.read()
+def parse_url(url):
+    result = analyze_url(url)
+    return unpack(result, True)
 
 
 class ParsedPiece(object):
