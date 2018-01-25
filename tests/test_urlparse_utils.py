@@ -53,15 +53,11 @@ def test_parse_query_string():
     for q, k, v in data:
         assert parse_query_string(q) == (k, v)
 
-    data = ['a&', 'a&&b']
+    data = ['a&', 'a&&b', 'a=1&', '']
 
     for i in data:
         with pytest.raises(IrregularURLException):
             parse_query_string(i)
-
-    with pytest.raises(AssertionError):
-        parse_query_string('')
-
 
 def test_analyze_url():
     data = [

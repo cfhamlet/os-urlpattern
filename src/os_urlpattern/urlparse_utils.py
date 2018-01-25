@@ -178,7 +178,8 @@ def filter_useless_part(parts):
 
 
 def parse_query_string(query_string):
-    assert query_string
+    if not query_string or query_string.endswith('&'):
+        raise IrregularURLException('Invalid url query')
     kv_type = True  # qkey True, qvalue False
     last_c = None
     kv_buf = {True: StringIO.StringIO(), False: StringIO.StringIO()}
@@ -199,23 +200,19 @@ def parse_query_string(query_string):
             kv_list[kv_type].append(s.read())
             kv_buf[kv_type] = StringIO.StringIO()
             if kv_type:
-                kv_list[False].append('') # treat as value-less
+                kv_list[False].append('')  # treat as value-less
             else:
                 kv_type = not kv_type
         else:
             s = kv_buf[kv_type]
             s.write(i)
         last_c = i
-    if last_c is not None:
-        if last_c == '&':
-            raise IrregularURLException
-        s = kv_buf[kv_type]
-        s.seek(0)
-        kv_list[kv_type].append(s.read())
-        if kv_type:
-            kv_list[False].append('')
+    s = kv_buf[kv_type]
+    s.seek(0)
+    kv_list[kv_type].append(s.read())
+    if kv_type:
+        kv_list[False].append('')
 
-    assert len(kv_list[True]) == len(kv_list[False])
     # only one query without value, treat as key-less
     if len(kv_list[True]) == 1 and not kv_list[True][0].endswith('='):
         kv_list[False][0], kv_list[True][0] = kv_list[True][0], kv_list[False][0]
