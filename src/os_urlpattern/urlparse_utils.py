@@ -7,6 +7,9 @@ from definition import ASCII_DIGIT_SET, CHAR_RULE_DICT, SIGN_RULE_SET
 
 
 class AnalyseResult(object):
+    __slots__ = ['_base_url', '_result', '_base_url_length',
+                 '_blank_query', '_blank_fragment']
+
     def __init__(self, url):
         self._base_url = url
         self._result = None
@@ -181,29 +184,31 @@ def parse_query_string(query_string):
     kv_buf = {True: StringIO.StringIO(), False: StringIO.StringIO()}
     kv_list = {True: [], False: []}
     for i in query_string:
-        if (i == '=' and kv_type) or (i == '&'
-                                      and last_c is not None
-                                      and last_c != '&'):
+        if i == '=' and kv_type:
             s = kv_buf[kv_type]
-            if i == '=':
-                s.write('=')
+            s.write(i)
             s.seek(0)
             kv_list[kv_type].append(s.read())
             kv_buf[kv_type] = StringIO.StringIO()
-            if i == '&' and kv_type:  # treat as value-less
-                kv_list[False].append('')
+            kv_type = not kv_type
+        elif i == '&':
+            if last_c is None or last_c == '&':
+                raise IrregularURLException('Invalid url query')
+            s = kv_buf[kv_type]
+            s.seek(0)
+            kv_list[kv_type].append(s.read())
+            kv_buf[kv_type] = StringIO.StringIO()
+            if kv_type:
+                kv_list[False].append('') # treat as value-less
             else:
                 kv_type = not kv_type
-            last_c = i
-            continue
-        if i == '&':
-            raise IrregularURLException('Invalid url query')
-        s = kv_buf[kv_type]
-        s.write(i)
+        else:
+            s = kv_buf[kv_type]
+            s.write(i)
         last_c = i
-    if last_c == '&':
-        raise IrregularURLException
-    elif last_c is not None:
+    if last_c is not None:
+        if last_c == '&':
+            raise IrregularURLException
         s = kv_buf[kv_type]
         s.seek(0)
         kv_list[kv_type].append(s.read())
@@ -211,7 +216,7 @@ def parse_query_string(query_string):
             kv_list[False].append('')
 
     assert len(kv_list[True]) == len(kv_list[False])
-    # first query, treat as key-less
+    # only one query without value, treat as key-less
     if len(kv_list[True]) == 1 and not kv_list[True][0].endswith('='):
         kv_list[False][0], kv_list[True][0] = kv_list[True][0], kv_list[False][0]
     return kv_list[True], kv_list[False]
