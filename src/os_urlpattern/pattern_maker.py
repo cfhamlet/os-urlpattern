@@ -1,7 +1,7 @@
 from os_urlpattern.urlparse_utils import parse_url, struct_id, PieceParser
 from os_urlpattern.piece_pattern_tree import PiecePatternTree
 from os_urlpattern.pattern_tree import PatternTree
-from os_urlpattern.cluster import process
+from os_urlpattern.pattern_cluster import cluster
 
 
 class PatternMaker(object):
@@ -44,7 +44,7 @@ class Maker(object):
                 dest.load_path(path[index:])
 
     def make(self):
-        process(self._config, self._url_meta,
+        cluster(self._config, self._url_meta,
                 self._piece_pattern_tree)
 
         pattern_tree = PatternTree(self._url_meta)
