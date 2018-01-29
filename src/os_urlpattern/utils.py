@@ -3,50 +3,34 @@ import time
 import logging
 
 
-class LogSpeedFilter(object):
-    def filter(self, record):
-        if hasattr(record, 'log_speed'):
-            if record.log_speed:
-                return 1
-            else:
-                return 0
-        else:
-            return 1
-
-
 class LogSpeedAdapter(logging.LoggerAdapter):
     def __init__(self, logger, interval):
         super(LogSpeedAdapter, self).__init__(logger, {})
         self._count = 0
         self._interval = interval
-        self._filter = LogSpeedFilter()
-        self.logger.addFilter(self._filter)
-        self._closed = False
         self._start_time = time.time()
 
     def process(self, msg, kwargs):
-        if self._closed:
-            raise RuntimeError('Logger closed')
         self._count += 1
 
-        extra = {'log_speed': False}
         if self._count % self._interval == 0:
-            extra['log_speed'] = True
             speed = self._speed()
             mem = used_memory()
             extra_msg = '[{mem}] {count} {speed:.1f}/s'.format(
                 count=self._count, speed=speed, mem=mem)
             msg = ' '.join((msg, extra_msg))
-        kwargs['extra'] = extra
-        return msg, kwargs
+            return msg, kwargs
+
+    def debug(self, msg, *args, **kwargs):
+        returnd = self.process(msg, kwargs)
+        if not returnd:
+            return
+        msg, kwargs = returnd
+        self.logger.debug(msg, *args, **kwargs)
 
     def _speed(self):
         now = time.time()
         return self._count / (now - self._start_time)
-
-    def close(self):
-        self._closed = True
-        self.logger.removeFilter(self._filter)
 
 
 def used_memory():

@@ -102,7 +102,6 @@ class MakePatternCommand(Command):
                 self._logger.warn('%s, %s' % (str(e), url))
                 stats['INVALID'] += 1
                 continue
-        speed_logger.close()
         self._logger.debug('[LOADED] %s' % str(stats))
         formatter = FORMATTERS[args.formatter]
         for pattern_tree in pattern_maker.process():
