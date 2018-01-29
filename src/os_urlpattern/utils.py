@@ -3,31 +3,50 @@ import time
 import logging
 
 
-class Counter(object):
-    def __init__(self, logger_name, log_interval):
-        self._start_time = None
-        self._count = 0
-        self._log_interval = log_interval
-        self._logger = logging.getLogger(logger_name)
+class LogSpeedFilter(object):
+    def filter(self, record):
+        if hasattr(record, 'log_speed'):
+            if record.log_speed:
+                return 1
+            else:
+                return 0
+        else:
+            return 1
 
-    def reset(self):
-        self._start_time = time.time()
+
+class SpeedLoggerAdapter(logging.LoggerAdapter):
+    def __init__(self, logger, interval):
+        super(SpeedLoggerAdapter, self).__init__(logger, {})
         self._count = 0
+        self._interval = interval
+        self._filter = LogSpeedFilter()
+        self.logger.addFilter(self._filter)
+        self._closed = False
+        self._start_time = time.time()
+
+    def process(self, msg, kwargs):
+        if self._closed:
+            raise RuntimeError('Logger closed')
+        self._count += 1
+
+        extra = {'log_speed': False}
+        if self._count % self._interval == 0:
+            extra['log_speed'] = True
+            speed = self._speed()
+            mem = used_memory()
+            extra_msg = '[{mem}] {count} {speed:.1f}/s'.format(
+                count=self._count, speed=speed, mem=mem)
+            msg = ' '.join((msg, extra_msg))
+        kwargs['extra'] = extra
+        return msg, kwargs
 
     def _speed(self):
         now = time.time()
         return self._count / (now - self._start_time)
 
-    def _log(self, tag):
-        sf = '[{tag}] [{mem}] {count} {speed:.1f}/s'
-        self._logger.debug(sf.format(tag=tag, mem=used_memory(),
-                                     count=self._count, speed=self._speed()))
-
-    def log(self, tag, force=False):
-
-        self._count += 1
-        if force or self._count % self._log_interval == 0:
-            self._log(tag)
+    def close(self):
+        self._closed = True
+        self.logger.removeFilter(self._filter)
 
 
 def used_memory():

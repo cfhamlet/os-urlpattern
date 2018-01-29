@@ -5,8 +5,9 @@ import argparse
 import logging
 import json
 import time
-from os_urlpattern.utils import Counter
+from collections import Counter
 from logging.config import dictConfig
+from os_urlpattern.utils import SpeedLoggerAdapter
 from os_urlpattern.pattern_maker import PatternMaker
 from os_urlpattern.formatter import FORMATTERS
 
@@ -87,24 +88,22 @@ class MakePatternCommand(Command):
                 raise ValueError, 'File not exist: %s' % args.config
         self._config.freeze()
         pattern_maker = PatternMaker(self._config)
-        counter = Counter('LoadStatus', 5000)
-        counter.reset()
-        status = {'ALL': 0, 'VALID': 0, 'INVALID': 0, 'UNIQ': 0}
-
+        stats = Counter()
+        speed_logger = SpeedLoggerAdapter(self._logger, 5000)
         for url in inputs:
             url = url.strip()
-            status['ALL'] += 1
+            stats['ALL'] += 1
+            speed_logger.debug('[LOADING]')
             try:
                 if pattern_maker.load(url):
-                    status['UNIQ'] += 1
-                status['VALID'] += 1
+                    stats['UNIQ'] += 1
+                stats['VALID'] += 1
             except Exception, e:
                 self._logger.warn('%s, %s' % (str(e), url))
-                status['INVALID'] += 1
+                stats['INVALID'] += 1
                 continue
-            counter.log('LOADING')
-        counter.log('LOADED', force=True)
-        self._logger.debug('[LOADED] %s' % str(status))
+        speed_logger.close()
+        self._logger.debug('[LOADED] %s' % str(stats))
         formatter = FORMATTERS[args.formatter]
         for pattern_tree in pattern_maker.process():
             formatter.format(pattern_tree)
