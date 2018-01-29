@@ -14,9 +14,9 @@ class LogSpeedFilter(object):
             return 1
 
 
-class SpeedLoggerAdapter(logging.LoggerAdapter):
+class LogSpeedAdapter(logging.LoggerAdapter):
     def __init__(self, logger, interval):
-        super(SpeedLoggerAdapter, self).__init__(logger, {})
+        super(LogSpeedAdapter, self).__init__(logger, {})
         self._count = 0
         self._interval = interval
         self._filter = LogSpeedFilter()

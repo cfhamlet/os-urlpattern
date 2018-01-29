@@ -7,7 +7,7 @@ import json
 import time
 from collections import Counter
 from logging.config import dictConfig
-from os_urlpattern.utils import SpeedLoggerAdapter
+from os_urlpattern.utils import LogSpeedAdapter
 from os_urlpattern.pattern_maker import PatternMaker
 from os_urlpattern.formatter import FORMATTERS
 
@@ -89,7 +89,7 @@ class MakePatternCommand(Command):
         self._config.freeze()
         pattern_maker = PatternMaker(self._config)
         stats = Counter()
-        speed_logger = SpeedLoggerAdapter(self._logger, 5000)
+        speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in inputs:
             url = url.strip()
             stats['ALL'] += 1
