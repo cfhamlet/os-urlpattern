@@ -163,11 +163,13 @@ class LastDotSplitFuzzyView(MergedView):
                 rules = []
                 pieces.append(''.join(self.parsed_piece.pieces[0:dot_idx]))
                 pieces.append(self.parsed_piece.pieces[dot_idx])
-                pieces.extend(self.parsed_piece.pieces[dot_idx + 1:])
                 rules.append(
                     ''.join(sorted(set(self.parsed_piece.rules[0:dot_idx]))))
                 rules.append(self.parsed_piece.rules[dot_idx])
-                rules.extend(self.parsed_piece.rules[dot_idx + 1:])
+                mixed_pieces, mixed_rules = mix(
+                    self.parsed_piece.pieces[dot_idx + 1:], self.parsed_piece.rules[dot_idx + 1:])
+                pieces.extend(mixed_pieces)
+                rules.extend(mixed_rules)
                 self._parsed_pieces = [ParsedPiece(
                     [piece], [rule]) for piece, rule in zip(pieces, rules)]
         else:
