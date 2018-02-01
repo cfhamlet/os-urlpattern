@@ -150,9 +150,11 @@ class LastDotSplitFuzzyView(MergedView):
         for idx, rule in enumerate(rules[::-1]):
             if idx > 2:
                 break
-            if rule[0] == BasePatternRule.DOT:
+            if rule == BasePatternRule.DOT:
                 dot_idx = part_num - idx - 1
                 break
+        self._parsed_pieces = [ParsedPiece([self.parsed_piece.piece], [
+                                           self.parsed_piece.fuzzy_rule])]
         if dot_idx is not None:
             skip = False
             for rule in self.parsed_piece.rules[dot_idx + 1:]:
@@ -173,9 +175,6 @@ class LastDotSplitFuzzyView(MergedView):
                 rules.extend(mixed_rules)
                 self._parsed_pieces = [ParsedPiece(
                     [piece], [rule]) for piece, rule in zip(pieces, rules)]
-        else:
-            self._parsed_pieces = [ParsedPiece([self.parsed_piece.piece], [
-                self.parsed_piece.fuzzy_rule])]
         return self._parsed_pieces
 
 
