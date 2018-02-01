@@ -1,8 +1,13 @@
 import StringIO
 import hashlib
+import copy
 from urlparse import urlparse, ParseResult
 from definition import QUERY_PART_RESERVED_CHARS, EMPTY_LIST, BLANK_LIST
 from definition import ASCII_DIGIT_SET, CHAR_RULE_DICT, SIGN_RULE_SET
+from definition import DIGIT_AND_ASCII_RULE_SET
+
+MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
+MIXED_RULE_SET.add('%')
 
 
 class IrregularURLException(Exception):
@@ -67,10 +72,14 @@ class URLMeta(object):
         return sum((self.path_depth, self.query_depth, self.fragment_depth))
 
 
-def _exact_num(rule, num):
+def number_rule(rule, num):
     if num == 1:
         return '[%s]' % rule
     return '[%s]{%d}' % (rule, num)
+
+
+def wildcard_rule(rule):
+    return '[%s]+' % rule if rule else ''
 
 
 def normalize_str_list(str_list, reserved_chars):
@@ -90,7 +99,7 @@ def normalize_str(raw_string, reserved_chars=None):
                 if l > 0:
                     if not reserved_chars or w[0] not in reserved_chars:
                         r = CHAR_RULE_DICT.get(w[0])
-                        w = _exact_num(r, l)
+                        w = number_rule(r, l)
                     normal_str.write(w)
                     frag = StringIO.StringIO()
         else:
@@ -101,7 +110,7 @@ def normalize_str(raw_string, reserved_chars=None):
                 if l > 0 and w[0] not in ASCII_DIGIT_SET and \
                         (not reserved_chars or w[0] not in reserved_chars):
                     r = CHAR_RULE_DICT.get(w[0])
-                    w = _exact_num(r, l)
+                    w = number_rule(r, l)
                 normal_str.write(w)
                 frag = StringIO.StringIO()
         frag.write(c)
@@ -113,7 +122,7 @@ def normalize_str(raw_string, reserved_chars=None):
     if last_c and last_c not in ASCII_DIGIT_SET and \
             (not reserved_chars or w[0] not in reserved_chars):
         r = CHAR_RULE_DICT.get(w[0])
-        w = _exact_num(r, l)
+        w = number_rule(r, l)
     normal_str.write(w)
     normal_str.seek(0)
     return normal_str.read()
@@ -194,6 +203,39 @@ def parse_query_string(query_string):
     if len(kv_list[True]) == 1 and not kv_list[True][0].endswith('='):
         kv_list[False][0], kv_list[True][0] = kv_list[True][0], kv_list[False][0]
     return kv_list[True], kv_list[False]
+
+
+def mix(pieces, rules):
+    mixed_pieces = []
+    mixed_rules = []
+
+    t_pieces = []
+    t_rules = []
+    t_mix = False
+    for piece, rule in zip(pieces, rules):
+        if rule in MIXED_RULE_SET:
+            if t_rules and not t_mix:
+                mixed_pieces.extend(t_pieces)
+                mixed_rules.extend(t_rules)
+                t_pieces = []
+                t_rules = []
+            t_mix = True
+        else:
+            if t_rules and t_mix:
+                mixed_pieces.append(''.join(t_pieces))
+                mixed_rules.append(''.join(sorted(set(t_rules))))
+                t_pieces = []
+                t_rules = []
+            t_mix = False
+        t_pieces.append(piece)
+        t_rules.append(rule)
+    if t_mix:
+        mixed_pieces.append(''.join(t_pieces))
+        mixed_rules.append(''.join(sorted(set(t_rules))))
+    else:
+        mixed_pieces.extend(t_pieces)
+        mixed_rules.extend(t_rules)
+    return mixed_pieces, mixed_rules
 
 
 def unpack(result, norm_query_key=True):
@@ -343,7 +385,7 @@ class PieceParser(object):
 
     def _normalize(self, letter, rule):
         if rule in SIGN_RULE_SET:
-            return _exact_num(rule, len(letter))
+            return number_rule(rule, len(letter))
         return letter
 
     def _create_parsed_piece(self):
