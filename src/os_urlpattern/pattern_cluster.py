@@ -1,4 +1,5 @@
 import copy
+from collections import Counter
 from pattern import Pattern
 from urlparse_utils import ParsedPiece, number_rule, wildcard_rule, URLMeta, mix
 from piece_pattern_tree import PiecePatternTree
@@ -318,6 +319,13 @@ class PatternCluster(object):
             c.add_node(cluster_node)
         return c
 
+    def _can_be_clustered(self, pack):
+        for bag in pack.iter_values():
+            p_set = set([node.pattern for node in bag])
+            if len(p_set) >= self._min_cluster_num:
+                return True
+        return False
+
 
 class PiecePatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
@@ -358,30 +366,12 @@ class LengthPatternCluster(PatternCluster):
             return None
         return self._create_cluster(FuzzyPatternCluster)
 
-    def _can_be_clustered(self, pack):
-        for bag in pack.iter_values():
-            u_set = set()
-            for node in bag:
-                u_set.add(node.piece)
-            if len(u_set) >= self._min_cluster_num:
-                return True
-        return False
-
 
 class MultiPartPatternCluster(PatternCluster):
     def _cluster(self):
         for pack in self._view_pack.iter_values():
             if self._can_be_clustered(pack):
                 self._deep_cluster(pack)
-
-    def _can_be_clustered(self, pack):
-        for bag in pack.iter_values():
-            u_set = set()
-            for node in bag:
-                u_set.add(node.pattern)
-            if len(u_set) >= self._min_cluster_num:
-                return True
-        return False
 
     def cluster(self):
         self._cluster()
@@ -401,17 +391,20 @@ class MultiPartPatternCluster(PatternCluster):
         url_meta = URLMeta(p_num, [], False)
         cluster(self._config, url_meta, piece_pattern_tree)
         piece_pattern_dict = {}
+        pattern_counter = Counter()
         for path in piece_pattern_tree.dump_paths():
             pattern = Pattern(''.join([str(node.pattern) for node in path]))
             piece = ''.join([str(node.piece) for node in path])
             if piece == pattern.pattern_string:
                 continue
             piece_pattern_dict[piece] = pattern
+            pattern_counter[pattern] += 1
 
         for node in pack.iter_nodes():
             if node.piece in piece_pattern_dict:
                 pattern = piece_pattern_dict[node.piece]
-                self._set_pattern(node, pattern)
+                if pattern_counter[pattern] > 1:
+                    self._set_pattern(node, pattern)
 
 
 class BasePatternCluster(MultiPartPatternCluster):
