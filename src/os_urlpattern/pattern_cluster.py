@@ -371,7 +371,17 @@ class LengthPatternCluster(PatternCluster):
 class MultiPartPatternCluster(PatternCluster):
     def _cluster(self):
         for pack in self._view_pack.iter_values():
-            self._deep_cluster(pack)
+            if self._can_be_clustered(pack):
+                self._deep_cluster(pack)
+
+    def _can_be_clustered(self, pack):
+        for bag in pack.iter_values():
+            u_set = set()
+            for node in bag:
+                u_set.add(node.pattern)
+            if len(u_set) >= self._min_cluster_num:
+                return True
+        return False
 
     def cluster(self):
         self._cluster()
