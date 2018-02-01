@@ -353,6 +353,16 @@ class LengthPatternCluster(PatternCluster):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(LengthView)
 
+    def _can_be_clustered(self, pack):
+        for bag in pack.iter_values():
+            p_set = set([node.pattern for node in bag])
+            if len(p_set) >= self._min_cluster_num:
+                return True
+        node = pack.pick_node_view()
+        if node.piece.isdigit() and len(pack) > 1:
+            return True
+        return False
+
     def _cluster(self):
         for length, pack in self._view_pack.iter_items():
             if self._can_be_clustered(pack):
