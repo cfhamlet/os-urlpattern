@@ -70,7 +70,7 @@ class ClusterNodeView(object):
     def view(self):
         raise NotImplementedError
 
-    def parsed_pieces(self):
+    def view_parsed_pieces(self):
         raise NotImplementedError
 
     @property
@@ -89,7 +89,7 @@ class PieceView(ClusterNodeView):
     def view(self):
         return self._cluster_node.node.piece
 
-    def parsed_pieces(self):
+    def view_parsed_pieces(self):
         if len(self.parsed_piece.rules) <= 1:
             return [self.parsed_piece]
 
@@ -106,7 +106,7 @@ class BaseView(ClusterNodeView):
     def view(self):
         return ''.join(self.parsed_piece.rules)
 
-    def parsed_pieces(self):
+    def view_parsed_pieces(self):
         return [ParsedPiece([piece], [rule])
                 for piece, rule in zip(self.parsed_piece.pieces, self.parsed_piece.rules)]
 
@@ -119,12 +119,12 @@ class MergedView(ClusterNodeView):
         self._parsed_pieces = None
 
     def view(self):
-        return ' '.join([p.fuzzy_rule for p in self.parsed_pieces()])
+        return ' '.join([p.fuzzy_rule for p in self.view_parsed_pieces()])
 
 
 class MixedView(MergedView):
 
-    def parsed_pieces(self):
+    def view_parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
 
@@ -141,7 +141,7 @@ class MixedView(MergedView):
 
 class LastDotSplitFuzzyView(MergedView):
 
-    def parsed_pieces(self):
+    def view_parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
         rules = self.parsed_piece.rules
@@ -342,7 +342,7 @@ class PiecePatternCluster(PatternCluster):
 
         forward_cls = LengthPatternCluster
         node_view = self._view_pack.pick_node_view()
-        if len(node_view.parsed_pieces()) > 1:
+        if len(node_view.view_parsed_pieces()) > 1:
             forward_cls = BasePatternCluster
         return self._create_cluster(forward_cls)
 
@@ -395,8 +395,8 @@ class MultiPartPatternCluster(PatternCluster):
         piece_pattern_tree = PiecePatternTree()
         for node in pack.iter_nodes():
             piece_pattern_tree.add_from_parsed_pieces(
-                node.parsed_pieces(), node.count, False)
-        p_num = len(pack.pick_node_view().parsed_pieces())
+                node.view_parsed_pieces(), node.count, False)
+        p_num = len(pack.pick_node_view().view_parsed_pieces())
         url_meta = URLMeta(p_num, [], False)
         cluster(self._config, url_meta, piece_pattern_tree)
         piece_pattern_dict = {}
