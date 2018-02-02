@@ -357,9 +357,6 @@ class LengthPatternCluster(PatternCluster):
             p_set = set([node.pattern for node in bag])
             if len(p_set) >= self._min_cluster_num:
                 return True
-        node = pack.pick_node_view()
-        if node.piece.isdigit() and len(pack) > 1:
-            return True
         return False
 
     def _cluster(self):
@@ -384,6 +381,8 @@ class MultiPartPatternCluster(PatternCluster):
 
     def cluster(self):
         self._cluster()
+        if len(self._view_pack) < self._min_cluster_num:
+            return None
         s_set = set()
         for node in self._view_pack.iter_nodes():
             s_set.add(node.pattern)
