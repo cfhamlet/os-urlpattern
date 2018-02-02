@@ -452,13 +452,22 @@ class FuzzyPatternCluster(PatternCluster):
         self._view_pack = ViewPack(FuzzyView)
 
     def cluster(self):
+        clusterd = False
+        un_clusterd_bags = []
         for fuzzy_rule, pack in self._view_pack.iter_items():
-            for bag in pack.iter_values():
+            for c_name, bag in pack.iter_items():
                 p_set = set()
                 for node in bag:
                     p_set.add(node.pattern)
                 if len(p_set) >= self._min_cluster_num:
+                    clusterd = True
                     self._set_pattern(bag, Pattern(wildcard_rule(fuzzy_rule)))
+                else:
+                    if c_name == '':
+                        un_clusterd_bags.append((fuzzy_rule, bag))
+        if clusterd:
+            for fuzzy_rule, bag in un_clusterd_bags:
+                self._set_pattern(bag, Pattern(wildcard_rule(fuzzy_rule)))
 
 
 class MetaInfo(object):
