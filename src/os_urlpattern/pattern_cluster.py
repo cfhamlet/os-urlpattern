@@ -353,6 +353,13 @@ class LengthPatternCluster(PatternCluster):
         self._view_pack = ViewPack(LengthView)
 
     def _can_be_clustered(self, pack):
+        node_view = pack.pick_node_view()
+        if node_view.piece.isdigit():
+            p_set = set([node.pattern for node in pack.iter_nodes()])
+            if len(p_set) >= self._min_cluster_num:
+                return True
+            return False
+
         for bag in pack.iter_values():
             p_set = set([node.pattern for node in bag])
             if len(p_set) >= self._min_cluster_num:
@@ -360,6 +367,7 @@ class LengthPatternCluster(PatternCluster):
         return False
 
     def _cluster(self):
+
         for length, pack in self._view_pack.iter_items():
             if self._can_be_clustered(pack):
                 node_view = pack.pick_node_view()
@@ -368,7 +376,8 @@ class LengthPatternCluster(PatternCluster):
                 self._set_pattern(pack, pattern)
 
     def _forward_cluster(self):
-        if len(self._view_pack) < self._min_cluster_num:
+        p_set = set([node.pattern for node in self.iter_nodes()])
+        if len(p_set) < self._min_cluster_num:
             return None
         return self._create_cluster(FuzzyPatternCluster)
 
@@ -381,11 +390,7 @@ class MultiPartPatternCluster(PatternCluster):
 
     def cluster(self):
         self._cluster()
-        if len(self._view_pack) < self._min_cluster_num:
-            return None
-        s_set = set()
-        for node in self._view_pack.iter_nodes():
-            s_set.add(node.pattern)
+        s_set = set([node.pattern for node in self.iter_nodes()])
         if len(s_set) < self._min_cluster_num:
             return None
         return self._forward_cluster()
@@ -452,13 +457,19 @@ class FuzzyPatternCluster(PatternCluster):
         self._view_pack = ViewPack(FuzzyView)
 
     def cluster(self):
+        node_view = self._view_pack.pick_node_view()
+        if node_view.piece.isdigit():
+            p_set = set([node.pattern for node in self.iter_nodes()])
+            if len(p_set) >= self._min_cluster_num:
+                self._set_pattern(self._view_pack, Pattern(
+                    wildcard_rule(BasePatternRule.DIGIT)))
+            return
         clusterd = False
         un_clusterd_bags = []
         for fuzzy_rule, pack in self._view_pack.iter_items():
+
             for c_name, bag in pack.iter_items():
-                p_set = set()
-                for node in bag:
-                    p_set.add(node.pattern)
+                p_set = set([node.pattern for node in bag])
                 if len(p_set) >= self._min_cluster_num:
                     clusterd = True
                     self._set_pattern(bag, Pattern(wildcard_rule(fuzzy_rule)))
