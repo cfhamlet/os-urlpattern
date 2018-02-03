@@ -474,7 +474,7 @@ class FuzzyPatternCluster(PatternCluster):
                     clusterd = True
                     self._set_pattern(bag, Pattern(wildcard_rule(fuzzy_rule)))
                 else:
-                    if c_name == '':
+                    if c_name == '' or c_name == 'LengthPatternCluster':
                         un_clusterd_bags.append((fuzzy_rule, bag))
         if clusterd:
             for fuzzy_rule, bag in un_clusterd_bags:
