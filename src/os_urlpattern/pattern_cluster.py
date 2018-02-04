@@ -276,11 +276,7 @@ class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(LastDotSplitFuzzyView)
 
     def _forward_cluster(self):
-        if len(self._view_pack) <= 1:
-            if len(self._view_pack.pick_node_view().view_parsed_pieces()) <= 1:
-                return None
-        return self._create_cluster(LengthPatternCluster)
-
+        return None
 
 class FuzzyPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
