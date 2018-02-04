@@ -1,7 +1,7 @@
 import copy
 from collections import Counter
 from pattern import Pattern
-from urlparse_utils import number_rule, wildcard_rule, URLMeta, mix
+from urlparse_utils import number_rule, wildcard_rule, URLMeta
 from piece_pattern_tree import PiecePatternTree
 from definition import BasePatternRule
 from cluster_node import ClusterNode, PieceView, LengthView, LastDotSplitFuzzyView, \
@@ -215,8 +215,8 @@ class MultiPartPatternCluster(PatternCluster):
 
     def cluster(self):
         self._cluster()
-        s_set = set([node.pattern for node in self.iter_nodes()])
-        if len(s_set) < self._min_cluster_num:
+        p_set = set([node.pattern for node in self.iter_nodes()])
+        if len(p_set) < self._min_cluster_num:
             return None
         return self._forward_cluster()
 
