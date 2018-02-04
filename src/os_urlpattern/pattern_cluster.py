@@ -260,6 +260,9 @@ class MixedPatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(MixedView)
 
     def _forward_cluster(self):
+        if len(self._view_pack) <= 1:
+            if len(self._view_pack.pick_node_view().view_parsed_pieces()) <= 1:
+                return None
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
@@ -273,6 +276,9 @@ class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(LastDotSplitFuzzyView)
 
     def _forward_cluster(self):
+        if len(self._view_pack) <= 1:
+            if len(self._view_pack.pick_node_view().view_parsed_pieces()) <= 1:
+                return None
         return self._create_cluster(LengthPatternCluster)
 
 
