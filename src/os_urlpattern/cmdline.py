@@ -103,7 +103,7 @@ class MakePatternCommand(Command):
                 stats['INVALID'] += 1
                 continue
         self._logger.debug('[LOADED] %s' % str(stats))
-        formatter = FORMATTERS[args.formatter]
+        formatter = FORMATTERS[args.formatter](self._config)
         for pattern_tree in pattern_maker.process():
             formatter.format(pattern_tree)
 

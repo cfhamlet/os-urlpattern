@@ -1,9 +1,14 @@
 import json
-from os_urlpattern.pattern_tree import PatternPath
+from os_urlpattern.pattern_tree import PatternTree, PatternPath
 from os_urlpattern.utils import get_ete_tree
 
 
 class Formatter(object):
+    def __init__(self, config):
+        self._config = config
+        self._dump_isolate_pattern = self._config.getboolean(
+            'make', 'dump_isolate_pattern')
+
     def format(self, pattern_tree):
         pass
 
@@ -18,6 +23,8 @@ class PatternPathEncoder(json.JSONEncoder):
 class JsonFormatter(Formatter):
     def format(self, pattern_tree):
         for pattern_path in pattern_tree.dumps():
+            if pattern_path.count <= 1 and not self._dump_isolate_pattern:
+                continue
             print(json.dumps(pattern_path, cls=PatternPathEncoder))
 
 
@@ -41,13 +48,24 @@ class ETEFormatter(Formatter):
                 pattern_string=pattern_node,
                 query_key=query_key,
                 sep=sep)
-        ete_tree = get_ete_tree(pattern_tree.root_node, format=f)
+        root_node = pattern_tree.root_node
+        o_pattern_tree = PatternTree(url_meta)
+        if not self._dump_isolate_pattern:
+            for pattern_path in root_node.dump_paths():
+                if pattern_path[-1].count <= 1:
+                    continue
+                o_pattern_tree.load_path(pattern_path[1:])
+            root_node = o_pattern_tree.root_node
+        if root_node.count <= 0:
+            return
+
+        ete_tree = get_ete_tree(root_node, format=f)
         print(ete_tree.get_ascii(show_internal=True))
 
 
-FORMATTERS = {'JSON': JsonFormatter()}
+FORMATTERS = {'JSON': JsonFormatter}
 try:
     import ete3
-    FORMATTERS['ETE'] = ETEFormatter()
+    FORMATTERS['ETE'] = ETEFormatter
 except:
     pass

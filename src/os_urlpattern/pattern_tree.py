@@ -103,11 +103,11 @@ class PatternTree(object):
     def root_node(self):
         return self._root
 
-    def load_path(self, piece_pattern_node_path):
+    def load_path(self, pattern_node_path):
         node = self._root
-        count = piece_pattern_node_path[-1].count
+        count = pattern_node_path[-1].count
         node.incr_count(count)
-        for piece_pattern_node in piece_pattern_node_path:
+        for piece_pattern_node in pattern_node_path:
             node = node.add_child(piece_pattern_node.pattern, count)
 
     def dumps(self):
