@@ -192,7 +192,6 @@ class LengthPatternCluster(PatternCluster):
         return False
 
     def _cluster(self):
-
         for length, pack in self._view_pack.iter_items():
             if self._can_be_clustered(pack):
                 node_view = pack.pick_node_view()
@@ -260,9 +259,9 @@ class MixedPatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(MixedView)
 
     def _forward_cluster(self):
-        if len(self._view_pack) <= 1:
-            if len(self._view_pack.pick_node_view().view_parsed_pieces()) <= 1:
-                return None
+        if len(self._view_pack) <= 1 \
+                and len(self._view_pack.pick_node_view().view_parsed_pieces()) <= 1:
+            return None
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
@@ -275,8 +274,20 @@ class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
               self).__init__(config, meta_info)
         self._view_pack = ViewPack(LastDotSplitFuzzyView)
 
+    def _deep_cluster(self, pack):
+        node_view = pack.pick_node_view()
+        if len(node_view.view_parsed_pieces()) <= 1:
+            c = LengthPatternCluster(self._config, self._meta_info)
+            for node_view in pack.iter_nodes():
+                c.add_node(node_view.cluster_node)
+            while c:
+                c = c.cluster()
+        else:
+            super(LastDotSplitFuzzyPatternCluster, self)._deep_cluster(pack)
+
     def _forward_cluster(self):
         return None
+
 
 class FuzzyPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
