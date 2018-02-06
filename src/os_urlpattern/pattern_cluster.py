@@ -231,6 +231,7 @@ class MultiPartPatternCluster(PatternCluster):
         p_num = len(pack.pick_node_view().view_parsed_pieces())
         url_meta = URLMeta(p_num, [], False)
         cluster(self._config, url_meta, piece_pattern_tree)
+
         piece_pattern_dict = {}
         pattern_counter = Counter()
         for path in piece_pattern_tree.dump_paths():
@@ -254,13 +255,11 @@ class BasePatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(BaseView)
 
     def _forward_cluster(self):
+
         c = self._create_cluster(MixedPatternCluster)
         if len(self.view_pack) > len(c.view_pack):
             return c
 
-        c_set = set([node.cluster_name for node in self.iter_nodes()])
-        if len(c_set) < self._min_cluster_num:
-            return None
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
@@ -275,13 +274,15 @@ class MixedPatternCluster(MultiPartPatternCluster):
         super(MixedPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(MixedView)
 
-    def _forward_cluster(self):
+    def _deep_cluster(self, pack):
         if len(self.view_pack) <= 1 \
                 and len(self.view_pack.pick_node_view().view_parsed_pieces()) <= 1:
-            return None
-        c_set = set([node.cluster_name for node in self.iter_nodes()])
-        if len(c_set) < self._min_cluster_num:
-            return None
+            return
+
+        super(MixedPatternCluster, self)._deep_cluster(pack)
+
+    def _forward_cluster(self):
+
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
