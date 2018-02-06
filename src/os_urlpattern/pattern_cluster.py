@@ -117,6 +117,10 @@ class PatternCluster(object):
         self._cluster_name = self.__class__.__name__
         self._view_pack = None
 
+    @property
+    def view_pack(self):
+        return self._view_pack
+
     def add_node(self, cluster_node):
         self._view_pack.add_node(cluster_node)
 
@@ -250,7 +254,20 @@ class BasePatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(BaseView)
 
     def _forward_cluster(self):
-        return self._create_cluster(MixedPatternCluster)
+        c = self._create_cluster(MixedPatternCluster)
+        if len(self.view_pack) > len(c.view_pack):
+            return c
+
+        c_set = set([node.cluster_name for node in self.iter_nodes()])
+        if len(c_set) < self._min_cluster_num:
+            return None
+        forward_cls = LengthPatternCluster
+        if self._meta_info.is_last_path():
+            forward_cls = LastDotSplitFuzzyPatternCluster
+        c = self._create_cluster(forward_cls)
+        if len(self.view_pack) > len(c.view_pack):
+            return c
+        return self._create_cluster(FuzzyPatternCluster)
 
 
 class MixedPatternCluster(MultiPartPatternCluster):
@@ -259,13 +276,19 @@ class MixedPatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(MixedView)
 
     def _forward_cluster(self):
-        if len(self._view_pack) <= 1 \
-                and len(self._view_pack.pick_node_view().view_parsed_pieces()) <= 1:
+        if len(self.view_pack) <= 1 \
+                and len(self.view_pack.pick_node_view().view_parsed_pieces()) <= 1:
+            return None
+        c_set = set([node.cluster_name for node in self.iter_nodes()])
+        if len(c_set) < self._min_cluster_num:
             return None
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
-        return self._create_cluster(forward_cls)
+        c = self._create_cluster(forward_cls)
+        if len(self.view_pack) > len(c.view_pack):
+            return c
+        return self._create_cluster(FuzzyPatternCluster)
 
 
 class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
