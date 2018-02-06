@@ -147,13 +147,6 @@ class PatternCluster(object):
             c.add_node(cluster_node)
         return c
 
-    def _can_be_clustered(self, pack):
-        for bag in pack.iter_values():
-            p_set = set([node.pattern for node in bag])
-            if len(p_set) >= self._min_cluster_num:
-                return True
-        return False
-
 
 class PiecePatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
@@ -181,27 +174,15 @@ class LengthPatternCluster(PatternCluster):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(LengthView)
 
-    def _can_be_clustered(self, pack):
-        node_view = pack.pick_node_view()
-        if node_view.piece.isdigit():
-            p_set = set([node.pattern for node in pack.iter_nodes()])
-            if len(p_set) >= self._min_cluster_num:
-                return True
-            return False
-
-        for bag in pack.iter_values():
-            p_set = set([node.pattern for node in bag])
-            if len(p_set) >= self._min_cluster_num:
-                return True
-        return False
-
     def _cluster(self):
+        node_view = self.view_pack.pick_node_view()
         for length, pack in self._view_pack.iter_items():
-            if self._can_be_clustered(pack):
-                node_view = pack.pick_node_view()
-                pattern = Pattern(number_rule(
-                    node_view.parsed_piece.fuzzy_rule, length))
-                self._set_pattern(pack, pattern)
+            pattern = Pattern(number_rule(
+                node_view.parsed_piece.fuzzy_rule, length))
+            for bag in pack.iter_values():
+                p_set = [node.pattern for node in bag]
+                if len(p_set) >= self._min_cluster_num:
+                    self._set_pattern(pack, pattern)
 
     def _forward_cluster(self):
         p_set = set([node.pattern for node in self.iter_nodes()])
@@ -211,6 +192,13 @@ class LengthPatternCluster(PatternCluster):
 
 
 class MultiPartPatternCluster(PatternCluster):
+    def _can_be_clustered(self, pack):
+        for bag in pack.iter_values():
+            p_set = set([node.pattern for node in bag])
+            if len(p_set) >= self._min_cluster_num:
+                return True
+        return False
+
     def _cluster(self):
         for pack in self._view_pack.iter_values():
             if self._can_be_clustered(pack):
@@ -266,6 +254,7 @@ class BasePatternCluster(MultiPartPatternCluster):
         c = self._create_cluster(forward_cls)
         if len(self.view_pack) > len(c.view_pack):
             return c
+
         return self._create_cluster(FuzzyPatternCluster)
 
 
