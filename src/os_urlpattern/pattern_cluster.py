@@ -28,6 +28,9 @@ class ClusterNodeViewBag(object):
         for node in self._nodes:
             node.set_pattern(pattern, cluster_name)
 
+    def pick_node_view(self):
+        return self._nodes[0]
+
 
 class ClusterNodeViewPack(object):
     def __init__(self):
@@ -78,13 +81,16 @@ class ViewPack(object):
         for node_view in self.iter_nodes():
             return node_view
 
-    def add_node(self, cluster_node):
-        node_view = self._view_class(cluster_node)
+    def add_node_view(self, node_view):
         v = node_view.view()
         if v not in self._packs:
             self._packs[v] = ClusterNodeViewPack()
         self._packs[v].add_node(node_view)
-        self._count += cluster_node.count
+        self._count += node_view.count
+
+    def add_node(self, cluster_node):
+        node_view = self._view_class(cluster_node)
+        self.add_node_view(node_view)
 
     def iter_nodes(self):
         for view_pack in self._packs.itervalues():
@@ -124,6 +130,9 @@ class PatternCluster(object):
     def add_node(self, cluster_node):
         self._view_pack.add_node(cluster_node)
 
+    def add_node_view(self, node_view):
+        self._view_pack.add_node_view(node_view)
+
     def iter_nodes(self):
         for node_view in self._view_pack.iter_nodes():
             yield node_view.cluster_node
@@ -136,7 +145,8 @@ class PatternCluster(object):
 
     def cluster(self):
         self._cluster()
-        return self._forward_cluster()
+        for c in self._forward_cluster():
+            yield c
 
     def _set_pattern(self, obj, pattern):
         obj.set_pattern(pattern, self._cluster_name)
@@ -160,13 +170,13 @@ class PiecePatternCluster(PatternCluster):
 
     def _forward_cluster(self):
         if len(self._view_pack) < self._min_cluster_num:
-            return None
+            return
 
         forward_cls = LengthPatternCluster
         node_view = self._view_pack.pick_node_view()
         if len(node_view.view_parsed_pieces()) > 1:
             forward_cls = BasePatternCluster
-        return self._create_cluster(forward_cls)
+        yield self._create_cluster(forward_cls)
 
 
 class LengthPatternCluster(PatternCluster):
@@ -187,36 +197,37 @@ class LengthPatternCluster(PatternCluster):
     def _forward_cluster(self):
         p_set = set([node.pattern for node in self.iter_nodes()])
         if len(p_set) < self._min_cluster_num:
-            return None
-        return self._create_cluster(FuzzyPatternCluster)
+            return
+        yield self._create_cluster(FuzzyPatternCluster)
 
 
 class MultiPartPatternCluster(PatternCluster):
-    def _can_be_clustered(self, pack):
-        for bag in pack.iter_values():
-            p_set = set([node.pattern for node in bag])
-            if len(p_set) >= self._min_cluster_num:
-                return True
+    def _can_be_clustered(self, bag):
+        p_set = set([node.pattern for node in bag])
+        if len(p_set) >= self._min_cluster_num:
+            return True
         return False
 
     def _cluster(self):
         for pack in self._view_pack.iter_values():
-            if self._can_be_clustered(pack):
-                self._deep_cluster(pack)
+            for bag in pack.iter_values():
+                if self._can_be_clustered(bag):
+                    self._deep_cluster(bag)
 
     def cluster(self):
         self._cluster()
         p_set = set([node.pattern for node in self.iter_nodes()])
         if len(p_set) < self._min_cluster_num:
-            return None
-        return self._forward_cluster()
+            return
+        for c in self._forward_cluster():
+            yield c
 
-    def _deep_cluster(self, pack):
+    def _deep_cluster(self, bag):
         piece_pattern_tree = PiecePatternTree()
-        for node in pack.iter_nodes():
+        for node in bag:
             piece_pattern_tree.add_from_parsed_pieces(
                 node.view_parsed_pieces(), node.count, False)
-        p_num = len(pack.pick_node_view().view_parsed_pieces())
+        p_num = len(bag.pick_node_view().view_parsed_pieces())
         url_meta = URLMeta(p_num, [], False)
         cluster(self._config, url_meta, piece_pattern_tree)
 
@@ -230,7 +241,7 @@ class MultiPartPatternCluster(PatternCluster):
             piece_pattern_dict[piece] = pattern
             pattern_counter[pattern] += 1
 
-        for node in pack.iter_nodes():
+        for node in bag:
             if node.piece in piece_pattern_dict:
                 pattern = piece_pattern_dict[node.piece]
                 if pattern_counter[pattern] > 1:
@@ -243,16 +254,37 @@ class BasePatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(BaseView)
 
     def _forward_cluster(self):
+        forward_clusters = [LengthPatternCluster, MixedPatternCluster]
+        if self._meta_info.is_last_path():
+            forward_clusters[0] = LastDotSplitFuzzyPatternCluster
 
-        c = self._create_cluster(MixedPatternCluster)
-        if len(self.view_pack) > len(c.view_pack):
-            return c
+        forward_clusters = [c(self._config, self._meta_info)
+                            for c in forward_clusters]
+
+        for view, pack in self.view_pack.iter_items():
+            node_view = MixedView(pack.pick_node_view().cluster_node)
+            c = forward_clusters[0]
+            if view != node_view.view():
+                c = forward_clusters[1]
+            for node in pack.iter_nodes():
+                c.add_node(node)
+
+        views_num = len(self.view_pack)
+        if views_num >= self._min_cluster_num:
+            c = self._create_cluster(MixedPatternCluster)
+            if views_num > len(c.view_pack):
+                return c
+        else:
+            c = self._create_cluster(LengthPatternCluster)
+            if views_num > len(c.view_pack):
+                return c
 
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
         c = self._create_cluster(forward_cls)
-        if len(self.view_pack) > len(c.view_pack):
+        l = len(self.view_pack)
+        if l > len(c.view_pack) or l <= 1:
             return c
 
         return self._create_cluster(FuzzyPatternCluster)
@@ -271,12 +303,12 @@ class MixedPatternCluster(MultiPartPatternCluster):
         super(MixedPatternCluster, self)._deep_cluster(pack)
 
     def _forward_cluster(self):
-
         forward_cls = LengthPatternCluster
         if self._meta_info.is_last_path():
             forward_cls = LastDotSplitFuzzyPatternCluster
         c = self._create_cluster(forward_cls)
-        if len(self.view_pack) > len(c.view_pack):
+        l = len(self.view_pack)
+        if l > len(c.view_pack) or l <= 1:
             return c
         return self._create_cluster(FuzzyPatternCluster)
 
@@ -330,6 +362,7 @@ class FuzzyPatternCluster(PatternCluster):
         if clusterd:
             for fuzzy_rule, bag in un_clusterd_bags:
                 self._set_pattern(bag, Pattern(wildcard_rule(fuzzy_rule)))
+        yield
 
 
 class MetaInfo(object):
@@ -368,13 +401,13 @@ class ClusterProcessor(object):
     def add_node(self, node):
         self._entry_cluster.add_node(ClusterNode(node))
 
-    def _process(self):
-        c = self._entry_cluster
-        while c:
-            c = c.cluster()
+    def _process(self, cluster):
+        if cluster is not None:
+            for c in cluster.cluster():
+                self._process(c)
 
     def process(self):
-        self._process()
+        self._process(self._entry_cluster)
         if self._meta_info.is_last_level():
             return
         next_level_processors = {}

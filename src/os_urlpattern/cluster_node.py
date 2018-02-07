@@ -82,15 +82,6 @@ class LengthView(ClusterNodeView):
         return self.parsed_piece.piece_length
 
 
-class BaseView(ClusterNodeView):
-    def view(self):
-        return ''.join(self.parsed_piece.rules)
-
-    def view_parsed_pieces(self):
-        return [ParsedPiece([piece], [rule])
-                for piece, rule in zip(self.parsed_piece.pieces, self.parsed_piece.rules)]
-
-
 class MergedView(ClusterNodeView):
     __slots__ = ('_parsed_pieces',)
 
@@ -100,6 +91,13 @@ class MergedView(ClusterNodeView):
 
     def view(self):
         return ' '.join([p.fuzzy_rule for p in self.view_parsed_pieces()])
+
+
+class BaseView(MergedView):
+
+    def view_parsed_pieces(self):
+        return [ParsedPiece([piece], [rule])
+                for piece, rule in zip(self.parsed_piece.pieces, self.parsed_piece.rules)]
 
 
 class MixedView(MergedView):
