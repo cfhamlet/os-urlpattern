@@ -31,6 +31,9 @@ class ClusterNodeViewBag(object):
     def pick_node_view(self):
         return self._nodes[0]
 
+    def __len__(self):
+        return len(self._nodes)
+
 
 class ClusterNodeViewPack(object):
     def __init__(self):
@@ -164,12 +167,14 @@ class PiecePatternCluster(PatternCluster):
         self._view_pack = ViewPack(PieceView)
 
     def _cluster(self):
-        for piece, pack in self._view_pack.iter_items():
+        if len(self.view_pack) < self._min_cluster_num:
+            return
+        for piece, pack in self.view_pack.iter_items():
             if pack.count >= self._min_cluster_num:
                 self._set_pattern(pack, Pattern(piece))
 
     def _forward_cluster(self):
-        if len(self._view_pack) < self._min_cluster_num:
+        if len(self.view_pack) < self._min_cluster_num:
             return
 
         forward_cls = LengthPatternCluster
@@ -202,6 +207,7 @@ class LengthPatternCluster(PatternCluster):
 
 
 class MultiPartPatternCluster(PatternCluster):
+
     def _can_be_clustered(self, bag):
         p_set = set([node.pattern for node in bag])
         if len(p_set) >= self._min_cluster_num:
@@ -244,7 +250,7 @@ class MultiPartPatternCluster(PatternCluster):
         for node in bag:
             if node.piece in piece_pattern_dict:
                 pattern = piece_pattern_dict[node.piece]
-                if pattern_counter[pattern] > 1:
+                if pattern_counter[pattern] >= self._min_cluster_num:
                     self._set_pattern(node, pattern)
 
 
@@ -259,30 +265,24 @@ class BasePatternCluster(MultiPartPatternCluster):
                             (LengthPatternCluster,
                              MixedPatternCluster,
                              LastDotSplitFuzzyPatternCluster)]
-        pattern_sets = [set(), set(), set()]
 
-        idx = 1
         for view, pack in self.view_pack.iter_items():
             idx = 1
-            node_view = MixedView(pack.pick_node_view().cluster_node)
-            if view == node_view.view():
+            nv = MixedView(pack.pick_node_view().cluster_node)
+            if view == nv.view():
                 idx = 0
                 if self._meta_info.is_last_path():
                     idx = 2
             else:
-                if len(node_view.view_parsed_pieces()) <= 1:
+                if len(nv.view_parsed_pieces()) <= 1:
                     idx = 0
-                elif self._meta_info.is_last_path():
-                    idx = 2
             c = forward_clusters[idx]
-            s = pattern_sets[idx]
-            for node in pack.iter_nodes():
-                c.add_node(node)
-                s.add(node.pattern)
+            for node_view in pack.iter_nodes():
+                c.add_node(node_view.cluster_node)
+        return
 
-        for i, c in enumerate(forward_clusters):
-            if len(c.view_pack) < len(pattern_sets[i]):
-                yield c
+        for c in forward_clusters:
+            yield c
 
 
 class MixedPatternCluster(MultiPartPatternCluster):
@@ -313,13 +313,13 @@ class FuzzyPatternCluster(PatternCluster):
         self._view_pack = ViewPack(FuzzyView)
 
     def cluster(self):
-        node_view = self._view_pack.pick_node_view()
-        if node_view.piece.isdigit():
-            p_set = set([node.pattern for node in self.iter_nodes()])
-            if len(p_set) >= self._min_cluster_num:
-                self._set_pattern(self._view_pack, Pattern(
-                    wildcard_rule(BasePatternRule.DIGIT)))
-            return
+        # node_view = self._view_pack.pick_node_view()
+        # if node_view.piece.isdigit():
+        #     p_set = set([node.pattern for node in self.iter_nodes()])
+        #     if len(p_set) >= self._min_cluster_num:
+        #         self._set_pattern(self._view_pack, Pattern(
+        #             wildcard_rule(BasePatternRule.DIGIT)))
+        #     return
         clusterd = False
         un_clusterd_bags = []
         for fuzzy_rule, pack in self._view_pack.iter_items():
