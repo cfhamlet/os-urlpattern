@@ -167,8 +167,6 @@ class PiecePatternCluster(PatternCluster):
         self._view_pack = ViewPack(PieceView)
 
     def _cluster(self):
-        if len(self.view_pack) < self._min_cluster_num:
-            return
         for piece, pack in self.view_pack.iter_items():
             if pack.count >= self._min_cluster_num:
                 self._set_pattern(pack, Pattern(piece))
@@ -279,7 +277,6 @@ class BasePatternCluster(MultiPartPatternCluster):
             c = forward_clusters[idx]
             for node_view in pack.iter_nodes():
                 c.add_node(node_view.cluster_node)
-        return
 
         for c in forward_clusters:
             yield c
@@ -313,13 +310,7 @@ class FuzzyPatternCluster(PatternCluster):
         self._view_pack = ViewPack(FuzzyView)
 
     def cluster(self):
-        # node_view = self._view_pack.pick_node_view()
-        # if node_view.piece.isdigit():
-        #     p_set = set([node.pattern for node in self.iter_nodes()])
-        #     if len(p_set) >= self._min_cluster_num:
-        #         self._set_pattern(self._view_pack, Pattern(
-        #             wildcard_rule(BasePatternRule.DIGIT)))
-        #     return
+
         clusterd = False
         un_clusterd_bags = []
         for fuzzy_rule, pack in self._view_pack.iter_items():
