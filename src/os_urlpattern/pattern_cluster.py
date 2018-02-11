@@ -273,20 +273,16 @@ class BasePatternCluster(MultiPartPatternCluster):
         forward_clusters = [c(self._config, self._meta_info) for c in
                             (LengthPatternCluster,
                              MixedPatternCluster,
-                             LastDotSplitFuzzyPatternCluster,
                              )]
 
         for view, pack in self.view_pack.iter_items():
-            idx = 1
+            c = forward_clusters[1]
             nv = MixedView(pack.pick_node_view().cluster_node)
             if view == nv.view():
-                idx = 0
-                if self._meta_info.is_last_path():
-                    idx = 2
+                continue
             else:
                 if len(nv.view_parsed_pieces()) <= 1:
-                    idx = 0
-            c = forward_clusters[idx]
+                    c = forward_clusters[0]
             for node_view in pack.iter_node_views():
                 c.add_cluster_node(node_view.cluster_node)
 
