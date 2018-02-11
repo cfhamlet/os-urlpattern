@@ -180,6 +180,15 @@ class LengthPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(LengthView)
+        self._pattern_filter = {}
+
+    def add_cluster_node(self, cluster_node):
+        super(LengthPatternCluster, self).add_cluster_node(cluster_node)
+        pattern = cluster_node.pattern
+        if pattern not in self._pattern_filter:
+            self._pattern_filter[pattern] = set()
+        self._pattern_filter[pattern].add(
+            cluster_node.parsed_piece.piece_length)
 
     def _cluster(self):
         node_view = self.view_pack.pick_node_view()
@@ -187,14 +196,29 @@ class LengthPatternCluster(PatternCluster):
             pattern = Pattern(number_rule(
                 node_view.parsed_piece.fuzzy_rule, length))
             for bag in pack.iter_values():
-                p_set = [node.pattern for node in bag]
+                p_set = [node.pattern for node in bag if len(
+                    self._pattern_filter[node.pattern]) <= 1]
                 if len(p_set) >= self._min_cluster_num:
                     self._set_pattern(pack, pattern)
+                    break
+
+    def _set_pattern(self, pack, pattern):
+        for node_view in pack.iter_node_views():
+            if len(self._pattern_filter[node_view.pattern]) > 1:
+                continue
+            node_view.set_pattern(pattern, self._cluster_name)
 
     def _forward_cluster(self):
         if len(self.view_pack) < self._min_cluster_num:
             return
-        yield self._create_cluster(FuzzyPatternCluster)
+        c = FuzzyPatternCluster(self._config, self._meta_info)
+        for cluster_node in self.iter_cluster_nodes():
+            pattern = cluster_node.pattern
+            if pattern in self._pattern_filter \
+                    and len(self._pattern_filter[pattern]) > 1:
+                continue
+            c.add_cluster_node(cluster_node)
+        yield c
 
 
 class MultiPartPatternCluster(PatternCluster):
