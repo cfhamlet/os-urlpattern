@@ -309,7 +309,7 @@ class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
         self._view_pack = ViewPack(LastDotSplitFuzzyView)
 
     def _forward_cluster(self):
-        yield self._create_cluster(LengthPatternCluster)
+        yield
 
 
 class FuzzyPatternCluster(PatternCluster):
