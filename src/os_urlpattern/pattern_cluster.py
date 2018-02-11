@@ -13,7 +13,7 @@ class ClusterNodeViewBag(object):
         self._nodes = []
         self._count = 0
 
-    def add_node(self, node_view):
+    def add_node_view(self, node_view):
         self._nodes.append(node_view)
         self._count += node_view.count
 
@@ -40,14 +40,14 @@ class ClusterNodeViewPack(object):
         self._packs = {}
         self._count = 0
 
-    def add_node(self, node_view):
+    def add_node_view(self, node_view):
         c_name = node_view.cluster_name
         if c_name not in self._packs:
             self._packs[c_name] = ClusterNodeViewBag()
-        self._packs[c_name].add_node(node_view)
+        self._packs[c_name].add_node_view(node_view)
         self._count += node_view.count
 
-    def iter_nodes(self):
+    def iter_node_views(self):
         for view_bag in self._packs.itervalues():
             for node_view in view_bag:
                 yield node_view
@@ -67,7 +67,7 @@ class ClusterNodeViewPack(object):
             bag.set_pattern(pattern, cluster_name)
 
     def pick_node_view(self):
-        for node_view in self.iter_nodes():
+        for node_view in self.iter_node_views():
             return node_view
 
     def __len__(self):
@@ -81,23 +81,23 @@ class ViewPack(object):
         self._count = 0
 
     def pick_node_view(self):
-        for node_view in self.iter_nodes():
+        for node_view in self.iter_node_views():
             return node_view
 
     def add_node_view(self, node_view):
         v = node_view.view()
         if v not in self._packs:
             self._packs[v] = ClusterNodeViewPack()
-        self._packs[v].add_node(node_view)
+        self._packs[v].add_node_view(node_view)
         self._count += node_view.count
 
-    def add_node(self, cluster_node):
+    def add_cluster_node(self, cluster_node):
         node_view = self._view_class(cluster_node)
         self.add_node_view(node_view)
 
-    def iter_nodes(self):
+    def iter_node_views(self):
         for view_pack in self._packs.itervalues():
-            for node_view in view_pack.iter_nodes():
+            for node_view in view_pack.iter_node_views():
                 yield node_view
 
     def iter_values(self):
@@ -130,14 +130,14 @@ class PatternCluster(object):
     def view_pack(self):
         return self._view_pack
 
-    def add_node(self, cluster_node):
-        self._view_pack.add_node(cluster_node)
+    def add_cluster_node(self, cluster_node):
+        self._view_pack.add_cluster_node(cluster_node)
 
     def add_node_view(self, node_view):
         self._view_pack.add_node_view(node_view)
 
-    def iter_nodes(self):
-        for node_view in self._view_pack.iter_nodes():
+    def iter_cluster_nodes(self):
+        for node_view in self._view_pack.iter_node_views():
             yield node_view.cluster_node
 
     def _cluster(self):
@@ -156,8 +156,8 @@ class PatternCluster(object):
 
     def _create_cluster(self, cluster_cls):
         c = cluster_cls(self._config, self._meta_info)
-        for cluster_node in self.iter_nodes():
-            c.add_node(cluster_node)
+        for cluster_node in self.iter_cluster_nodes():
+            c.add_cluster_node(cluster_node)
         return c
 
 
@@ -198,8 +198,7 @@ class LengthPatternCluster(PatternCluster):
                     self._set_pattern(pack, pattern)
 
     def _forward_cluster(self):
-        p_set = set([node.pattern for node in self.iter_nodes()])
-        if len(p_set) < self._min_cluster_num:
+        if len(self._view_pack) < self._min_cluster_num:
             return
         yield self._create_cluster(FuzzyPatternCluster)
 
@@ -220,9 +219,6 @@ class MultiPartPatternCluster(PatternCluster):
 
     def cluster(self):
         self._cluster()
-        p_set = set([node.pattern for node in self.iter_nodes()])
-        if len(p_set) < self._min_cluster_num:
-            return
         for c in self._forward_cluster():
             yield c
 
@@ -275,8 +271,8 @@ class BasePatternCluster(MultiPartPatternCluster):
                 if len(nv.view_parsed_pieces()) <= 1:
                     idx = 0
             c = forward_clusters[idx]
-            for node_view in pack.iter_nodes():
-                c.add_node(node_view.cluster_node)
+            for node_view in pack.iter_node_views():
+                c.add_cluster_node(node_view.cluster_node)
 
         for c in forward_clusters:
             yield c
@@ -359,11 +355,11 @@ class ClusterProcessor(object):
         self._entry_cluster = PiecePatternCluster(config, meta_info)
 
     def iter_nodes(self):
-        for cluster_node in self._entry_cluster.iter_nodes():
+        for cluster_node in self._entry_cluster.iter_cluster_nodes():
             yield cluster_node.node
 
     def add_node(self, node):
-        self._entry_cluster.add_node(ClusterNode(node))
+        self._entry_cluster.add_cluster_node(ClusterNode(node))
 
     def _process(self, cluster):
         if cluster is not None:
