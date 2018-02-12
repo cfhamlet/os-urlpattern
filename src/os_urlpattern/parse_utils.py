@@ -398,3 +398,17 @@ def struct_id(url_meta, parsed_pieces):
     pieces_hash = hashlib.md5(
         '/'.join([p.fuzzy_rule for p in parsed_pieces])).hexdigest()
     return '-'.join((meta_hash, pieces_hash))
+
+
+def parse_pattern(pattern_string):
+    pass
+
+
+class ParsedPatternPiece(object):
+    def __init__(self, pattern_piece, num):
+        self._pattern_piece = pattern_piece
+        self._num = num
+
+
+def parse_pattern_piece(pattern_string):
+    pass
