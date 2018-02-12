@@ -185,6 +185,7 @@ class LengthPatternCluster(PatternCluster):
     def add_cluster_node(self, cluster_node):
         pattern = cluster_node.pattern
         if cluster_node.cluster_name != '' \
+                and cluster_node.cluster_name != PiecePatternCluster.__name__\
                 and len(cluster_node.parsed_piece.rules) > 1:
             wc = pattern.pattern_string.count(']+')
             if wc < self._min_cluster_num:
