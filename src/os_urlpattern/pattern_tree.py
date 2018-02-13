@@ -3,16 +3,6 @@ import json
 from os_urlpattern.urlparse_utils import pack
 
 
-class PatternUnit(object):
-    def __init__(self, pattern_unit_string):
-        pass
-
-
-class PatternPiece(object):
-    def __ini__(self, pattern_units):
-        pass
-
-
 class PatternPath(object):
     def __init__(self, pattern_node_path, url_meta):
         self._pattern_node_path = pattern_node_path
