@@ -116,5 +116,3 @@ class BasePattern(object):
     DOT = Pattern(BasePatternRule.DOT)
     ALL_MATCH = Pattern(BasePatternRule.ALL_MATCH)
     EMPTY = Pattern(BasePatternRule.EMPTY)
-
-

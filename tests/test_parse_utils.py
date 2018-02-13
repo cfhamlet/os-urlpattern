@@ -8,6 +8,8 @@ from os_urlpattern.parse_utils import PieceParser
 from os_urlpattern.parse_utils import pack
 from os_urlpattern.parse_utils import URLMeta
 from os_urlpattern.parse_utils import IrregularURLException
+from os_urlpattern.parse_utils import parse_url_pattern
+from os_urlpattern.parse_utils import parse_pattern_string
 
 
 def test_normalize_str():
@@ -140,3 +142,33 @@ def test_url_meta():
     assert hash(url_meta1) != hash(url_meta2)
     url_meta3 = URLMeta(1, ['key1', 'key2'], False)
     assert hash(url_meta1) == hash(url_meta3)
+
+
+def test_parse_url_pattern():
+    data = [
+        'http://www.g.com/',
+        'http://www.g.com/abc',
+        'http://www.g.com/abc?a=1#c',
+        'http://www.g.com/abc???a=1#c',
+        'http://www.g.com/abc?=1#c',
+        'http://www.g.com/abc?a=1#',
+        'http://www.g.com/abc?a=1&b=2#',
+    ]
+    for url in data:
+        meta1, parts1 = parse_url(url)
+        pattern_string = pack(meta1, parts1)
+        meta2, parts2 = parse_url_pattern(pattern_string)
+        assert meta1 == meta2
+        assert len(parts1) == len(parts2)
+
+
+def test_parse_pattern_string():
+    data = [
+        'abc',
+        '[0-9]{2}abc',
+        'abc[0-9]+',
+        'abc[\\[\\?][a-z]',
+        '',
+    ]
+    for p_str in data:
+        assert ''.join([str(u) for u in parse_pattern_string(p_str)]) == p_str

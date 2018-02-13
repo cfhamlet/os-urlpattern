@@ -14,6 +14,10 @@ class IrregularURLException(Exception):
     pass
 
 
+class InvalidPatternException(Exception):
+    pass
+
+
 class URLMeta(object):
     __slots__ = ['_path_depth', '_query_keys', '_has_fragment', '_hashcode']
 
@@ -400,15 +404,86 @@ def struct_id(url_meta, parsed_pieces):
     return '-'.join((meta_hash, pieces_hash))
 
 
-def parse_pattern(pattern_string):
-    pass
+def analyze_url_pattern(url_pattern_string):
+    idx_p = 0
+    idx_q = url_pattern_string.find('[\\?]')
+    idx_f = url_pattern_string.find('#')
+    path = query = fragment = None
+    if idx_q < 0 and idx_f < 0:
+        path = url_pattern_string[idx_p:]
+    elif idx_q > 0 and idx_f > 0:
+        if idx_f > idx_q:
+            path = url_pattern_string[idx_p:idx_q]
+            query = url_pattern_string[idx_q + 4:idx_f]
+        else:
+            path = url_pattern_string[idx_p:idx_f]
+        fragment = url_pattern_string[idx_f + 1:]
+    elif idx_q < 0 and idx_f > 0:
+        path = url_pattern_string[idx_p:idx_f]
+        fragment = url_pattern_string[idx_f + 1:]
+    elif idx_q > 0 and idx_f < 0:
+        path = url_pattern_string[idx_p:idx_q]
+        query = url_pattern_string[idx_q + 4:]
+
+    scheme = netloc = params = ''
+    return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
-class ParsedPatternPiece(object):
-    def __init__(self, pattern_piece, num):
-        self._pattern_piece = pattern_piece
-        self._num = num
+def parse_url_pattern(url_pattern_string):
+    result = analyze_url_pattern(url_pattern_string)
+    return unpack(result, False)
 
 
-def parse_pattern_piece(pattern_string):
-    pass
+def parse_pattern_string(pattern_string):
+    if pattern_string == '':
+        return ['']
+    pattern_units = []
+    l = len(pattern_string)
+    s = StringIO.StringIO()
+    idx = 0
+    last_rule = None
+    while idx < l:
+        c = pattern_string[idx]
+        if c == '[':
+            if last_rule is not None:
+                s.seek(0)
+                pattern_units.append(s.read())
+                s = StringIO.StringIO()
+                last_rule = None
+
+            idx_s = idx
+            while True:
+                idx = pattern_string.find(']', idx + 1)
+                if idx < 0:
+                    raise InvalidPatternException
+                elif pattern_string[idx - 1] == '\\':
+                    continue
+                break
+            if idx + 1 < l:
+                if pattern_string[idx + 1] == '{':
+                    idx = pattern_string.find('}', idx + 1)
+                    if idx < 0:
+                        raise InvalidPatternException
+                elif pattern_string[idx + 1] == '+':
+                    idx += 1
+            idx += 1
+            pattern_units.append(pattern_string[idx_s:idx])
+        else:
+            rule = CHAR_RULE_DICT[c]
+            if last_rule is None:
+                s.write(c)
+            else:
+                if rule == last_rule:
+                    s.write(c)
+                else:
+                    s.seek(0)
+                    pattern_units.append(s.read())
+                    s = StringIO.StringIO()
+                    s.write(c)
+            last_rule = rule
+            idx += 1
+    if last_rule is not None:
+        s.seek(0)
+        pattern_units.append(s.read())
+
+    return pattern_units
