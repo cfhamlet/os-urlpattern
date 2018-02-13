@@ -3,7 +3,7 @@ from collections import Counter
 from pattern import Pattern
 from urlparse_utils import number_rule, wildcard_rule, URLMeta
 from piece_pattern_tree import PiecePatternTree
-from definition import BasePatternRule
+from definition import BasePatternRule, DIGIT_AND_ASCII_RULE_SET
 from cluster_node import ClusterNode, PieceView, LengthView, LastDotSplitFuzzyView, \
     BaseView, MixedView, FuzzyView
 
@@ -180,15 +180,31 @@ class LengthPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(LengthView)
-        self._pattern_filter = {}
+        self._pattern_filter = set()
+
+    def _to_be_filtered(self, pattern):
+        wc = pattern.pattern_string.count(']+')
+        if wc >= self._min_cluster_num:
+            return False
+        c = 0
+        for pu in pattern.pattern_units:
+            if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
+                if pu.fuzzy_rule not in str(pu):
+                    c += 1
+        if c > 1:
+            return True
+
+        return False
 
     def add_cluster_node(self, cluster_node):
         pattern = cluster_node.pattern
+        if pattern in self._pattern_filter:
+            return
         if cluster_node.cluster_name != '' \
                 and cluster_node.cluster_name != PiecePatternCluster.__name__\
                 and len(cluster_node.parsed_piece.rules) > 1:
-            wc = pattern.pattern_string.count(']+')
-            if wc < self._min_cluster_num:
+            if self._to_be_filtered(pattern):
+                self._pattern_filter.add(pattern)
                 return
         super(LengthPatternCluster, self).add_cluster_node(cluster_node)
 

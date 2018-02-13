@@ -9,6 +9,12 @@ class PatternUnit(object):
         self._fuzzy_rule = None
         self._parse()
 
+    @property
+    def fuzzy_rule(self):
+        if self._fuzzy_rule is None:
+            self._fuzzy_rule = ''.join(sorted(self._rules))
+        return self._fuzzy_rule
+
     def _parse(self):
         if self._pattern_unit_string == '':
             self._parse_empty()
