@@ -108,5 +108,5 @@ class Pattern(object):
     def fuzzy_rule(self):
         if self._fuzzy_rule is None:
             self._fuzzy_rule = ''.join(sorted(set.union(
-                *[u.rules for u in self.pattern_units]))
+                *[u.rules for u in self.pattern_units])))
         return self._fuzzy_rule
