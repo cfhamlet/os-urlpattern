@@ -8,8 +8,9 @@ from os_urlpattern.parse_utils import PieceParser
 from os_urlpattern.parse_utils import pack
 from os_urlpattern.parse_utils import URLMeta
 from os_urlpattern.parse_utils import IrregularURLException
-from os_urlpattern.parse_utils import parse_url_pattern
+from os_urlpattern.parse_utils import parse_url_pattern_string
 from os_urlpattern.parse_utils import parse_pattern_string
+from os_urlpattern.parse_utils import parse_pattern_unit_string
 
 
 def test_normalize_str():
@@ -157,18 +158,34 @@ def test_parse_url_pattern():
     for url in data:
         meta1, parts1 = parse_url(url)
         pattern_string = pack(meta1, parts1)
-        meta2, parts2 = parse_url_pattern(pattern_string)
+        meta2, parts2 = parse_url_pattern_string(pattern_string)
         assert meta1 == meta2
         assert len(parts1) == len(parts2)
 
 
-def test_parse_pattern_string():
+def test_parse_pattern():
     data = [
-        'abc',
-        '[0-9]{2}abc',
-        'abc[0-9]+',
-        'abc[\\[\\?][a-z]',
-        '',
+        ('abc', 1),
+        ('[0-9]{2}abc', 2),
+        ('abc[0-9]+', 2),
+        ('abc[\\[\\?][a-z]', 3),
+        ('', 1),
+        ('abcAbc', 3),
     ]
-    for p_str in data:
-        assert ''.join([str(u) for u in parse_pattern_string(p_str)]) == p_str
+    for p_str, num in data:
+        ps = parse_pattern_string(p_str)
+        assert ''.join([str(u) for u in ps]) == p_str
+        assert len(ps) == num
+
+
+def test_parse_pattern_unit():
+    data = [
+        ('[a-z]', set(['a-z']), 1),
+        ('[a-z]+', set(['a-z']), -1),
+        ('', set(['']), 1),
+        ('[%\\+]{12}', set(['%', '\\+']), 12),
+    ]
+    for p_str, e_rules, e_num in data:
+        rules, num = parse_pattern_unit_string(p_str)
+        assert num == e_num
+        assert rules == e_rules

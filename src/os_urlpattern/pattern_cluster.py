@@ -374,11 +374,11 @@ class ClusterProcessor(object):
             return
         next_level_processors = {}
         for node in self.iter_nodes():
-            n_hash = hash(node.pattern)
-            if n_hash not in next_level_processors:
-                next_level_processors[n_hash] = ClusterProcessor(
+            pattern = node.pattern
+            if pattern not in next_level_processors:
+                next_level_processors[pattern] = ClusterProcessor(
                     self._config, self._meta_info.next_level_meta_info())
-            next_processor = next_level_processors[n_hash]
+            next_processor = next_level_processors[pattern]
             for child in node.children:
                 next_processor.add_node(child)
         for processor in next_level_processors.itervalues():

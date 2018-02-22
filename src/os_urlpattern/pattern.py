@@ -4,10 +4,9 @@ import re
 class PatternUnit(object):
     def __init__(self, pattern_unit_string):
         self._pattern_unit_string = pattern_unit_string
-        self._num = None
-        self._rules = None
+        from parse_utils import parse_pattern_unit_string
+        self._rules, self._num = parse_pattern_unit_string(pattern_unit_string)
         self._fuzzy_rule = None
-        self._parse()
 
     @property
     def fuzzy_rule(self):
@@ -15,54 +14,12 @@ class PatternUnit(object):
             self._fuzzy_rule = ''.join(sorted(self._rules))
         return self._fuzzy_rule
 
-    def _parse(self):
-        if self._pattern_unit_string == '':
-            self._parse_empty()
-        elif self._pattern_unit_string[0] != '[':
-            self._parse_char()
-        else:
-            self._parse_complex()
-
-    def _parse_complex(self):
-        if self._pattern_unit_string[-1] == ']':
-            self._num = 1
-        elif self._pattern_unit_string[-1] == '}':
-            t = self._pattern_unit_string.rfind('{')
-            self._num = int(self._pattern_unit_string[t + 1:-1])
-        elif self._pattern_unit_string[-1] == '+':
-            self._num = '+'
-        t = self._pattern_unit_string.rfind(']')
-        p_str = self._pattern_unit_string[1:t]
-        l = len(p_str)
-        idx = 0
-        self._rules = set()
-        while idx < l:
-            c = p_str[idx]
-            n = 3
-            if c in set(['0', 'a', 'A']):
-                pass
-            elif c == '\\':
-                n = 2
-            else:
-                n = 1
-            self._rules.add(p_str[idx:idx + n])
-            idx += n
-
-    def _parse_empty(self):
-        self._rules = set([''])
-        self._num = 1
-
-    def _parse_char(self):
-        from definition import CHAR_RULE_DICT
-        self._rules = set([CHAR_RULE_DICT[self._pattern_unit_string[0]]])
-        self._num = 1
-
     @property
     def rules(self):
         return self._rules
 
     @property
-    def num(self):  # return int or '+', weird design
+    def num(self):  # return negative means '+'
         return self._num
 
     def __str__(self):

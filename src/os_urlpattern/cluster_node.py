@@ -119,8 +119,8 @@ class LastDotSplitFuzzyView(ClusterNodeView):
             if rule == BasePatternRule.DOT:
                 dot_idx = part_num - idx - 1
                 break
-        self._parsed_pieces = [ParsedPiece([self.parsed_piece.piece], [
-                                           self.parsed_piece.fuzzy_rule])]
+        self._parsed_pieces = [ParsedPiece([self.parsed_piece.piece],
+                                           [self.parsed_piece.fuzzy_rule])]
         if dot_idx is not None:
             skip = False
             for rule in self.parsed_piece.rules[dot_idx + 1:]:
@@ -151,6 +151,6 @@ class FuzzyView(ClusterNodeView):
     def view_parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
-        self._parsed_pieces = [ParsedPiece([self.parsed_piece.piece], [
-                                           self.parsed_piece.fuzzy_rule])]
+        self._parsed_pieces = [ParsedPiece([self.parsed_piece.piece],
+                                           [self.parsed_piece.fuzzy_rule])]
         return self._parsed_pieces

@@ -429,7 +429,7 @@ def analyze_url_pattern(url_pattern_string):
     return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
-def parse_url_pattern(url_pattern_string):
+def parse_url_pattern_string(url_pattern_string):
     result = analyze_url_pattern(url_pattern_string)
     return unpack(result, False)
 
@@ -487,3 +487,37 @@ def parse_pattern_string(pattern_string):
         pattern_units.append(s.read())
 
     return pattern_units
+
+
+def parse_pattern_unit_string(pattern_unit_string):
+    rules = set()
+    num = 1
+    if pattern_unit_string == '':
+        rules.add('')
+    elif pattern_unit_string[0] != '[':
+        rules.add(CHAR_RULE_DICT[pattern_unit_string[0]])
+    else:
+        if pattern_unit_string[-1] == ']':
+            num = 1
+        elif pattern_unit_string[-1] == '}':
+            t = pattern_unit_string.rfind('{')
+            num = int(pattern_unit_string[t + 1:-1])
+        elif pattern_unit_string[-1] == '+':
+            num = -1
+        t = pattern_unit_string.rfind(']')
+        p_str = pattern_unit_string[1:t]
+        l = len(p_str)
+        idx = 0
+        literal_set = set(['a', 'A', '0'])
+        while idx < l:
+            c = p_str[idx]
+            n = 3
+            if c in literal_set:
+                pass
+            elif c == '\\':
+                n = 2
+            else:
+                n = 1
+            rules.add(p_str[idx:idx + n])
+            idx += n
+    return rules, num
