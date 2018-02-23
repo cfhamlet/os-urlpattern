@@ -10,11 +10,11 @@ from cluster_node import ClusterNode, PieceView, LengthView, LastDotSplitFuzzyVi
 
 class ClusterNodeViewBag(object):
     def __init__(self):
-        self._nodes = []
+        self._node_views = []
         self._count = 0
 
     def add_node_view(self, node_view):
-        self._nodes.append(node_view)
+        self._node_views.append(node_view)
         self._count += node_view.count
 
     @property
@@ -22,17 +22,17 @@ class ClusterNodeViewBag(object):
         return self._count
 
     def __iter__(self):
-        return iter(self._nodes)
+        return iter(self._node_views)
 
     def set_pattern(self, pattern, cluster_name):
-        for node in self._nodes:
-            node.set_pattern(pattern, cluster_name)
+        for node_view in self._node_views:
+            node_view.set_pattern(pattern, cluster_name)
 
     def pick_node_view(self):
-        return self._nodes[0]
+        return self._node_views[0]
 
     def __len__(self):
-        return len(self._nodes)
+        return len(self._node_views)
 
 
 class ClusterNodeViewPack(object):
@@ -182,31 +182,26 @@ class LengthPatternCluster(PatternCluster):
         self._view_pack = ViewPack(LengthView)
         self._pattern_filter = set()
 
-    def _to_be_filtered(self, pattern):
-        wc = pattern.pattern_string.count(']+')
-        if wc >= self._min_cluster_num:
-            return False
-        c = 0
-        for pu in pattern.pattern_units:
-            if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
-                if pu.fuzzy_rule not in str(pu):
-                    c += 1
-        if c > 1:
-            return True
+    # def _to_be_filtered(self, pattern):
 
-        return False
+    #     for pu in pattern.pattern_units:
+    #         if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
+    #             if pu.fuzzy_rule not in str(pu):
+    #                 return True
 
-    def add_cluster_node(self, cluster_node):
-        pattern = cluster_node.pattern
-        if pattern in self._pattern_filter:
-            return
-        if cluster_node.cluster_name != '' \
-                and cluster_node.cluster_name != PiecePatternCluster.__name__\
-                and len(cluster_node.parsed_piece.rules) > 1:
-            if self._to_be_filtered(pattern):
-                self._pattern_filter.add(pattern)
-                return
-        super(LengthPatternCluster, self).add_cluster_node(cluster_node)
+    #     return False
+
+    # def add_cluster_node(self, cluster_node):
+    #     pattern = cluster_node.pattern
+    #     if pattern in self._pattern_filter:
+    #         return
+    #     if cluster_node.cluster_name != '' \
+    #             and cluster_node.cluster_name != PiecePatternCluster.__name__\
+    #             and len(cluster_node.parsed_piece.rules) > 1:
+    #         if self._to_be_filtered(pattern):
+    #             self._pattern_filter.add(pattern)
+    #             return
+    #     super(LengthPatternCluster, self).add_cluster_node(cluster_node)
 
     def _cluster(self):
         node_view = self.view_pack.pick_node_view()
@@ -232,20 +227,13 @@ class MultiPartPatternCluster(PatternCluster):
             for bag in pack.iter_values():
                 self._deep_cluster(bag)
 
-    def cluster(self):
-        self._cluster()
-        for c in self._forward_cluster():
-            yield c
-
     def _deep_cluster(self, bag):
-        p_set = set([node.pattern for node in bag])
-        if len(p_set) < self._min_cluster_num:
-            return
 
         piece_pattern_tree = PiecePatternTree()
         for node in bag:
             piece_pattern_tree.add_from_parsed_pieces(
                 node.view_parsed_pieces(), node.count, False)
+
         p_num = len(bag.pick_node_view().view_parsed_pieces())
         url_meta = URLMeta(p_num, [], False)
         cluster(self._config, url_meta, piece_pattern_tree)
@@ -272,12 +260,26 @@ class BasePatternCluster(MultiPartPatternCluster):
         super(BasePatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(BaseView)
 
+    def _to_be_filtered(self, pattern):
+        n = p = 0
+        for pu in pattern.pattern_units:
+            if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
+                if pu.fuzzy_rule not in str(pu):
+                    p += 1
+                else:
+                    n += 1
+        if p > n:
+            return True
+
+        return False
+
     def _forward_cluster(self):
 
         forward_clusters = [c(self._config, self._meta_info) for c in
                             (LengthPatternCluster,
                              MixedPatternCluster,)]
 
+        filtered_patterns = set()
         for view, pack in self.view_pack.iter_items():
             c = forward_clusters[1]
             nv = MixedView(pack.pick_node_view().cluster_node)
@@ -287,6 +289,14 @@ class BasePatternCluster(MultiPartPatternCluster):
                 if len(nv.view_parsed_pieces()) <= 1:
                     c = forward_clusters[0]
             for node_view in pack.iter_node_views():
+                pattern = node_view.pattern
+                if pattern in filtered_patterns:
+                    continue
+                if node_view.cluster_name != '' \
+                        and node_view.cluster_name != PiecePatternCluster.__name__:
+                    if self._to_be_filtered(pattern):
+                        filtered_patterns.add(pattern)
+                        continue
                 c.add_cluster_node(node_view.cluster_node)
 
         for c in forward_clusters:
@@ -298,8 +308,28 @@ class MixedPatternCluster(MultiPartPatternCluster):
         super(MixedPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(MixedView)
 
+    def _to_be_filtered(self, pattern):
+        for pu in pattern.pattern_units:
+            if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
+                if pu.fuzzy_rule not in str(pu):
+                    return True
+
+        return False
+
     def _forward_cluster(self):
-        yield self._create_cluster(LengthPatternCluster)
+        forward_cluster = LengthPatternCluster(self._config, self._meta_info)
+        filtered_patterns = set()
+        for node_view in self.view_pack.iter_node_views():
+            pattern = node_view.pattern
+            if pattern in filtered_patterns:
+                continue
+            if node_view.cluster_name != '' \
+                    and node_view.cluster_name != PiecePatternCluster.__name__:
+                if self._to_be_filtered(pattern):
+                    filtered_patterns.add(pattern)
+                    continue
+            forward_cluster.add_cluster_node(node_view.cluster_node)
+        yield forward_cluster
 
 
 class FuzzyPatternCluster(PatternCluster):

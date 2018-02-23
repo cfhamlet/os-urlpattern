@@ -79,15 +79,13 @@ class MakePatternCommand(Command):
                             type=lambda s: s.upper(),
                             )
 
-    def run(self, args):
+    def _load(self, pattern_maker, args):
         inputs = sys.stdin
         if args.file and os.path.exists(args.file):
             if os.path.exists(args.file):
                 inputs = open(args.file, 'r')
             else:
-                raise ValueError, 'File not exist: %s' % args.config
-        self._config.freeze()
-        pattern_maker = PatternMaker(self._config)
+                raise ValueError, 'File not exist: %s' % args.file
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in inputs:
@@ -103,9 +101,24 @@ class MakePatternCommand(Command):
                 stats['INVALID'] += 1
                 continue
         self._logger.debug('[LOADED] %s' % str(stats))
+
+    def _dump(self, pattern_maker, args):
         formatter = FORMATTERS[args.formatter](self._config)
+        s = time.time()
         for pattern_tree in pattern_maker.process():
+            e = time.time()
+            self._logger.debug('[CLUSTER] %d %.2fs' %
+                               (pattern_tree.root_node.count, e - s))
             formatter.format(pattern_tree)
+            s = time.time()
+
+    def run(self, args):
+
+        self._config.freeze()
+        pattern_maker = PatternMaker(self._config)
+
+        self._load(pattern_maker, args)
+        self._dump(pattern_maker, args)
 
 
 class MatchPatternCommand(Command):
