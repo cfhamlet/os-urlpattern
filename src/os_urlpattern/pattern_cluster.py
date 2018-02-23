@@ -138,7 +138,7 @@ class PatternCluster(object):
         pass
 
     def _forward_cluster(self):
-        yield 
+        yield
 
     def cluster(self):
         self._cluster()
@@ -267,7 +267,10 @@ class BasePatternCluster(MultiPartPatternCluster):
                 if pu.fuzzy_rule not in str(pu):
                     p += 1
                 else:
-                    n += 1
+                    if pu.num > 0:
+                        p += 1
+                    else:
+                        n += 1
         if p > n and n < self._min_cluster_num:
             return True
 
@@ -286,7 +289,8 @@ class BasePatternCluster(MultiPartPatternCluster):
             nv = MixedView(pack.pick_node_view().cluster_node)
             if view == nv.view():
                 if self._meta_info.is_last_path():
-                    nv = LastDotSplitFuzzyView(pack.pick_node_view().cluster_node)
+                    nv = LastDotSplitFuzzyView(
+                        pack.pick_node_view().cluster_node)
                     if len(nv.view_parsed_pieces()) > 1:
                         c = forward_clusters[2]
             else:
