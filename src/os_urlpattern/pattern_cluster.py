@@ -268,7 +268,7 @@ class BasePatternCluster(MultiPartPatternCluster):
                     p += 1
                 else:
                     n += 1
-        if p > n:
+        if p > n and n < self._min_cluster_num:
             return True
 
         return False
