@@ -372,6 +372,9 @@ class PieceParser(object):
     def _pre_process(self, piece):
         for c in piece:
             self._define(c)
+        l = len(self._piece_list)
+        if l > 99: # magic number
+            raise IrregularURLException('Too many pieces %d' % l)
         for idx, buf in enumerate(self._piece_list):
             buf.seek(0)
             letter = buf.read()

@@ -1,7 +1,7 @@
 import copy
 from collections import Counter
 from pattern import Pattern
-from urlparse_utils import number_rule, wildcard_rule, URLMeta
+from parse_utils import number_rule, wildcard_rule, URLMeta
 from piece_pattern_tree import PiecePatternTree
 from definition import BasePatternRule, DIGIT_AND_ASCII_RULE_SET
 from cluster_node import ClusterNode, PieceView, LengthView, LastDotSplitFuzzyView, \
@@ -377,7 +377,7 @@ class MetaInfo(object):
         return self.url_meta.path_depth == self._current_level
 
     def next_level_meta_info(self):
-        return MetaInfo(self.url_meta, self._current_level + 1)
+        return MetaInfo(self.url_meta, self.current_level + 1)
 
 
 class ClusterProcessor(object):
@@ -403,11 +403,12 @@ class ClusterProcessor(object):
         if self._meta_info.is_last_level():
             return
         next_level_processors = {}
+        next_level_meta_info = self._meta_info.next_level_meta_info()
         for node in self.iter_nodes():
             pattern = node.pattern
             if pattern not in next_level_processors:
                 next_level_processors[pattern] = ClusterProcessor(
-                    self._config, self._meta_info.next_level_meta_info())
+                    self._config, next_level_meta_info)
             next_processor = next_level_processors[pattern]
             for child in node.children:
                 next_processor.add_node(child)
