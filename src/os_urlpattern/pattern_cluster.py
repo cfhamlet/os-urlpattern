@@ -138,7 +138,7 @@ class PatternCluster(object):
         pass
 
     def _forward_cluster(self):
-        pass
+        yield 
 
     def cluster(self):
         self._cluster()
@@ -277,17 +277,21 @@ class BasePatternCluster(MultiPartPatternCluster):
 
         forward_clusters = [c(self._config, self._meta_info) for c in
                             (LengthPatternCluster,
-                             MixedPatternCluster,)]
+                             MixedPatternCluster,
+                             LastDotSplitFuzzyPatternCluster)]
 
         filtered_patterns = set()
         for view, pack in self.view_pack.iter_items():
-            c = forward_clusters[1]
+            c = forward_clusters[0]
             nv = MixedView(pack.pick_node_view().cluster_node)
             if view == nv.view():
-                continue
+                if self._meta_info.is_last_path():
+                    nv = LastDotSplitFuzzyView(pack.pick_node_view().cluster_node)
+                    if len(nv.view_parsed_pieces()) > 1:
+                        c = forward_clusters[2]
             else:
-                if len(nv.view_parsed_pieces()) <= 1:
-                    c = forward_clusters[0]
+                if len(nv.view_parsed_pieces()) > 1:
+                    c = forward_clusters[1]
             for node_view in pack.iter_node_views():
                 pattern = node_view.pattern
                 if pattern in filtered_patterns:
@@ -330,6 +334,13 @@ class MixedPatternCluster(MultiPartPatternCluster):
                     continue
             forward_cluster.add_cluster_node(node_view.cluster_node)
         yield forward_cluster
+
+
+class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
+    def __init__(self, config, meta_info):
+        super(LastDotSplitFuzzyPatternCluster,
+              self).__init__(config, meta_info)
+        self._view_pack = ViewPack(LastDotSplitFuzzyView)
 
 
 class FuzzyPatternCluster(PatternCluster):
