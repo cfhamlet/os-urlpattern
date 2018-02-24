@@ -325,19 +325,33 @@ class MixedPatternCluster(MultiPartPatternCluster):
         return False
 
     def _forward_cluster(self):
-        forward_cluster = LengthPatternCluster(self._config, self._meta_info)
+        forward_clusters = [c(self._config, self._meta_info) for c in
+                            (LengthPatternCluster,
+                             LastDotSplitFuzzyPatternCluster)]
+
         filtered_patterns = set()
-        for node_view in self.view_pack.iter_node_views():
-            pattern = node_view.pattern
-            if pattern in filtered_patterns:
-                continue
-            if node_view.cluster_name != '' \
-                    and node_view.cluster_name != PiecePatternCluster.__name__:
-                if self._to_be_filtered(pattern):
-                    filtered_patterns.add(pattern)
+        for view, pack in self.view_pack.iter_items():
+            c = forward_clusters[0]
+            if self._meta_info.is_last_path():
+                nv = LastDotSplitFuzzyView(pack.pick_node_view().cluster_node)
+                if view == nv.view():
                     continue
-            forward_cluster.add_cluster_node(node_view.cluster_node)
-        yield forward_cluster
+                else:
+                    if len(nv.view_parsed_pieces()) > 1:
+                        c = forward_clusters[1]
+            for node_view in pack.iter_node_views():
+                pattern = node_view.pattern
+                if pattern in filtered_patterns:
+                    continue
+                if node_view.cluster_name != '' \
+                        and node_view.cluster_name != PiecePatternCluster.__name__:
+                    if self._to_be_filtered(pattern):
+                        filtered_patterns.add(pattern)
+                        continue
+                c.add_cluster_node(node_view.cluster_node)
+
+        for c in forward_clusters:
+            yield c
 
 
 class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
