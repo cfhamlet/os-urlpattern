@@ -329,7 +329,7 @@ class BasePatternCluster(MultiPartPatternCluster):
                 c.add_cluster_node(node_view.cluster_node)
 
         for c in forward_clusters:
-            if len(c.view_pack)>0:
+            if len(c.view_pack) > 0:
                 yield c
 
 
@@ -365,7 +365,8 @@ class MixedPatternCluster(BasePatternCluster):
                 c.add_cluster_node(node_view.cluster_node)
 
         for c in forward_clusters:
-            yield c
+            if len(c.view_pack) > 0:
+                yield c
 
 
 class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
