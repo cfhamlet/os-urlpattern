@@ -263,14 +263,11 @@ class BasePatternCluster(MultiPartPatternCluster):
     def _to_be_filtered(self, pattern):
         n = p = 0
         for pu in pattern.pattern_units:
-            if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
-                if pu.fuzzy_rule not in str(pu):
+            if pu.rules.intersection(DIGIT_AND_ASCII_RULE_SET):
+                if not str(pu).startswith('['):
                     p += 1
                 else:
-                    if pu.num > 0:
-                        p += 1
-                    else:
-                        n += 1
+                    n += 1
         if p > n and n < self._min_cluster_num:
             return True
 
@@ -311,18 +308,10 @@ class BasePatternCluster(MultiPartPatternCluster):
             yield c
 
 
-class MixedPatternCluster(MultiPartPatternCluster):
+class MixedPatternCluster(BasePatternCluster):
     def __init__(self, config, meta_info):
         super(MixedPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(MixedView)
-
-    def _to_be_filtered(self, pattern):
-        for pu in pattern.pattern_units:
-            if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
-                if pu.fuzzy_rule not in str(pu):
-                    return True
-
-        return False
 
     def _forward_cluster(self):
         forward_clusters = [c(self._config, self._meta_info) for c in
@@ -337,7 +326,7 @@ class MixedPatternCluster(MultiPartPatternCluster):
                 if view == nv.view():
                     continue
                 else:
-                    if len(nv.view_parsed_pieces()) > 1:
+                    if len(nv.view_parsed_pieces()) > 1:  # not exactly
                         c = forward_clusters[1]
             for node_view in pack.iter_node_views():
                 pattern = node_view.pattern
