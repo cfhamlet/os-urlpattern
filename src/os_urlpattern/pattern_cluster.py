@@ -196,7 +196,9 @@ class LengthPatternCluster(PatternCluster):
 
     def _cluster_digital_pattern(self):
         count = 0
-        for length, pack in self._view_pack.iter_items():
+        if len(self.view_pack) >= self._min_cluster_num:
+            count  = len(self.view_pack)
+        for length, pack in self.view_pack.iter_items():
             if count > 1:
                 break
             p_set = set([node.pattern for node in pack.iter_node_views()])
