@@ -40,6 +40,9 @@ class ClusterNodeViewPack(object):
         self._packs = {}
         self._count = 0
 
+    def get_cluster_bag(self, cluster_name):
+        return self._packs.get(cluster_name, None)
+
     def add_node_view(self, node_view):
         c_name = node_view.cluster_name
         if c_name not in self._packs:
@@ -191,20 +194,25 @@ class LengthPatternCluster(PatternCluster):
         self._force_cluster_digital_pattern = self._config.getboolean(
             'make', 'force_cluster_digital_pattern')
 
-    def _cluster(self):
-        node_view = self.view_pack.pick_node_view()
+    def _cluster_digital_pattern(self):
+        count = 0
+        for length, pack in self._view_pack.iter_items():
+            if count > 1:
+                break
+            p_set = set([node.pattern for node in pack.iter_node_views()])
+            if len(p_set) > 1:
+                self._set_pattern(pack, Pattern(
+                    number_rule(BasePatternRule.DIGIT, length)))
+                count += 1
+        if count > 1:
+            self._set_pattern(self.view_pack, Pattern(
+                wildcard_rule(BasePatternRule.DIGIT)))
+
+    def _cluster_length_pattern(self):
+        node_view = self._view_pack.pick_node_view()
         for length, pack in self._view_pack.iter_items():
             pattern = Pattern(number_rule(
                 node_view.parsed_piece.fuzzy_rule, length))
-            if self._force_cluster_digital_pattern:
-                node_view = pack.pick_node_view()
-                rules = node_view.parsed_piece.rules
-                if len(rules) == 1 and BasePatternRule.DIGIT in rules:
-                    p_set = set(
-                        [node.pattern for node in pack.iter_node_views()])
-                    if len(p_set) > 1:
-                        self._set_pattern(pack, pattern)
-                        continue
 
             for bag in pack.iter_values():
                 p_set = set([node.pattern for node in bag])
@@ -212,7 +220,20 @@ class LengthPatternCluster(PatternCluster):
                     self._set_pattern(pack, pattern)
                     break
 
+    def _cluster(self):
+        node_view = self._view_pack.pick_node_view()
+        rules = node_view.parsed_piece.rules
+        if len(rules) == 1 and BasePatternRule.DIGIT in rules:
+            self._cluster_digital_pattern()
+        else:
+            self._cluster_length_pattern()
+
     def _forward_cluster(self):
+        if self._force_cluster_digital_pattern:
+            node_view = self.view_pack.pick_node_view()
+            rules = node_view.parsed_piece.rules
+            if len(rules) == 1 and BasePatternRule.DIGIT in rules:
+                return
         if len(self.view_pack) < self._min_cluster_num:
             return
         yield self._create_cluster(FuzzyPatternCluster)
@@ -308,7 +329,8 @@ class BasePatternCluster(MultiPartPatternCluster):
                 c.add_cluster_node(node_view.cluster_node)
 
         for c in forward_clusters:
-            yield c
+            if len(c.view_pack)>0:
+                yield c
 
 
 class MixedPatternCluster(BasePatternCluster):
@@ -362,7 +384,7 @@ class FuzzyPatternCluster(PatternCluster):
 
         clusterd = False
         un_clusterd_bags = []
-        for fuzzy_rule, pack in self._view_pack.iter_items():
+        for fuzzy_rule, pack in self.view_pack.iter_items():
 
             for c_name, bag in pack.iter_items():
                 p_set = set([node.pattern for node in bag])
