@@ -159,6 +159,8 @@ class PiecePatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(PiecePatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(PieceView)
+        self._force_cluster_digital_pattern = self._config.getboolean(
+            'make', 'force_cluster_digital_pattern')
 
     def _cluster(self):
         for piece, pack in self.view_pack.iter_items():
@@ -166,48 +168,44 @@ class PiecePatternCluster(PatternCluster):
                 self._set_pattern(pack, Pattern(piece))
 
     def _forward_cluster(self):
-        if len(self.view_pack) < self._min_cluster_num:
-            return
+        l_view_pack = len(self.view_pack)
+        if l_view_pack < self._min_cluster_num:
+            if l_view_pack <= 1:
+                return
+            node_view = self._view_pack.pick_node_view()
+            rules = node_view.parsed_piece.rules
+            if not (len(rules) == 1 and BasePatternRule.DIGIT in rules):
+                return
 
-        forward_cls = LengthPatternCluster
+        forward_cluster_cls = LengthPatternCluster
         node_view = self._view_pack.pick_node_view()
         if len(node_view.view_parsed_pieces()) > 1:
-            forward_cls = BasePatternCluster
-        yield self._create_cluster(forward_cls)
+            forward_cluster_cls = BasePatternCluster
+        yield self._create_cluster(forward_cluster_cls)
 
 
 class LengthPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(LengthView)
-        self._pattern_filter = set()
-
-    # def _to_be_filtered(self, pattern):
-
-    #     for pu in pattern.pattern_units:
-    #         if pu.fuzzy_rule in DIGIT_AND_ASCII_RULE_SET:
-    #             if pu.fuzzy_rule not in str(pu):
-    #                 return True
-
-    #     return False
-
-    # def add_cluster_node(self, cluster_node):
-    #     pattern = cluster_node.pattern
-    #     if pattern in self._pattern_filter:
-    #         return
-    #     if cluster_node.cluster_name != '' \
-    #             and cluster_node.cluster_name != PiecePatternCluster.__name__\
-    #             and len(cluster_node.parsed_piece.rules) > 1:
-    #         if self._to_be_filtered(pattern):
-    #             self._pattern_filter.add(pattern)
-    #             return
-    #     super(LengthPatternCluster, self).add_cluster_node(cluster_node)
+        self._force_cluster_digital_pattern = self._config.getboolean(
+            'make', 'force_cluster_digital_pattern')
 
     def _cluster(self):
         node_view = self.view_pack.pick_node_view()
         for length, pack in self._view_pack.iter_items():
             pattern = Pattern(number_rule(
                 node_view.parsed_piece.fuzzy_rule, length))
+            if self._force_cluster_digital_pattern:
+                node_view = pack.pick_node_view()
+                rules = node_view.parsed_piece.rules
+                if len(rules) == 1 and BasePatternRule.DIGIT in rules:
+                    p_set = set(
+                        [node.pattern for node in pack.iter_node_views()])
+                    if len(p_set) > 1:
+                        self._set_pattern(pack, pattern)
+                        continue
+
             for bag in pack.iter_values():
                 p_set = set([node.pattern for node in bag])
                 if len(p_set) >= self._min_cluster_num:
@@ -232,7 +230,7 @@ class MultiPartPatternCluster(PatternCluster):
         piece_pattern_tree = PiecePatternTree()
         for node in bag:
             piece_pattern_tree.add_from_parsed_pieces(
-                node.view_parsed_pieces(), node.count, False)
+                node.view_parsed_pieces(), count=node.count, uniq=False)
 
         p_num = len(bag.pick_node_view().view_parsed_pieces())
         url_meta = URLMeta(p_num, [], False)
@@ -263,11 +261,15 @@ class BasePatternCluster(MultiPartPatternCluster):
     def _to_be_filtered(self, pattern):
         n = p = 0
         for pu in pattern.pattern_units:
-            if pu.rules.intersection(DIGIT_AND_ASCII_RULE_SET):
+            inter = pu.rules.intersection(DIGIT_AND_ASCII_RULE_SET)
+            if inter:
                 if not str(pu).startswith('['):
                     p += 1
                 else:
-                    n += 1
+                    if pu.num > 0 and len(inter) == 1:
+                        p += 1
+                    else:
+                        n += 1
         if p > n and n < self._min_cluster_num:
             return True
 
@@ -293,6 +295,7 @@ class BasePatternCluster(MultiPartPatternCluster):
             else:
                 if len(nv.view_parsed_pieces()) > 1:
                     c = forward_clusters[1]
+
             for node_view in pack.iter_node_views():
                 pattern = node_view.pattern
                 if pattern in filtered_patterns:

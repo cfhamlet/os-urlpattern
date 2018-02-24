@@ -93,12 +93,6 @@ MULTI_ASCII_RULE_SET = set([BasePatternRule.MULTI_ASCII,
                             BasePatternRule.MULTI_ASCII_LOWER,
                             BasePatternRule.MULTI_ASCII_UPPER])
 
-# ==
-# MULTI_TO_BASE_ASCII_RULE_DICT = dict(
-#     [(BasePatternRule.MULTI_ASCII, BasePatternRule.BASE_ASCII),
-#      (BasePatternRule.MULTI_ASCII_LOWER, BasePatternRule.BASE_ASCII_LOWER),
-#      (BasePatternRule.MULTI_ASCII_UPPER, BasePatternRule.BASE_ASCII_UPPER)])
-
 
 # base pattern
 class BasePattern(object):
