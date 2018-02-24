@@ -289,10 +289,7 @@ class BasePatternCluster(MultiPartPatternCluster):
                 if not str(pu).startswith('['):
                     p += 1
                 else:
-                    if pu.num > 0 and len(inter) == 1:
-                        p += 1
-                    else:
-                        n += 1
+                    n += 1
         if p > n and n < self._min_cluster_num:
             return True
 
