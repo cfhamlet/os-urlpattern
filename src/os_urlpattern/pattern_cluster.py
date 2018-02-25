@@ -197,7 +197,7 @@ class LengthPatternCluster(PatternCluster):
     def _cluster_digital_pattern(self):
         count = 0
         if len(self.view_pack) >= self._min_cluster_num:
-            count  = len(self.view_pack)
+            count = len(self.view_pack)
         for length, pack in self.view_pack.iter_items():
             if count > 1:
                 break
@@ -246,17 +246,16 @@ class MultiPartPatternCluster(PatternCluster):
 
     def _cluster(self):
         for pack in self._view_pack.iter_values():
-            for bag in pack.iter_values():
-                self._deep_cluster(bag)
+            self._deep_cluster(pack)
 
-    def _deep_cluster(self, bag):
+    def _deep_cluster(self, pack):
 
         piece_pattern_tree = PiecePatternTree()
-        for node in bag:
+        for node_view in pack.iter_node_views():
             piece_pattern_tree.add_from_parsed_pieces(
-                node.view_parsed_pieces(), count=node.count, uniq=False)
+                node_view.view_parsed_pieces(), count=node_view.count, uniq=False)
 
-        p_num = len(bag.pick_node_view().view_parsed_pieces())
+        p_num = len(pack.pick_node_view().view_parsed_pieces())
         url_meta = URLMeta(p_num, [], False)
         cluster(self._config, url_meta, piece_pattern_tree)
 
@@ -270,11 +269,11 @@ class MultiPartPatternCluster(PatternCluster):
             piece_pattern_dict[piece] = pattern
             pattern_counter[pattern] += path[-1].count
 
-        for node in bag:
-            if node.piece in piece_pattern_dict:
-                pattern = piece_pattern_dict[node.piece]
+        for node_view in pack.iter_node_views():
+            if node_view.piece in piece_pattern_dict:
+                pattern = piece_pattern_dict[node_view.piece]
                 if pattern_counter[pattern] >= self._min_cluster_num:
-                    self._set_pattern(node, pattern)
+                    self._set_pattern(node_view, pattern)
 
 
 class BasePatternCluster(MultiPartPatternCluster):
@@ -291,7 +290,7 @@ class BasePatternCluster(MultiPartPatternCluster):
                     p += 1
                 else:
                     n += 1
-        if p > n and n < self._min_cluster_num:
+        if p >= n and n < self._min_cluster_num:
             return True
 
         return False
