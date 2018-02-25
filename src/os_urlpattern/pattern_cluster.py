@@ -223,12 +223,13 @@ class LengthPatternCluster(PatternCluster):
                     break
 
     def _cluster(self):
-        node_view = self._view_pack.pick_node_view()
-        rules = node_view.parsed_piece.rules
-        if len(rules) == 1 and BasePatternRule.DIGIT in rules:
-            self._cluster_digital_pattern()
-        else:
-            self._cluster_length_pattern()
+        if self._force_cluster_digital_pattern:
+            node_view = self._view_pack.pick_node_view()
+            rules = node_view.parsed_piece.rules
+            if len(rules) == 1 and BasePatternRule.DIGIT in rules:
+                self._cluster_digital_pattern()
+                return
+        self._cluster_length_pattern()
 
     def _forward_cluster(self):
         if self._force_cluster_digital_pattern:
