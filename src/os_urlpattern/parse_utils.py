@@ -1,10 +1,11 @@
-import StringIO
-import hashlib
 import copy
-from urlparse import urlparse, ParseResult
-from definition import QUERY_PART_RESERVED_CHARS, EMPTY_LIST, BLANK_LIST
-from definition import ASCII_DIGIT_SET, CHAR_RULE_DICT, SIGN_RULE_SET
-from definition import DIGIT_AND_ASCII_RULE_SET
+import hashlib
+import StringIO
+from urlparse import ParseResult, urlparse
+
+from definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
+                        DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
+                        QUERY_PART_RESERVED_CHARS, SIGN_RULE_SET)
 
 MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
 MIXED_RULE_SET.add('%')

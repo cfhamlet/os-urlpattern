@@ -1,5 +1,5 @@
-from definition import BasePatternRule, DIGIT_AND_ASCII_RULE_SET
-from urlparse_utils import mix, ParsedPiece
+from definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
+from urlparse_utils import ParsedPiece, mix
 
 
 class PiecePatternNodeMix(object):

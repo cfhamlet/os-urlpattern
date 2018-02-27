@@ -1,11 +1,21 @@
 import copy
 from collections import Counter
+
+from cluster_node import (BaseView, ClusterNode, FuzzyView,
+                          LastDotSplitFuzzyView, LengthView, MixedView,
+                          PieceView)
+from definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
+from parse_utils import URLMeta, number_rule, wildcard_rule
 from pattern import Pattern
-from parse_utils import number_rule, wildcard_rule, URLMeta
 from piece_pattern_tree import PiecePatternTree
-from definition import BasePatternRule, DIGIT_AND_ASCII_RULE_SET
-from cluster_node import ClusterNode, PieceView, LengthView, LastDotSplitFuzzyView, \
-    BaseView, MixedView, FuzzyView
+
+
+def is_digital(pack):
+    nv = pack.pick_node_view()
+    rules = nv.parsed_piece.rules
+    if len(rules) == 1 and BasePatternRule.DIGIT in rules:
+        return True
+    return False
 
 
 class ClusterNodeViewBag(object):
@@ -162,8 +172,8 @@ class PiecePatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(PiecePatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(PieceView)
-        self._force_cluster_digital_pattern = self._config.getboolean(
-            'make', 'force_cluster_digital_pattern')
+        self._wildcard_digital_pattern = self._config.getboolean(
+            'make', 'wildcard_digital_pattern')
 
     def _cluster(self):
         for piece, pack in self.view_pack.iter_items():
@@ -172,16 +182,16 @@ class PiecePatternCluster(PatternCluster):
 
     def _forward_cluster(self):
         l_view_pack = len(self.view_pack)
-        if l_view_pack < self._min_cluster_num:
-            if l_view_pack <= 1:
-                return
-            node_view = self._view_pack.pick_node_view()
-            rules = node_view.parsed_piece.rules
-            if not (len(rules) == 1 and BasePatternRule.DIGIT in rules):
+        if l_view_pack <= 1:
+            return
+        elif l_view_pack < self._min_cluster_num:
+            if self._wildcard_digital_pattern and is_digital(self.view_pack):
+                pass
+            else:
                 return
 
         forward_cluster_cls = LengthPatternCluster
-        node_view = self._view_pack.pick_node_view()
+        node_view = self.view_pack.pick_node_view()
         if len(node_view.view_parsed_pieces()) > 1:
             forward_cluster_cls = BasePatternCluster
         yield self._create_cluster(forward_cluster_cls)
@@ -191,8 +201,8 @@ class LengthPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._view_pack = ViewPack(LengthView)
-        self._force_cluster_digital_pattern = self._config.getboolean(
-            'make', 'force_cluster_digital_pattern')
+        self._wildcard_digital_pattern = self._config.getboolean(
+            'make', 'wildcard_digital_pattern')
 
     def _cluster_digital_pattern(self):
         count = 0
@@ -223,20 +233,14 @@ class LengthPatternCluster(PatternCluster):
                     break
 
     def _cluster(self):
-        if self._force_cluster_digital_pattern:
-            node_view = self._view_pack.pick_node_view()
-            rules = node_view.parsed_piece.rules
-            if len(rules) == 1 and BasePatternRule.DIGIT in rules:
-                self._cluster_digital_pattern()
-                return
-        self._cluster_length_pattern()
+        if self._wildcard_digital_pattern and is_digital(self.view_pack):
+            self._cluster_digital_pattern()
+        else:
+            self._cluster_length_pattern()
 
     def _forward_cluster(self):
-        if self._force_cluster_digital_pattern:
-            node_view = self.view_pack.pick_node_view()
-            rules = node_view.parsed_piece.rules
-            if len(rules) == 1 and BasePatternRule.DIGIT in rules:
-                return
+        if self._wildcard_digital_pattern and is_digital(self.view_pack):
+            return
         if len(self.view_pack) < self._min_cluster_num:
             return
         yield self._create_cluster(FuzzyPatternCluster)
@@ -289,7 +293,10 @@ class BasePatternCluster(MultiPartPatternCluster):
                 if not str(pu).startswith('['):
                     p += 1
                 else:
-                    n += 1
+                    if pu.num > 0:
+                        p += 1
+                    else:
+                        n += 1
         if p >= n and n < self._min_cluster_num:
             return True
 

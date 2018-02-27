@@ -1,5 +1,6 @@
 import json
-from os_urlpattern.pattern_tree import PatternTree, PatternPath
+
+from os_urlpattern.pattern_tree import PatternPath, PatternTree
 from os_urlpattern.utils import get_ete_tree
 
 

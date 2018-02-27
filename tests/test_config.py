@@ -1,4 +1,5 @@
 import pytest
+
 from os_urlpattern.config import Config
 
 

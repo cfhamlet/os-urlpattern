@@ -1,5 +1,7 @@
 import hashlib
 import json
+
+from os_urlpattern.definition import BasePattern
 from os_urlpattern.urlparse_utils import pack
 
 
@@ -87,7 +89,6 @@ class PatternNode(object):
             yield path
 
 
-from os_urlpattern.definition import BasePattern
 
 
 class PatternTree(object):

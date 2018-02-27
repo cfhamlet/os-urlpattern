@@ -1,16 +1,12 @@
 import pytest
-from os_urlpattern.parse_utils import filter_useless_part
-from os_urlpattern.parse_utils import analyze_url
-from os_urlpattern.parse_utils import parse_url
-from os_urlpattern.parse_utils import parse_query_string
-from os_urlpattern.parse_utils import normalize_str
-from os_urlpattern.parse_utils import PieceParser
-from os_urlpattern.parse_utils import pack
-from os_urlpattern.parse_utils import URLMeta
-from os_urlpattern.parse_utils import IrregularURLException
-from os_urlpattern.parse_utils import parse_url_pattern_string
-from os_urlpattern.parse_utils import parse_pattern_string
-from os_urlpattern.parse_utils import parse_pattern_unit_string
+
+from os_urlpattern.parse_utils import (IrregularURLException, PieceParser,
+                                       URLMeta, analyze_url,
+                                       filter_useless_part, normalize_str,
+                                       pack, parse_pattern_string,
+                                       parse_pattern_unit_string,
+                                       parse_query_string, parse_url,
+                                       parse_url_pattern_string)
 
 
 def test_normalize_str():

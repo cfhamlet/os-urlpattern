@@ -1,15 +1,17 @@
 from __future__ import print_function
-import sys
-import os
+
 import argparse
-import logging
 import json
+import logging
+import os
+import sys
 import time
 from collections import Counter
 from logging.config import dictConfig
-from os_urlpattern.utils import LogSpeedAdapter
-from os_urlpattern.pattern_maker import PatternMaker
+
 from os_urlpattern.formatter import FORMATTERS
+from os_urlpattern.pattern_maker import PatternMaker
+from os_urlpattern.utils import LogSpeedAdapter
 
 
 def _config_logging(log_level):

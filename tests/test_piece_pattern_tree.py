@@ -1,5 +1,5 @@
+from os_urlpattern.parse_utils import PieceParser, parse_url
 from os_urlpattern.piece_pattern_tree import PiecePatternTree
-from os_urlpattern.parse_utils import parse_url, PieceParser
 
 
 def test_count():

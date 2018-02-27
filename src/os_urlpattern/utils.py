@@ -1,6 +1,6 @@
+import logging
 import os
 import time
-import logging
 
 
 class LogSpeedAdapter(logging.LoggerAdapter):

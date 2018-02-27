@@ -1,5 +1,6 @@
 import hashlib
 import string
+
 from pattern import Pattern
 
 ZERO_DIGEST = hashlib.md5('0').hexdigest().upper()
