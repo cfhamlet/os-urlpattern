@@ -110,7 +110,7 @@ class MakePatternCommand(Command):
         for pattern_tree in pattern_maker.process():
             e = time.time()
             self._logger.debug('[CLUSTER] %d %.2fs' %
-                               (pattern_tree.root_node.count, e - s))
+                               (pattern_tree.root.count, e - s))
             formatter.format(pattern_tree)
             s = time.time()
 

@@ -4,14 +4,23 @@ from pattern import Pattern
 
 class PiecePatternNode(object):
     __slots__ = ('_parrent', '_children', '_count',
-                 '_pattern', '_parsed_piece')
+                 '_pattern', '_parsed_piece', '_meta')
 
     def __init__(self, parsed_piece, pattern=None):
         self._parrent = None
         self._children = None
         self._count = 0
+        self._meta = None
         self._parsed_piece = parsed_piece
         self._pattern = Pattern(self.piece) if pattern is None else pattern
+
+    @property
+    def meta(self):
+        return self._meta
+
+    @meta.setter
+    def meta(self, v):
+        self._meta = v
 
     def piece_eq_pattern(self):
         return self.piece == self._pattern.pattern_string

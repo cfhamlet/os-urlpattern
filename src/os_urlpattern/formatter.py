@@ -49,14 +49,14 @@ class ETEFormatter(Formatter):
                 pattern_string=pattern_node,
                 query_key=query_key,
                 sep=sep)
-        root_node = pattern_tree.root_node
+        root_node = pattern_tree.root
         o_pattern_tree = PatternTree(url_meta)
         if not self._dump_isolate_pattern:
             for pattern_path in root_node.dump_paths():
                 if pattern_path[-1].count <= 1:
                     continue
                 o_pattern_tree.load_path(pattern_path[1:])
-            root_node = o_pattern_tree.root_node
+            root_node = o_pattern_tree.root
         if root_node.count <= 0:
             return
 

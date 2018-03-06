@@ -101,7 +101,7 @@ class PatternTree(object):
         return self._url_meta
 
     @property
-    def root_node(self):
+    def root(self):
         return self._root
 
     def load_path(self, pattern_node_path):

@@ -3,6 +3,23 @@ import os
 import time
 
 
+class Stack(object):
+    def __init__(self):
+        self._objs = []
+
+    def push(self, obj):
+        self._objs.append(obj)
+
+    def pop(self):
+        return self._objs.pop()
+
+    def top(self):
+        return self._objs[-1]
+
+    def __len__(self):
+        return len(self._objs)
+
+
 class LogSpeedAdapter(logging.LoggerAdapter):
     def __init__(self, logger, interval):
         super(LogSpeedAdapter, self).__init__(logger, {})
