@@ -20,7 +20,7 @@ setup(
     package_dir={'': 'src'},
     include_package_data=True,
     license='MIT License',
-    description='Automate generate url pattern.',
+    description='Cluster url pattern automatically.',
     long_description=open('README.rst').read(),
     author='Ozzy',
     author_email='cfhamlet@gmail.com',
