@@ -13,7 +13,7 @@ def cluster(config, url_meta, piece_pattern_tree):
     p_pre = None
     min_cluster_num = config.getint('make', 'min_cluster_num')
 
-    while len(stack) != 0:
+    while len(stack) > 0:
         p_cur = stack.top()
         if not p_cur.children:
             stack.pop()

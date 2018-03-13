@@ -98,7 +98,7 @@ class MakePatternCommand(Command):
                 if pattern_maker.load(url):
                     stats['UNIQ'] += 1
                 stats['VALID'] += 1
-            except Exception, e:
+            except Exception as e:
                 self._logger.warn('%s, %s' % (str(e), url))
                 stats['INVALID'] += 1
                 continue
