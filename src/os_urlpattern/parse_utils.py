@@ -20,7 +20,7 @@ class InvalidPatternException(Exception):
 
 
 class URLMeta(object):
-    __slots__ = ['_path_depth', '_query_keys', '_has_fragment', '_hashcode']
+    __slots__ = ('_path_depth', '_query_keys', '_has_fragment', '_hashcode')
 
     def __init__(self, path_depth, query_keys, has_fragment):
         self._path_depth = path_depth
@@ -32,6 +32,8 @@ class URLMeta(object):
         return hash(self.hashcode)
 
     def __eq__(self, o):
+        if not isinstance(o, URLMeta):
+            return False
         return hash(o) == hash(self)
 
     @property
