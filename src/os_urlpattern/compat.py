@@ -1,9 +1,9 @@
-import sys
 import operator
+import sys
 
-PY3 = sys.version_info[0] >= 3
+_PY3 = sys.version_info[0] >= 3
 
-if PY3:
+if _PY3:
     from io import StringIO
     iteritems = operator.methodcaller("items")
     from urllib.parse import urlparse, ParseResult
