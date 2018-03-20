@@ -1,13 +1,13 @@
 import copy
 from collections import Counter
 
-from cluster_node import (BaseView, ClusterNode, FuzzyView,
-                          LastDotSplitFuzzyView, LengthView, MixedView,
-                          PieceView)
-from definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
-from parse_utils import URLMeta, number_rule, wildcard_rule
-from pattern import Pattern
-from piece_pattern_tree import PiecePatternTree
+from .cluster_node import (BaseView, ClusterNode, FuzzyView,
+                           LastDotSplitFuzzyView, LengthView, MixedView,
+                           PieceView)
+from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
+from .parse_utils import URLMeta, number_rule, wildcard_rule
+from .pattern import Pattern
+from .piece_pattern_tree import PiecePatternTree
 
 
 def is_digital(pack):

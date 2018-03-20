@@ -1,7 +1,7 @@
 import json
 
-from os_urlpattern.pattern_tree import PatternPath, PatternTree
-from os_urlpattern.utils import get_ete_tree
+from .pattern_tree import PatternPath, PatternTree
+from .utils import get_ete_tree
 
 
 class Formatter(object):

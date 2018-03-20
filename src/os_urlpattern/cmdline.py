@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import argparse
-import json
 import logging
 import os
 import sys
@@ -9,9 +8,9 @@ import time
 from collections import Counter
 from logging.config import dictConfig
 
-from os_urlpattern.formatter import FORMATTERS
-from os_urlpattern.pattern_maker import PatternMaker
-from os_urlpattern.utils import LogSpeedAdapter
+from .formatter import FORMATTERS
+from .pattern_maker import PatternMaker
+from .utils import LogSpeedAdapter
 
 
 def _config_logging(log_level):
@@ -60,7 +59,7 @@ class Command(object):
             if os.path.exists(args.config):
                 self._config.read(args.config)
             else:
-                raise ValueError, 'File not exist: %s' % args.config
+                raise ValueError('File not exist: %s' % args.config)
         _config_logging(args.log_level)
 
     def run(self, args):
@@ -87,7 +86,7 @@ class MakePatternCommand(Command):
             if os.path.exists(args.file):
                 inputs = open(args.file, 'r')
             else:
-                raise ValueError, 'File not exist: %s' % args.file
+                raise ValueError('File not exist: %s' % args.file)
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in inputs:
@@ -144,7 +143,7 @@ def _execute(command, argv=None):
 
 
 def _default_config():
-    from os_urlpattern import config
+    from . import config
     path = os.path.dirname(config.__file__)
     cfg = config.Config()
     cfg.read(os.path.join(path, 'default_config.cfg'))

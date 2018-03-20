@@ -1,5 +1,5 @@
-from parse_utils import EMPTY_PARSED_PIECE
-from pattern import Pattern
+from .parse_utils import EMPTY_PARSED_PIECE
+from .pattern import Pattern
 
 
 class PiecePatternNode(object):

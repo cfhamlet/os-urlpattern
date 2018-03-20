@@ -1,7 +1,7 @@
-from os_urlpattern.parse_utils import PieceParser, parse_url, struct_id
-from os_urlpattern.pattern_cluster_alpha import cluster
-from os_urlpattern.pattern_tree import PatternTree
-from os_urlpattern.piece_pattern_tree import PiecePatternTree
+from .parse_utils import PieceParser, parse_url, struct_id
+from .pattern_cluster_alpha import cluster
+from .pattern_tree import PatternTree
+from .piece_pattern_tree import PiecePatternTree
 
 
 class PatternMaker(object):

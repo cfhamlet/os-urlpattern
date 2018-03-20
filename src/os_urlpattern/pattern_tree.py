@@ -1,8 +1,8 @@
 import hashlib
 import json
 
-from os_urlpattern.definition import BasePattern
-from os_urlpattern.urlparse_utils import pack
+from .definition import BasePattern
+from .parse_utils import pack
 
 
 class PatternPath(object):

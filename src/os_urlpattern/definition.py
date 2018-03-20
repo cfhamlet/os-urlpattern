@@ -1,7 +1,7 @@
 import hashlib
 import string
 
-from pattern import Pattern
+from .pattern import Pattern
 
 ZERO_DIGEST = hashlib.md5('0').hexdigest().upper()
 QUERY_PART_RESERVED_CHARS = set(['='])

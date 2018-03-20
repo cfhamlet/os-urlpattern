@@ -38,7 +38,7 @@ class Pattern(object):
 
     @property
     def pattern_units(self):
-        from parse_utils import parse_pattern_string
+        from .parse_utils import parse_pattern_string
         if self._pattern_units is None:
             self._pattern_units = [PatternUnit(
                 u) for u in parse_pattern_string(self._pattern_string)]

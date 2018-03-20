@@ -3,7 +3,7 @@ import hashlib
 import StringIO
 from urlparse import ParseResult, urlparse
 
-from definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
+from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
                         DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
                         QUERY_PART_RESERVED_CHARS, SIGN_RULE_SET)
 

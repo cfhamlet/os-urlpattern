@@ -1,4 +1,4 @@
-from utils import Stack
+from .utils import Stack
 
 
 def traverse_cluster(config, root):
