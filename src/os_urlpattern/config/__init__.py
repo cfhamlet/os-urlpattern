@@ -1,4 +1,4 @@
-from ConfigParser import ConfigParser
+from ..compat import ConfigParser
 try:
     from collections import OrderedDict as _default_dict
 except ImportError:

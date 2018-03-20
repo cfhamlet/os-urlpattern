@@ -1,11 +1,12 @@
 import copy
 import hashlib
-import StringIO
-from urlparse import ParseResult, urlparse
+from .compat import ParseResult, urlparse
 
+from .compat import StringIO
 from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
-                        DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
-                        QUERY_PART_RESERVED_CHARS, SIGN_RULE_SET)
+                         DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
+                         LITERAL_RULES_PRIFIX, QUERY_PART_RESERVED_CHARS,
+                         SIGN_RULE_SET)
 
 MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
 MIXED_RULE_SET.add('%')
@@ -39,15 +40,15 @@ class URLMeta(object):
     @property
     def hashcode(self):
         if self._hashcode is None:
-            s = StringIO.StringIO()
-            s.write(self._path_depth)
+            s = StringIO()
+            s.write(str(self._path_depth))
             if self._query_keys:
                 s.write('?')
                 s.write('&'.join(self._query_keys))
             if self._has_fragment:
                 s.write('#')
             s.seek(0)
-            self._hashcode = hashlib.md5(s.read()).hexdigest()
+            self._hashcode = hashlib.md5(s.read().encode()).hexdigest()
         return self._hashcode
 
     @property
@@ -94,8 +95,8 @@ def normalize_str_list(str_list, reserved_chars):
 
 
 def normalize_str(raw_string, reserved_chars=None):
-    normal_str = StringIO.StringIO()
-    frag = StringIO.StringIO()
+    normal_str = StringIO()
+    frag = StringIO()
     last_c = None
     for c in raw_string:
         if c in ASCII_DIGIT_SET:
@@ -108,7 +109,7 @@ def normalize_str(raw_string, reserved_chars=None):
                         r = CHAR_RULE_DICT.get(w[0])
                         w = number_rule(r, l)
                     normal_str.write(w)
-                    frag = StringIO.StringIO()
+                    frag = StringIO()
         else:
             if last_c != c:
                 frag.seek(0)
@@ -119,7 +120,7 @@ def normalize_str(raw_string, reserved_chars=None):
                     r = CHAR_RULE_DICT.get(w[0])
                     w = number_rule(r, l)
                 normal_str.write(w)
-                frag = StringIO.StringIO()
+                frag = StringIO()
         frag.write(c)
         last_c = c
 
@@ -162,7 +163,7 @@ def filter_useless_part(parts):
         else:
             return True
 
-    return filter(_filterd, parts)
+    return list(filter(_filterd, parts))
 
 
 def parse_query_string(query_string):
@@ -174,7 +175,7 @@ def parse_query_string(query_string):
         raise IrregularURLException('Invalid url query')
     kv_type = True  # qkey True, qvalue False
     last_c = None
-    kv_buf = {True: StringIO.StringIO(), False: StringIO.StringIO()}
+    kv_buf = {True: StringIO(), False: StringIO()}
     kv_list = {True: [], False: []}
     for i in query_string:
         if i == '=' and kv_type:
@@ -182,7 +183,7 @@ def parse_query_string(query_string):
             s.write(i)
             s.seek(0)
             kv_list[kv_type].append(s.read())
-            kv_buf[kv_type] = StringIO.StringIO()
+            kv_buf[kv_type] = StringIO()
             kv_type = not kv_type
         elif i == '&':
             if last_c is None or last_c == '&':
@@ -190,7 +191,7 @@ def parse_query_string(query_string):
             s = kv_buf[kv_type]
             s.seek(0)
             kv_list[kv_type].append(s.read())
-            kv_buf[kv_type] = StringIO.StringIO()
+            kv_buf[kv_type] = StringIO()
             if kv_type:
                 kv_list[False].append('')  # treat as value-less
             else:
@@ -263,7 +264,7 @@ def unpack(result, norm_query_key=True):
 
 
 def pack(url_meta, paths):
-    s = StringIO.StringIO()
+    s = StringIO()
     s.write('/')
     idx = url_meta.path_depth + url_meta.query_depth
     p = '/'.join([str(p) for p in paths[0:url_meta.path_depth]])
@@ -389,7 +390,7 @@ class PieceParser(object):
         rule = CHAR_RULE_DICT[char]
 
         if last_rule != rule:
-            self._piece_list.append(StringIO.StringIO())
+            self._piece_list.append(StringIO())
             self._rule_list.append(rule)
         self._piece_list[-1].write(char)
 
@@ -445,7 +446,7 @@ def parse_pattern_string(pattern_string):
         return ['']
     pattern_units = []
     l = len(pattern_string)
-    s = StringIO.StringIO()
+    s = StringIO()
     idx = 0
     last_rule = None
     while idx < l:
@@ -454,7 +455,7 @@ def parse_pattern_string(pattern_string):
             if last_rule is not None:
                 s.seek(0)
                 pattern_units.append(s.read())
-                s = StringIO.StringIO()
+                s = StringIO()
                 last_rule = None
 
             idx_s = idx
@@ -484,7 +485,7 @@ def parse_pattern_string(pattern_string):
                 else:
                     s.seek(0)
                     pattern_units.append(s.read())
-                    s = StringIO.StringIO()
+                    s = StringIO()
                     s.write(c)
             last_rule = rule
             idx += 1
@@ -514,11 +515,10 @@ def parse_pattern_unit_string(pattern_unit_string):
         p_str = pattern_unit_string[1:t]
         l = len(p_str)
         idx = 0
-        literal_set = set(['a', 'A', '0'])
         while idx < l:
             c = p_str[idx]
             n = 3
-            if c in literal_set:
+            if c in LITERAL_RULES_PRIFIX:
                 pass
             elif c == '\\':
                 n = 2
