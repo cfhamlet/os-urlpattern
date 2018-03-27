@@ -10,7 +10,7 @@ from logging.config import dictConfig
 
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
-from .utils import LogSpeedAdapter
+from .utils import LogSpeedAdapter, load_obj
 
 
 def _config_logging(log_level):
@@ -113,9 +113,15 @@ class MakePatternCommand(Command):
             formatter.format(pattern_tree)
             s = time.time()
 
-    def run(self, args):
-
+    def _freeze_config(self):
+        cluster_algorithm_method = load_obj(
+            self._config.get('make', 'cluster_algorithm'))
+        self._config.set('make', 'cluster_algorithm', cluster_algorithm_method)
         self._config.freeze()
+
+    def run(self, args):
+        self._freeze_config()
+
         pattern_maker = PatternMaker(self._config)
 
         self._load(pattern_maker, args)

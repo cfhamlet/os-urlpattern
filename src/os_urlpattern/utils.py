@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from importlib import import_module
 
 
 class Stack(object):
@@ -75,3 +76,9 @@ def get_ete_tree(root_node, format=str):
     ete_root_node = Tree(name=format(root_node))
     add_children(root_node, ete_root_node)
     return ete_root_node
+
+
+def load_obj(obj_path):
+    module_path, obj_name = obj_path.rsplit('.', 1)
+    _mod = import_module(module_path)
+    return getattr(_mod, obj_name)
