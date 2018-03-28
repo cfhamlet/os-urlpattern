@@ -19,7 +19,7 @@ class PatternUnit(object):
         return self._rules
 
     @property
-    def num(self):  # return negative means '+'
+    def num(self):  # return negative means wildcard '+'
         return self._num
 
     def __str__(self):

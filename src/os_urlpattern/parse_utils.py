@@ -1,23 +1,15 @@
 import copy
 import hashlib
-from .compat import ParseResult, urlparse
 
-from .compat import StringIO
+from .compat import ParseResult, StringIO, urlparse
 from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
                          DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
                          LITERAL_RULES_PRIFIX, QUERY_PART_RESERVED_CHARS,
                          SIGN_RULE_SET)
+from .exceptions import InvalidPatternException, IrregularURLException
 
 MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
 MIXED_RULE_SET.add('%')
-
-
-class IrregularURLException(Exception):
-    pass
-
-
-class InvalidPatternException(Exception):
-    pass
 
 
 class URLMeta(object):
