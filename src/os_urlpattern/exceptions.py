@@ -4,3 +4,7 @@ class IrregularURLException(Exception):
 
 class InvalidPatternException(Exception):
     pass
+
+
+class InvalidCharException(Exception):
+    pass

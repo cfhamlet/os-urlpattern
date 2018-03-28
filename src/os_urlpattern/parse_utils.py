@@ -6,7 +6,8 @@ from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
                          DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
                          LITERAL_RULES_PRIFIX, QUERY_PART_RESERVED_CHARS,
                          SIGN_RULE_SET)
-from .exceptions import InvalidPatternException, IrregularURLException
+from .exceptions import (InvalidCharException, InvalidPatternException,
+                         IrregularURLException)
 
 MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
 MIXED_RULE_SET.add('%')
@@ -379,7 +380,10 @@ class PieceParser(object):
 
     def _define(self, char):
         last_rule = self._rule_list[-1] if self._rule_list else None
-        rule = CHAR_RULE_DICT[char]
+        try:
+            rule = CHAR_RULE_DICT[char]
+        except KeyError as e:
+            raise InvalidCharException('Invalid char %s' % e)
 
         if last_rule != rule:
             self._piece_list.append(StringIO())

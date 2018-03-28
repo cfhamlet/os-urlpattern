@@ -8,7 +8,8 @@ import time
 from collections import Counter
 from logging.config import dictConfig
 
-from .exceptions import InvalidPatternException, IrregularURLException
+from .exceptions import (InvalidCharException, InvalidPatternException,
+                         IrregularURLException)
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
 from .utils import LogSpeedAdapter, load_obj
@@ -98,7 +99,9 @@ class MakePatternCommand(Command):
                 if pattern_maker.load(url):
                     stats['UNIQ'] += 1
                 stats['VALID'] += 1
-            except (InvalidPatternException, IrregularURLException) as e:
+            except (InvalidPatternException,
+                    IrregularURLException,
+                    InvalidCharException) as e:
                 self._logger.warn('%s, %s' % (str(e), url))
                 stats['INVALID'] += 1
                 continue
