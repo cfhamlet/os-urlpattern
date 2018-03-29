@@ -4,6 +4,7 @@ from collections import Counter
 from .cluster_node import (BaseView, ClusterNode, FuzzyView,
                            LastDotSplitFuzzyView, LengthView, MixedView,
                            PieceView)
+from .compat import iteritems, itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .parse_utils import URLMeta, number_rule, wildcard_rule
 from .pattern import Pattern
@@ -61,22 +62,22 @@ class ClusterNodeViewPack(object):
         self._count += node_view.count
 
     def iter_node_views(self):
-        for view_bag in self._packs.itervalues():
+        for view_bag in itervalues(self._packs):
             for node_view in view_bag:
                 yield node_view
 
     def iter_items(self):
-        return self._packs.iteritems()
+        return iteritems(self._packs)
 
     def iter_values(self):
-        return self._packs.itervalues()
+        return itervalues(self._packs)
 
     @property
     def count(self):
         return self._count
 
     def set_pattern(self, pattern, cluster_name):
-        for bag in self._packs.itervalues():
+        for bag in itervalues(self._packs):
             bag.set_pattern(pattern, cluster_name)
 
     def pick_node_view(self):
@@ -106,22 +107,22 @@ class ViewPack(object):
         self._count += node_view.count
 
     def iter_node_views(self):
-        for view_pack in self._packs.itervalues():
+        for view_pack in itervalues(self._packs):
             for node_view in view_pack.iter_node_views():
                 yield node_view
 
     def iter_values(self):
-        return self._packs.itervalues()
+        return itervalues(self._packs)
 
     def iter_items(self):
-        return self._packs.iteritems()
+        return iteritems(self._packs)
 
     @property
     def count(self):
         return self._count
 
     def set_pattern(self, pattern, cluster_name):
-        for pack in self._packs.itervalues():
+        for pack in itervalues(self._packs):
             pack.set_pattern(pattern, cluster_name)
 
     def __len__(self):
@@ -448,6 +449,9 @@ class ClusterProcessor(object):
             for c in cluster.cluster():
                 self._process(c)
 
+    def _preprocess(self):
+        pass
+
     def process(self):
         self._process(self._entry_cluster)
         if self._meta_info.is_last_level():
@@ -462,11 +466,14 @@ class ClusterProcessor(object):
             next_processor = next_level_processors[pattern]
             for child in node.children:
                 next_processor.add_node(child)
-        for processor in next_level_processors.itervalues():
+        for processor in itervalues(next_level_processors):
             processor.process()
 
 
-def cluster(config, url_meta, piece_pattern_tree):
+def cluster(config, url_meta, piece_pattern_tree, **kwargs):
+    min_cluster_num = config.getint('make', 'min_cluster_num')
+    if piece_pattern_tree.count < min_cluster_num:
+        return
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info)
     processor.add_node(piece_pattern_tree.root)

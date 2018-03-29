@@ -362,11 +362,11 @@ class PieceParser(object):
     def parse(self, piece):
         if piece not in self._cache:
             self._reset()
-            self._pre_process(piece)
+            self._preprocess(piece)
             self._cache[piece] = self._create_parsed_piece()
         return self._cache[piece]
 
-    def _pre_process(self, piece):
+    def _preprocess(self, piece):
         for c in piece:
             self._define(c)
         l = len(self._piece_list)
@@ -403,7 +403,7 @@ class PieceParser(object):
 def struct_id(url_meta, parsed_pieces):
     meta_hash = url_meta.hashcode
     pieces_hash = hashlib.md5(
-        '/'.join([p.fuzzy_rule for p in parsed_pieces])).hexdigest()
+        '/'.join([p.fuzzy_rule for p in parsed_pieces]).encode()).hexdigest()
     return '-'.join((meta_hash, pieces_hash))
 
 

@@ -4,7 +4,7 @@ import re
 class PatternUnit(object):
     def __init__(self, pattern_unit_string):
         self._pattern_unit_string = pattern_unit_string
-        from parse_utils import parse_pattern_unit_string
+        from .parse_utils import parse_pattern_unit_string
         self._rules, self._num = parse_pattern_unit_string(pattern_unit_string)
         self._fuzzy_rule = None
 

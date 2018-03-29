@@ -1,5 +1,4 @@
 from .parse_utils import PieceParser, parse_url, struct_id
-from .pattern_cluster_alpha import cluster
 from .pattern_tree import PatternTree
 from .piece_pattern_tree import PiecePatternTree
 from .utils import load_obj
@@ -34,7 +33,7 @@ class Maker(object):
         self._config = config
         self._url_meta = url_meta
         self._piece_pattern_tree = PiecePatternTree()
-        self._cluster_algorithm = self._config.get('make', 'cluster_algorithm', True)
+        self._cluster_algorithm = self._config.get('make', 'cluster_algorithm')
 
     def load(self, parsed_pieces, count=1, uniq_path=True):
         return self._piece_pattern_tree.add_from_parsed_pieces(
