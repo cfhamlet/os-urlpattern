@@ -444,6 +444,10 @@ class ClusterProcessor(object):
     def add_node(self, node):
         self._entry_cluster.add_cluster_node(ClusterNode(node))
 
+    def add_children(self, node):
+        for child in node.children:
+            self.add_node(child)
+
     def _process(self, cluster):
         if cluster is not None:
             for c in cluster.cluster():
@@ -463,9 +467,8 @@ class ClusterProcessor(object):
             if pattern not in next_level_processors:
                 next_level_processors[pattern] = ClusterProcessor(
                     self._config, next_level_meta_info)
-            next_processor = next_level_processors[pattern]
-            for child in node.children:
-                next_processor.add_node(child)
+            next_level_processor = next_level_processors[pattern]
+            next_level_processor.add_children(node)
         for processor in itervalues(next_level_processors):
             processor.process()
 
