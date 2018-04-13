@@ -8,9 +8,9 @@ from .piece_pattern_tree import PiecePatternTree
 from .utils import Bag
 
 
-class CountBag(Bag):
+class TBag(Bag):
     def __init__(self):
-        super(CountBag, self).__init__()
+        super(TBag, self).__init__()
         self._count = 0
 
     @property
@@ -18,8 +18,12 @@ class CountBag(Bag):
         return self._count
 
     def add(self, obj):
-        super(CountBag, self).add(obj)
+        super(TBag, self).add(obj)
         self._count += obj.count
+
+    def set_pattern(self, pattern):
+        for obj in self:
+            obj.set_pattern(pattern)
 
 
 class PatternCluster(object):
@@ -57,7 +61,7 @@ class PiecePatternCluster(PatternCluster):
     def add(self, piece_pattern_node):
         piece = piece_pattern_node.piece
         if piece not in self._piece_bags:
-            self._piece_bags[piece] = CountBag()
+            self._piece_bags[piece] = TBag()
         self._piece_bags[piece].add(piece_pattern_node)
 
     def _create_forward_cluster(self):
@@ -110,7 +114,7 @@ class LengthPatternCluster(PatternCluster):
     def add(self, piece_bag):
         piece_length = piece_bag.pick().parsed_piece.piece_length
         if piece_length not in self._length_bags:
-            self._length_bags[piece_length] = CountBag()
+            self._length_bags[piece_length] = TBag()
         self._length_bags[piece_length].add(piece_bag)
 
     def _cluster(self):
