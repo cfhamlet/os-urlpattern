@@ -1,11 +1,11 @@
 from collections import Counter
 
-from .compat import itervalues, iteritems
-from .utils import Bag
+from .compat import iteritems, itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .parse_utils import URLMeta, number_rule, wildcard_rule
 from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternTree
+from .utils import Bag
 
 
 class CountBag(Bag):
@@ -90,12 +90,11 @@ class PiecePatternCluster(PatternCluster):
                 return False
             else:
                 for child in parrent.iter_children():
-                    if child.piece == node.piece:
-                        continue
-                    if self._piece_bags[child.piece].count < self._min_cluster_num:
+                    if child.piece != node.piece and \
+                            self._piece_bags[child.piece].count < self._min_cluster_num:
                         sands.add(child.piece)
-        if len(sands) >= self._min_cluster_num - 1:
-            return False
+                        if len(sands) >= self._min_cluster_num - 1:
+                            return False
         return True
 
     def _forward_clusters(self):
@@ -105,6 +104,21 @@ class PiecePatternCluster(PatternCluster):
 class LengthPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(LengthPatternCluster, self).__init__(config, meta_info)
+        self._length_bags = {}
+        self._forward_cluster = FuzzyPatternCluster(config, meta_info)
+
+    def add(self, piece_bag):
+        piece_length = piece_bag.pick().parsed_piece.piece_length
+        if piece_length not in self._length_bags:
+            self._length_bags[piece_length] = CountBag()
+        self._length_bags[piece_length].add(piece_bag)
+
+    def _cluster(self):
+        for length, bag in iteritems(self._length_bags):
+            pass
+
+    def _forward_clusters(self):
+        yield self._forward_cluster
 
 
 class MultiPartPatternCluster(PatternCluster):
@@ -114,6 +128,11 @@ class MultiPartPatternCluster(PatternCluster):
 class BasePatternCluster(MultiPartPatternCluster):
     def __init__(self, config, meta_info):
         super(BasePatternCluster, self).__init__(config, meta_info)
+
+
+class FuzzyPatternCluster(PatternCluster):
+    def __init__(self, config, meta_info):
+        super(FuzzyPatternCluster, self).__init__(config, meta_info)
 
 
 class MetaInfo(object):
