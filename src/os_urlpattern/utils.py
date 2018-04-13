@@ -4,6 +4,39 @@ import time
 from importlib import import_module
 
 
+class Bag(object):
+    def __init__(self):
+        self._objs = []
+
+    def add(self, obj):
+        self._objs.append(obj)
+
+    def __len__(self):
+        return len(self._objs)
+
+    def _pick(self, obj):
+        if isinstance(obj, Bag):
+            return self._pick(obj[0])
+        return obj
+
+    def __getitem__(self, idx):
+        return self._objs[idx]
+
+    def pick(self):
+        return self._pick(self._objs[0])
+
+    def __iter__(self):
+        return iter(self._objs)
+
+    def iter_all(self):
+        for obj in self._objs:
+            if isinstance(obj, Bag):
+                for o in obj.iter_all():
+                    yield o
+            else:
+                yield obj
+
+
 class Stack(object):
     def __init__(self):
         self._objs = []

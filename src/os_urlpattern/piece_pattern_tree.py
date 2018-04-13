@@ -1,5 +1,6 @@
 from .parse_utils import EMPTY_PARSED_PIECE
 from .pattern import Pattern
+from .compat import itervalues
 
 
 class PiecePatternNode(object):
@@ -52,10 +53,11 @@ class PiecePatternNode(object):
         return self._parsed_piece
 
     @property
-    def children(self):
-        if not self._children:
-            return None
-        return self._children.values()
+    def children_num(self):
+        return len(self._children)
+
+    def iter_children(self):
+        return itervalues(self._children)
 
     @property
     def count(self):
@@ -94,7 +96,7 @@ class PiecePatternNode(object):
         if not self._children:
             yield path_list
             return
-        for child in self.children:
+        for child in self.iter_children():
             for path in child._dump_paths(path_list):
                 yield path
             path_list.pop(-1)
