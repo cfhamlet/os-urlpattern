@@ -79,26 +79,32 @@ class PiecePatternCluster(PatternCluster):
             self._forward_cluster = self._create_forward_cluster()
 
         for _, bag in iteritems(self._piece_bags):
-            if not self._keep(bag):
+            if not self._use_piece_pattern(bag):
                 self._forward_cluster.add(bag)
 
-    def _keep(self, bag):
+    def _use_piece_pattern(self, bag):
         if bag.count < self._min_cluster_num:
             return False
+
         sands = set()
         for node in bag:
-            parrent = node.parrent
-            if parrent.children_num == 1:
+            p_node = node.parrent
+            g_node = p_node.parrent
+
+            if p_node.children_num == 1:
                 continue
-            elif parrent.children_num >= self._min_cluster_num:
+            elif p_node.children_num >= self._min_cluster_num:
                 return False
             else:
-                for child in parrent.iter_children():
-                    if child.piece != node.piece and \
-                            self._piece_bags[child.piece].count < self._min_cluster_num:
-                        sands.add(child.piece)
+                for bro in p_node.iter_children():
+                    if bro.piece == node.piece:
+                        continue
+                    if self._piece_bags[bro.piece].count < self._min_cluster_num:
+                        sands.add(bro.piece)
                         if len(sands) >= self._min_cluster_num - 1:
                             return False
+                    else:
+                        return False
         return True
 
     def _forward_clusters(self):
@@ -117,9 +123,29 @@ class LengthPatternCluster(PatternCluster):
             self._length_bags[piece_length] = TBag()
         self._length_bags[piece_length].add(piece_bag)
 
+    def _use_length_pattern(self, bag):
+        if bag.count < self._min_cluster_num:
+            return False
+        return True
+
     def _cluster(self):
+        if len(self._length_bags) == 1:
+            length, bag = self._length_bags.popitem()
+            if len(bag) >= self._min_cluster_num:
+                pattern = Pattern(number_rule(
+                    bag.pick().parsed_piece.fuzzy_rule, length))
+                bag.set_pattern(pattern)
+            else:
+                self._forward_cluster.add(bag)
+            return
+
         for length, bag in iteritems(self._length_bags):
-            pass
+            if self._use_length_pattern(bag):
+                pattern = Pattern(number_rule(
+                    bag.pick().parsed_piece.fuzzy_rule, length))
+                bag.set_pattern(pattern)
+            else:
+                self._forward_cluster.add(bag)
 
     def _forward_clusters(self):
         yield self._forward_cluster
@@ -137,6 +163,9 @@ class BasePatternCluster(MultiPartPatternCluster):
 class FuzzyPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(FuzzyPatternCluster, self).__init__(config, meta_info)
+
+    def add(self, length_bag):
+        pass
 
 
 class MetaInfo(object):
