@@ -47,6 +47,35 @@ class PatternCluster(object):
         pass
 
 
+class Sieve(object):
+    def sift(self, node):
+        pass
+
+
+class SingleTypeSieve(Sieve):
+    def __init__(self):
+        self._length_stats = Counter()
+
+    def sift(self, node):
+        length = node.parsed_piece.piece_length
+        self._length_stats[length] += 1
+        if len(self._length_stats) > 1:
+            return True
+        return False
+
+
+class MultiTypeSieve(Sieve):
+    def sift(self, node):
+        pass
+
+
+def create_sieve(node):
+    sieve_cls = SingleTypeSieve
+    if len(node.parsed_piece.pieces) > 1:
+        sieve_cls = MultiTypeSieve
+    return sieve_cls()
+
+
 class PiecePatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(PiecePatternCluster, self).__init__(config, meta_info)
@@ -87,15 +116,18 @@ class PiecePatternCluster(PatternCluster):
             return False
 
         sands = set()
+        sieve = create_sieve(bag.pick().parrent)
+
         for node in bag:
             p_node = node.parrent
-            g_node = p_node.parrent
 
-            if p_node.children_num == 1:
-                continue
-            elif p_node.children_num >= self._min_cluster_num:
+            if p_node.children_num >= self._min_cluster_num:
                 return False
             else:
+                if sieve.sift(p_node):
+                    return False
+                if p_node.children_num == 1:
+                    continue
                 for bro in p_node.iter_children():
                     if bro.piece == node.piece:
                         continue
@@ -105,6 +137,7 @@ class PiecePatternCluster(PatternCluster):
                             return False
                     else:
                         return False
+
         return True
 
     def _forward_clusters(self):
