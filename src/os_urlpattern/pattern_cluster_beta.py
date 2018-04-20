@@ -6,6 +6,7 @@ from .parse_utils import URLMeta, number_rule, wildcard_rule
 from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternTree
 from .utils import Bag
+from .node_viewer import PieceViewer, LengthViewer, BaseViewer, MixedViewer
 
 
 class TBag(Bag):
@@ -47,33 +48,51 @@ class PatternCluster(object):
         pass
 
 
-class Sieve(object):
-    def sift(self, node):
-        pass
+class CmpBucket(object):
+    def __init__(self, viewer_cls_list):
+        self._viewer_cls_list = viewer_cls_list
+        self._viewer_cls_idx = 0
+        self._last_viewer = None
+
+    def _get_viewer_cls(self):
+        return self._viewer_cls_list[self._viewer_cls_idx]
+
+    def _next_viewer_cls(self):
+        if self._get_viewer_cls() is None:
+            return None
+        self._viewer_cls_idx += 1
+        return self._get_viewer_cls()
+
+    def fill(self, node):
+        if self._last_viewer is None:
+            v_cls = self._get_viewer_cls()
+            self._last_viewer = v_cls(node)
+        else:
+            while self._get_viewer_cls() is not None:
+                v_cls = self._get_viewer_cls()
+                viewer = v_cls(node)
+                if self._last_viewer.view() != viewer.view():
+                    self._next_viewer_cls()
+                else:
+                    return True
+            return False
+
+        return True
 
 
-class SingleTypeSieve(Sieve):
-    def __init__(self):
-        self._length_stats = Counter()
-
-    def sift(self, node):
-        length = node.parsed_piece.piece_length
-        self._length_stats[length] += 1
-        if len(self._length_stats) > 1:
-            return True
-        return False
-
-
-class MultiTypeSieve(Sieve):
-    def sift(self, node):
-        pass
-
-
-def create_sieve(node):
-    sieve_cls = SingleTypeSieve
+def create_cmp_bucket(node):
+    cls_list = None
     if len(node.parsed_piece.pieces) > 1:
-        sieve_cls = MultiTypeSieve
-    return sieve_cls()
+        cls_list = [PieceViewer,
+                    BaseViewer,
+                    MixedViewer,
+                    LengthViewer,
+                    None, ]
+    else:
+        cls_list = [PieceViewer,
+                    LengthViewer,
+                    None, ]
+    return CmpBucket(cls_list)
 
 
 class PiecePatternCluster(PatternCluster):
@@ -116,7 +135,7 @@ class PiecePatternCluster(PatternCluster):
             return False
 
         sands = set()
-        sieve = create_sieve(bag.pick().parrent)
+        bucket = create_cmp_bucket(bag.pick().parrent)
 
         for node in bag:
             p_node = node.parrent
@@ -124,7 +143,7 @@ class PiecePatternCluster(PatternCluster):
             if p_node.children_num >= self._min_cluster_num:
                 return False
             else:
-                if sieve.sift(p_node):
+                if not bucket.fill(p_node):
                     return False
                 if p_node.children_num == 1:
                     continue
