@@ -151,7 +151,7 @@ class PiecePatternCluster(PatternCluster):
             return NO_PATTERN
 
         sands = set()
-        bucket = create_cmp_bucket(bag.pick().parrent)
+        bucket = create_cmp_bucket(piece_bag.pick().parrent)
 
         for node in piece_bag:
             p_node = node.parrent
@@ -209,23 +209,18 @@ class LengthPatternCluster(PatternCluster):
                 return False
         return True
 
-    def _direct_check(self, bag):
-        num = len(bag)
+    def _direct_check(self, length_bag):
+        num = len(length_bag)
         if num == 1:
             return NO_PATTERN
         elif num < self._min_cluster_num:
-            pass
-        else:
-            pass
+            if length_bag.count < self._min_cluster_num:
+                return NO_PATTERN
 
+        self._set_pattern(length_bag)
 
-        if bag.count < self._min_cluster_num:
-            return NO_PATTERN
-        if len(bag) < self._min_cluster_num:
-            return NO_PATTERN
-
-        bucket = create_cmp_bucket(bag.pick().parrent)
-        for node in bag.iter_all():
+        bucket = create_cmp_bucket(length_bag.pick().parrent)
+        for node in length_bag.iter_all():
             p_node = node.parrent
             if not bucket.add_and_check(p_node):
                 return NO_PATTERN
@@ -233,32 +228,17 @@ class LengthPatternCluster(PatternCluster):
         return (True, bucket)
 
     def _cluster(self):
-        if len(self._length_bags) == 1:
-            length, length_bag = self._length_bags.popitem()
-            if len(length_bag) >= self._min_cluster_num:
-                self._set_pattern(length_bag, length)
-            else:
-                sands = 0
-                blocks = 0
-                for piece_bag in length_bag:
-                    if piece_bag.count >= self._min_cluster_num:
-                        blocks += 1
-                    else:
-                        sands += 1
-                if sands > 0 and blocks > 0:
-                    return
 
         for length, length_bag in iteritems(self._length_bags):
             patterned, bucket = self._direct_check(length_bag)
             if not patterned or not self._deep_check(bucket):
                 self._forward_cluster.add(length_bag)
-            else:
-                self._set_pattern(length_bag, length)
 
-    def _set_pattern(self, bag, length):
-        pattern = Pattern(number_rule(
-            bag.pick().parsed_piece.fuzzy_rule, length))
-        bag.set_pattern(pattern)
+    def _set_pattern(self, length_bag):
+        pp = length_bag.pick().parsed_piece
+        length = pp.piece_length
+        pattern = Pattern(number_rule(pp.fuzzy_rule, length))
+        length_bag.set_pattern(pattern)
 
     def _forward_clusters(self):
         yield self._forward_cluster
@@ -276,22 +256,24 @@ class BasePatternCluster(MultiPartPatternCluster):
 class FuzzyPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(FuzzyPatternCluster, self).__init__(config, meta_info)
-        self._cached_piece_bags = {}
+        self._cached_bag = TBag()
         self._force_pattern = False
 
-    def add(self, c_bag):
+    def add(self, bag):
         if self._force_pattern:
-            self._set_pattern(c_bag)
-            return
-        for piece_bag in c_bag:
-            piece = piece_bag.pick().piece
-            if piece not in self._cached_piece_bags:
-                self._cached_piece_bags[piece] = TBag()
-            self._cached_piece_bags[piece].add(piece_bag)
-            if len(self._cached_piece_bags) >= self._min_cluster_num:
+            self._set_pattern(bag)
+        else:
+            self._cached_bag.add(bag)
+            if len(self._cached_bag) > 1 and self._cached_bag.count >= self._min_cluster_num:
+                self._force_pattern = True
+
+    def _cluster(self):
+        if self._force_pattern:
+            self._set_pattern(self._cached_bag)
 
     def _set_pattern(self, bag):
-        pass
+        pattern = Pattern(wildcard_rule(bag.pick().parsed_piece.fuzzy_rule))
+        bag.set_pattern(pattern)
 
 
 class MetaInfo(object):
