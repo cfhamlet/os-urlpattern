@@ -233,13 +233,15 @@ class FuzzyPatternCluster(PatternCluster):
         super(FuzzyPatternCluster, self).__init__(config, meta_info)
         self._cached_bag = CBag()
         self._force_pattern = False
+        self._fuzzy_pattern = None
 
     def add(self, bag):
         if self._force_pattern:
             self._set_pattern(bag)
         else:
             self._cached_bag.add(bag)
-            if len(self._cached_bag) > 1 and self._cached_bag.count >= self._min_cluster_num:
+            if len(self._cached_bag) > 1 \
+                    and self._cached_bag.count >= self._min_cluster_num:
                 self._force_pattern = True
 
     def _cluster(self):
@@ -247,8 +249,10 @@ class FuzzyPatternCluster(PatternCluster):
             self._set_pattern(self._cached_bag)
 
     def _set_pattern(self, bag):
-        pattern = Pattern(wildcard_rule(bag.pick().parsed_piece.fuzzy_rule))
-        bag.set_pattern(pattern)
+        if self._fuzzy_pattern is None:
+            self._fuzzy_pattern = Pattern(
+                wildcard_rule(bag.pick().parsed_piece.fuzzy_rule))
+        bag.set_pattern(self._force_pattern)
 
 
 class MetaInfo(object):
