@@ -1,19 +1,17 @@
-from collections import Counter
-
-from .compat import iteritems, itervalues
+from .compat import itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
+from .node_viewer import BaseViewer, LengthViewer, MixedViewer, PieceViewer
 from .parse_utils import URLMeta, number_rule, wildcard_rule
 from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternTree
 from .utils import Bag
-from .node_viewer import PieceViewer, LengthViewer, BaseViewer, MixedViewer
 
-NO_PATTERN = (False, None)
+NOT_PATTERN = (False, None)
 
 
-class TBag(Bag):
+class CBag(Bag):
     def __init__(self):
-        super(TBag, self).__init__()
+        super(CBag, self).__init__()
         self._count = 0
 
     @property
@@ -21,7 +19,7 @@ class TBag(Bag):
         return self._count
 
     def add(self, obj):
-        super(TBag, self).add(obj)
+        super(CBag, self).add(obj)
         self._count += obj.count
 
     def set_pattern(self, pattern):
@@ -50,7 +48,7 @@ class PatternCluster(object):
         pass
 
 
-class CmpBucket(object):
+class TBucket(object):
     def __init__(self, viewer_cls_list):
         self._viewer_cls_list = viewer_cls_list
         self._viewer_cls_idx = 0
@@ -77,22 +75,22 @@ class CmpBucket(object):
         return self._last_viewer.view() == viewer.view()
 
     def add_and_check(self, node):
-        self._nodes.add(node)
         if self._last_viewer is None:
             v_cls = self._get_viewer_cls()
             self._last_viewer = v_cls(node)
-        else:
-            while self._get_viewer_cls() is not None:
-                if self.check(node):
-                    return True
-                else:
-                    self._next_viewer_cls()
-            return False
+            self._nodes.add(node)
+            return True
 
-        return True
+        while self._get_viewer_cls() is not None:
+            if self.check(node):
+                self._nodes.add(node)
+                return True
+            else:
+                self._next_viewer_cls()
+        return False
 
 
-def create_cmp_bucket(node):
+def create_tbucket(node):
     cls_list = None
     if len(node.parsed_piece.pieces) > 1:
         cls_list = [PieceViewer,
@@ -104,14 +102,36 @@ def create_cmp_bucket(node):
         cls_list = [PieceViewer,
                     LengthViewer,
                     None, ]
-    return CmpBucket(cls_list)
+    return TBucket(cls_list)
+
+
+class PBag(CBag):
+    def __init__(self):
+        super(PBag, self).__init__()
+        self._skip = False
+        self._p_nodes = set()
+
+    @property
+    def skip(self):
+        return self._skip
+
+    @skip.setter
+    def skip(self, skip):
+        self._skip = skip
+
+    def add(self, piece_node):
+        super(PBag, self).add(piece_node)
+        self._p_nodes.add(piece_node.parrent)
+
+    @property
+    def p_nodes(self):
+        return self._p_nodes
 
 
 class PiecePatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(PiecePatternCluster, self).__init__(config, meta_info)
         self._piece_bags = {}
-        self._p_nodes = set()
         self._forward_cluster = None
 
     def iter_nodes(self):
@@ -122,9 +142,27 @@ class PiecePatternCluster(PatternCluster):
     def add(self, piece_pattern_node):
         piece = piece_pattern_node.piece
         if piece not in self._piece_bags:
-            self._piece_bags[piece] = TBag()
-        self._piece_bags[piece].add(piece_pattern_node)
-        self._p_nodes.add(piece_pattern_node.parrent)
+            self._piece_bags[piece] = PBag()
+        bag = self._piece_bags[piece]
+        bag.add(piece_pattern_node)
+        if bag.skip or bag.count < self._min_cluster_num:
+            return
+
+        p_node = piece_pattern_node.parrent
+        if p_node is None or p_node.children_num == 1:
+            return
+
+        for b_node in p_node.iter_children():
+            b_piece = b_node.piece
+            if b_piece == piece:
+                continue
+            if b_piece not in self._piece_bags:
+                continue
+            b_bag = self._piece_bags[b_piece]
+            if b_bag.count >= self._min_cluster_num:
+                b_bag.skip = True
+                bag.skip = True
+                break
 
     def _create_forward_cluster(self):
         cluster_cls = LengthPatternCluster
@@ -141,46 +179,9 @@ class PiecePatternCluster(PatternCluster):
         if self._forward_cluster is None:
             self._forward_cluster = self._create_forward_cluster()
 
-        for _, piece_bag in iteritems(self._piece_bags):
-            patterned, bucket = self._direct_check(piece_bag)
-            if not patterned or not self._deep_check(bucket):
+        for piece_bag in itervalues(self._piece_bags):
+            if piece_bag.skip or piece_bag.count < self._min_cluster_num:
                 self._forward_cluster.add(piece_bag)
-
-    def _direct_check(self, piece_bag):
-        if piece_bag.count < self._min_cluster_num:
-            return NO_PATTERN
-
-        sands = set()
-        bucket = create_cmp_bucket(piece_bag.pick().parrent)
-
-        for node in piece_bag:
-            p_node = node.parrent
-
-            if p_node.children_num >= self._min_cluster_num:
-                return NO_PATTERN
-            else:
-                if not bucket.add_and_check(p_node):
-                    return NO_PATTERN
-                if p_node.children_num == 1:
-                    continue
-                for bro in p_node.iter_children():
-                    if bro.piece == node.piece:
-                        continue
-                    if self._piece_bags[bro.piece].count < self._min_cluster_num:
-                        sands.add(bro.piece)
-                        if len(sands) >= self._min_cluster_num - 1:
-                            return NO_PATTERN
-                    else:
-                        return NO_PATTERN
-
-        return (True, bucket)
-
-    def _deep_check(self, bucket):
-        nodes = self._p_nodes - bucket.nodes()
-        for node in nodes:
-            if bucket.check(node):
-                return False
-        return True
 
     def _forward_clusters(self):
         yield self._forward_cluster
@@ -191,53 +192,24 @@ class LengthPatternCluster(PatternCluster):
         super(LengthPatternCluster, self).__init__(config, meta_info)
         self._forward_cluster = FuzzyPatternCluster(config, meta_info)
         self._length_bags = {}
-        self._p_nodes = set()
 
     def add(self, piece_bag):
         piece_length = piece_bag.pick().parsed_piece.piece_length
         if piece_length not in self._length_bags:
-            self._length_bags[piece_length] = TBag()
+            self._length_bags[piece_length] = CBag()
         self._length_bags[piece_length].add(piece_bag)
-        for node in piece_bag.iter_all():
-            p_node = node.parrent
-            self._p_nodes.add(p_node)
-
-    def _deep_check(self, bucket):
-        nodes = self._p_nodes - bucket.nodes()
-        for node in nodes:
-            if bucket.check(node):
-                return False
-        return True
-
-    def _direct_check(self, length_bag):
-        num = len(length_bag)
-        if num == 1:
-            return NO_PATTERN
-        elif num < self._min_cluster_num:
-            if length_bag.count < self._min_cluster_num:
-                return NO_PATTERN
-
-        self._set_pattern(length_bag)
-
-        bucket = create_cmp_bucket(length_bag.pick().parrent)
-        for node in length_bag.iter_all():
-            p_node = node.parrent
-            if not bucket.add_and_check(p_node):
-                return NO_PATTERN
-
-        return (True, bucket)
 
     def _cluster(self):
 
-        for length, length_bag in iteritems(self._length_bags):
+        for length_bag in itervalues(self._length_bags):
             patterned, bucket = self._direct_check(length_bag)
             if not patterned or not self._deep_check(bucket):
                 self._forward_cluster.add(length_bag)
 
     def _set_pattern(self, length_bag):
-        pp = length_bag.pick().parsed_piece
-        length = pp.piece_length
-        pattern = Pattern(number_rule(pp.fuzzy_rule, length))
+        parsed_piece = length_bag.pick().parsed_piece
+        length = parsed_piece.piece_length
+        pattern = Pattern(number_rule(parsed_piece.fuzzy_rule, length))
         length_bag.set_pattern(pattern)
 
     def _forward_clusters(self):
@@ -252,11 +224,14 @@ class BasePatternCluster(MultiPartPatternCluster):
     def __init__(self, config, meta_info):
         super(BasePatternCluster, self).__init__(config, meta_info)
 
+    def add(self, piece_bag):
+        pass
+
 
 class FuzzyPatternCluster(PatternCluster):
     def __init__(self, config, meta_info):
         super(FuzzyPatternCluster, self).__init__(config, meta_info)
-        self._cached_bag = TBag()
+        self._cached_bag = CBag()
         self._force_pattern = False
 
     def add(self, bag):
