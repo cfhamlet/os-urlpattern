@@ -245,7 +245,12 @@ class FuzzyPatternCluster(PatternCluster):
                 self._force_pattern = True
 
     def _cluster(self):
-        if self._force_pattern or (len(self._cached_bag) - self._iso_count) > 1:
+        if self._force_pattern \
+            or (len(self._cached_bag) > 1
+                and self._cached_bag.count >= self._min_cluster_num
+                and not (len(self._cached_bag) == 2
+                         and self._iso_count == 1
+                         and (self._cached_bag.count - 1) >= self._min_cluster_num)):
             self._set_pattern(self._cached_bag)
 
     def _set_pattern(self, bag):
