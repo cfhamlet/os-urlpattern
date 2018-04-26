@@ -200,10 +200,8 @@ class LengthPatternCluster(PatternCluster):
         self._length_bags[piece_length].add(piece_bag)
 
     def _cluster(self):
-
         for length_bag in itervalues(self._length_bags):
-            patterned, bucket = self._direct_check(length_bag)
-            if not patterned or not self._deep_check(bucket):
+            if length_bag.count < self._min_cluster_num:
                 self._forward_cluster.add(length_bag)
 
     def _set_pattern(self, length_bag):
@@ -234,25 +232,27 @@ class FuzzyPatternCluster(PatternCluster):
         self._cached_bag = CBag()
         self._force_pattern = False
         self._fuzzy_pattern = None
+        self._iso_count = 0
 
     def add(self, bag):
         if self._force_pattern:
             self._set_pattern(bag)
         else:
             self._cached_bag.add(bag)
-            if len(self._cached_bag) > 1 \
-                    and self._cached_bag.count >= self._min_cluster_num:
+            if bag.count == 1:
+                self._iso_count += 1
+            if len(self._cached_bag) >= self._min_cluster_num:
                 self._force_pattern = True
 
     def _cluster(self):
-        if self._force_pattern:
+        if self._force_pattern or (len(self._cached_bag) - self._iso_count) > 1:
             self._set_pattern(self._cached_bag)
 
     def _set_pattern(self, bag):
         if self._fuzzy_pattern is None:
             self._fuzzy_pattern = Pattern(
                 wildcard_rule(bag.pick().parsed_piece.fuzzy_rule))
-        bag.set_pattern(self._force_pattern)
+        bag.set_pattern(self._fuzzy_pattern)
 
 
 class MetaInfo(object):
