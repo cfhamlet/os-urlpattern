@@ -154,16 +154,15 @@ class PiecePatternCluster(PatternCluster):
 
         ppn = piece_pattern_node
         mcn = self._min_cluster_num
-        if ppn.count >= mcn and ((p_node.count - ppn.count >= mcn)
-                                 or (2 * ppn.count - p_node.count < mcn - 1)):
+        if ppn.count >= mcn \
+            and ((p_node.count - ppn.count >= mcn)
+                 or (2 * ppn.count - p_node.count < mcn - 1)):
             bag.skip = True
             return
 
         for b_node in p_node.iter_children():
             b_piece = b_node.piece
-            if b_piece == piece:
-                continue
-            if b_piece not in self._piece_bags:
+            if b_piece == piece or b_piece not in self._piece_bags:
                 continue
             b_bag = self._piece_bags[b_piece]
             if b_bag.count >= self._min_cluster_num:
