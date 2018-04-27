@@ -152,8 +152,10 @@ class PiecePatternCluster(PatternCluster):
         if p_node is None or p_node.children_num == 1:
             return
 
-        if piece_pattern_node.count >= self._min_cluster_num \
-                and p_node.count - piece_pattern_node.count >= self._min_cluster_num:
+        ppn = piece_pattern_node
+        mcn = self._min_cluster_num
+        if ppn.count >= mcn and ((p_node.count - ppn.count >= mcn)
+                                 or (2 * ppn.count - p_node.count < mcn - 1)):
             bag.skip = True
             return
 
@@ -237,26 +239,30 @@ class FuzzyPatternCluster(PatternCluster):
         self._cached_bag = CBag()
         self._force_pattern = False
         self._fuzzy_pattern = None
-        self._iso_count = 0
+        self._mc_bag = None
 
     def add(self, bag):
         if self._force_pattern:
             self._set_pattern(bag)
         else:
             self._cached_bag.add(bag)
-            if bag.count == 1:
-                self._iso_count += 1
+            if self._mc_bag is None or bag.count > self._mc_bag.count:
+                self._mc_bag = bag
             if len(self._cached_bag) >= self._min_cluster_num:
                 self._force_pattern = True
 
     def _cluster(self):
+        if self._cached_bag.count <= 0:
+            return
+        mcn = self._min_cluster_num
+        cbc = self._cached_bag.count
+        mbc = self._mc_bag.count
         if self._force_pattern \
             or (len(self._cached_bag) > 1
-                and self._cached_bag.count >= self._min_cluster_num
-                and not (len(self._cached_bag) == 2
-                         and self._iso_count == 1
-                         and (self._cached_bag.count - 1) >= self._min_cluster_num)
-                ):
+                and cbc >= mcn
+                and (mbc < mcn
+                     or cbc - mbc >= mcn
+                     or 2 * mbc - cbc < mcn - 1)):
             self._set_pattern(self._cached_bag)
 
     def _set_pattern(self, bag):
