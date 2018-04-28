@@ -6,8 +6,6 @@ from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternTree
 from .utils import Bag
 
-NOT_PATTERN = (False, None)
-
 
 class CBag(Bag):
     def __init__(self):
@@ -134,6 +132,9 @@ class PiecePatternCluster(PatternCluster):
         self._piece_bags = {}
         self._forward_cluster = None
 
+    def get_piece_bag(self, piece):
+        return self._piece_bags.get(piece, None)
+
     def iter_nodes(self):
         for bag in itervalues(self._piece_bags):
             for node in bag.iter_all():
@@ -152,11 +153,10 @@ class PiecePatternCluster(PatternCluster):
         if p_node is None or p_node.children_num == 1:
             return
 
-        ppn = piece_pattern_node
+        ppc = piece_pattern_node.count
+        pnc = p_node.count
         mcn = self._min_cluster_num
-        if ppn.count >= mcn \
-            and ((p_node.count - ppn.count >= mcn)
-                 or (2 * ppn.count - p_node.count < mcn - 1)):
+        if ppc >= mcn and ((pnc - ppc >= mcn) or (2 * ppc - pnc < mcn - 1)):
             bag.skip = True
             return
 
@@ -186,8 +186,22 @@ class PiecePatternCluster(PatternCluster):
             self._forward_cluster = self._create_forward_cluster()
 
         for piece_bag in itervalues(self._piece_bags):
-            if piece_bag.skip or piece_bag.count < self._min_cluster_num:
+            if piece_bag.skip \
+                    or piece_bag.count < self._min_cluster_num \
+                    or self._trace_back_skip(piece_bag):
                 self._forward_cluster.add(piece_bag)
+
+    def _trace_back_skip(self, piece_bag):
+        pre_processor = self._processor.pre_level_processor
+        s = sum([pre_processor.get_piece_bag(
+            p.piece).count for p in piece_bag.p_nodes])
+
+        mcn = self._min_cluster_num
+        pbc = piece_bag.count
+        if (s - pbc > mcn) or (2 * pbc - s < mcn - 1):
+            return True
+
+        return False
 
     def _forward_clusters(self):
         yield self._forward_cluster
@@ -295,11 +309,14 @@ class MetaInfo(object):
 
 
 class ClusterProcessor(object):
-    def __init__(self, config, meta_info, pre_processor):
+    def __init__(self, config, meta_info, pre_level_processor):
         self._config = config
         self._meta_info = meta_info
         self._entry_cluster = PiecePatternCluster(self)
-        self._pre_processor = pre_processor
+        self._pre_level_processor = pre_level_processor
+
+    def get_piece_bag(self, piece):
+        return self._entry_cluster.get_piece_bag(piece)
 
     @property
     def meta_info(self):
@@ -310,8 +327,8 @@ class ClusterProcessor(object):
         return self._config
 
     @property
-    def pre_processor(self):
-        return self._pre_processor
+    def pre_level_processor(self):
+        return self._pre_level_processor
 
     def add_node(self, node):
         self._entry_cluster.add(node)
@@ -331,17 +348,21 @@ class ClusterProcessor(object):
             return
 
         next_level_processors = {}
-        next_level_meta_info = self._meta_info.next_level_meta_info()
         for node in self._entry_cluster.iter_nodes():
             pattern = node.pattern
             if pattern not in next_level_processors:
-                next_level_processors[pattern] = ClusterProcessor(
-                    self._config, next_level_meta_info, self)
+                next_level_processors[pattern] = self._create_next_level_processor(
+                )
             next_level_processor = next_level_processors[pattern]
             next_level_processor.add_children(node)
 
         for processor in itervalues(next_level_processors):
             processor.process()
+
+    def _create_next_level_processor(self):
+        return ClusterProcessor(self._config,
+                                self._meta_info.next_level_meta_info(),
+                                self)
 
 
 def split(piece_pattern_tree):
