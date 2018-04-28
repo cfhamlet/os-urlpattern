@@ -23,7 +23,8 @@ Automatically generate URL pattern.
 
 Install
 -------
-  ``$ pip install os-urlpattern``
+
+``$ pip install os-urlpattern``
 
 Usage
 ------
@@ -34,8 +35,10 @@ API
 
 Unit Tests
 ----------
-  ``$ tox``
+
+``$ tox``
 
 License
 --------
+
 MIT licensed.

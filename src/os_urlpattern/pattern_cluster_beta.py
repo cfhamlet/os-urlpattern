@@ -185,11 +185,15 @@ class PiecePatternCluster(PatternCluster):
         if self._forward_cluster is None:
             self._forward_cluster = self._create_forward_cluster()
 
+        iso_piece_bags = []
+
         for piece_bag in itervalues(self._piece_bags):
             if piece_bag.skip \
                     or piece_bag.count < self._min_cluster_num \
                     or self._pre_level_skip(piece_bag):
                 self._forward_cluster.add(piece_bag)
+            else:
+                iso_piece_bags.append(piece_bag)
 
     def _pre_level_skip(self, piece_bag):
         pre_processor = self._processor.pre_level_processor
