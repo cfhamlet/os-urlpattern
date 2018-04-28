@@ -188,10 +188,10 @@ class PiecePatternCluster(PatternCluster):
         for piece_bag in itervalues(self._piece_bags):
             if piece_bag.skip \
                     or piece_bag.count < self._min_cluster_num \
-                    or self._trace_back_skip(piece_bag):
+                    or self._pre_level_skip(piece_bag):
                 self._forward_cluster.add(piece_bag)
 
-    def _trace_back_skip(self, piece_bag):
+    def _pre_level_skip(self, piece_bag):
         pre_processor = self._processor.pre_level_processor
         s = sum([pre_processor.get_piece_bag(
             p.piece).count for p in piece_bag.p_nodes])
