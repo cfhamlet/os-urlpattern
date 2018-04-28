@@ -28,10 +28,10 @@ class CBag(Bag):
 
 
 class PatternCluster(object):
-    def __init__(self, config, meta_info):
-        self._config = config
-        self._meta_info = meta_info
-        self._min_cluster_num = config.getint('make', 'min_cluster_num')
+    def __init__(self, processor):
+        self._processor = processor
+        self._min_cluster_num = processor.config.getint(
+            'make', 'min_cluster_num')
 
     def _cluster(self):
         pass
@@ -129,8 +129,8 @@ class PBag(CBag):
 
 
 class PiecePatternCluster(PatternCluster):
-    def __init__(self, config, meta_info):
-        super(PiecePatternCluster, self).__init__(config, meta_info)
+    def __init__(self, processor):
+        super(PiecePatternCluster, self).__init__(processor)
         self._piece_bags = {}
         self._forward_cluster = None
 
@@ -175,7 +175,7 @@ class PiecePatternCluster(PatternCluster):
         piece_pattern_node = self._piece_bags.values()[0].pick()
         if len(piece_pattern_node.parsed_piece.pieces) > 1:
             cluster_cls = BasePatternCluster
-        return cluster_cls(self._config, self._meta_info)
+        return cluster_cls(self._processor)
 
     def _cluster(self):
         n = len(self._piece_bags)
@@ -194,9 +194,9 @@ class PiecePatternCluster(PatternCluster):
 
 
 class LengthPatternCluster(PatternCluster):
-    def __init__(self, config, meta_info):
-        super(LengthPatternCluster, self).__init__(config, meta_info)
-        self._forward_cluster = FuzzyPatternCluster(config, meta_info)
+    def __init__(self, processor):
+        super(LengthPatternCluster, self).__init__(processor)
+        self._forward_cluster = FuzzyPatternCluster(processor)
         self._length_bags = {}
 
     def add(self, piece_bag):
@@ -225,16 +225,16 @@ class MultiPartPatternCluster(PatternCluster):
 
 
 class BasePatternCluster(MultiPartPatternCluster):
-    def __init__(self, config, meta_info):
-        super(BasePatternCluster, self).__init__(config, meta_info)
+    def __init__(self, processor):
+        super(BasePatternCluster, self).__init__(processor)
 
     def add(self, piece_bag):
         pass
 
 
 class FuzzyPatternCluster(PatternCluster):
-    def __init__(self, config, meta_info):
-        super(FuzzyPatternCluster, self).__init__(config, meta_info)
+    def __init__(self, processor):
+        super(FuzzyPatternCluster, self).__init__(processor)
         self._cached_bag = CBag()
         self._force_pattern = False
         self._fuzzy_pattern = None
@@ -295,11 +295,23 @@ class MetaInfo(object):
 
 
 class ClusterProcessor(object):
-    def __init__(self, config, meta_info, global_processing):
+    def __init__(self, config, meta_info, pre_processor):
         self._config = config
         self._meta_info = meta_info
-        self._global_processing = global_processing
-        self._entry_cluster = PiecePatternCluster(config, meta_info)
+        self._entry_cluster = PiecePatternCluster(self)
+        self._pre_processor = pre_processor
+
+    @property
+    def meta_info(self):
+        return self._meta_info
+
+    @property
+    def config(self):
+        return self._config
+
+    @property
+    def pre_processor(self):
+        return self._pre_processor
 
     def add_node(self, node):
         self._entry_cluster.add(node)
@@ -313,22 +325,21 @@ class ClusterProcessor(object):
             for c in pattern_cluster.cluster():
                 self._process(c)
 
-    def _preprocess(self):
-        pass
-
     def process(self):
         self._process(self._entry_cluster)
         if self._meta_info.is_last_level():
             return
+
         next_level_processors = {}
         next_level_meta_info = self._meta_info.next_level_meta_info()
         for node in self._entry_cluster.iter_nodes():
             pattern = node.pattern
             if pattern not in next_level_processors:
                 next_level_processors[pattern] = ClusterProcessor(
-                    self._config, next_level_meta_info, self._global_processing)
+                    self._config, next_level_meta_info, self)
             next_level_processor = next_level_processors[pattern]
             next_level_processor.add_children(node)
+
         for processor in itervalues(next_level_processors):
             processor.process()
 
@@ -337,20 +348,18 @@ def split(piece_pattern_tree):
     yield
 
 
-def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    global_processing = kwargs.get('global_processing', True)
-    if global_processing and \
-            piece_pattern_tree.count < config.getint('make', 'min_cluster_num'):
-        return
-
+def process(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
-    processor = ClusterProcessor(
-        config, meta_info, global_processing)
+    processor = ClusterProcessor(config, meta_info, None)
     processor.add_node(piece_pattern_tree.root)
     processor.process()
 
+
+def cluster(config, url_meta, piece_pattern_tree, **kwargs):
+    if piece_pattern_tree.count < config.getint('make', 'min_cluster_num'):
+        return
+    process(config, url_meta, piece_pattern_tree, **kwargs)
+
     return
-    if global_processing:
-        for sub_piece_pattern_tree in split(piece_pattern_tree):
-            cluster(config, url_meta, sub_piece_pattern_tree,
-                    global_processing=False)
+    for sub_piece_pattern_tree in split(piece_pattern_tree):
+        process(config, url_meta, sub_piece_pattern_tree)
