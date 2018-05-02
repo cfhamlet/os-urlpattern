@@ -33,7 +33,18 @@ class PatternCluster(object):
         self._min_cluster_num = processor.config.getint(
             'make', 'min_cluster_num')
 
-    def as_cluster_branch(self, nodes):
+    def get_processor(self, n):
+        processor = self._processor
+        while n > 0 and processor is not None:
+            processor = processor.pre_level_processor
+            n -= 1
+        return processor
+
+    @property
+    def pre_level_processor(self):
+        return self._processor.pre_level_processor
+
+    def as_cluster(self, nodes):
         return False
 
     def cluster(self):
@@ -80,8 +91,18 @@ class PiecePatternCluster(PatternCluster):
         super(PiecePatternCluster, self).__init__(processor)
         self._piece_bags = {}
 
-    def as_cluster_branch(self, nodes):
-        return False
+    def as_cluster(self, nodes):
+        pieces = set([node.piece for node in nodes])
+        if len(pieces) >= self._min_cluster_num:
+            return False
+        max_count = 0
+        total_count = 0
+        for piece in pieces:
+            piece_bag = self._piece_bags[piece]
+            if piece_bag.count > max_count:
+                max_count = piece_bag.count
+            total_count += piece_bag.count
+        return not uncertain(total_count, max_count, self._min_cluster_num)
 
     def get_piece_bag(self, piece):
         return self._piece_bags.get(piece, None)
@@ -135,23 +156,29 @@ class PiecePatternCluster(PatternCluster):
         for piece_bag in itervalues(self._piece_bags):
             if piece_bag.skip \
                     or piece_bag.count < self._min_cluster_num \
-                    or self._pre_level_skip(piece_bag) \
-                    or not self._processor.seek_cluster_branch(piece_bag.p_nodes):
+                    or not self.get_processor(1).seek_cluster(piece_bag.p_nodes):
                 forward_cluster.add(piece_bag)
-
-    def _pre_level_skip(self, piece_bag):
-        pre_pp_cluster = self._processor.pre_level_processor.get_cluster(
-            PiecePatternCluster)
-        total = sum([pre_pp_cluster.get_piece_bag(
-            p.piece).count for p in piece_bag.p_nodes])
-
-        return uncertain(total, piece_bag.count, self._min_cluster_num)
 
 
 class LengthPatternCluster(PatternCluster):
     def __init__(self, processor):
         super(LengthPatternCluster, self).__init__(processor)
         self._length_bags = {}
+
+    def as_cluster(self, nodes):
+        lengths = [node.parsed_piece.piece_length for node in nodes]
+        if len(lengths) >= self._min_cluster_num:
+            return False
+
+        max_count = 0
+        total_count = 0
+        for length in lengths:
+            length_bag = self._length_bags[length]
+            if length_bag.count > max_count:
+                max_count = length_bag.count
+            total_count += length_bag.count
+
+        return not uncertain(total_count, max_count, self._min_cluster_num)
 
     def add(self, piece_bag):
         piece_length = piece_bag.pick().parsed_piece.piece_length
@@ -275,9 +302,9 @@ class ClusterProcessor(object):
             [(c.__name__, c(self)) for c in CLUSTER_CLASSES])
         self._pre_level_processor = pre_level_processor
 
-    def seek_cluster_branch(self, nodes):
+    def seek_cluster(self, nodes):
         for c in self._pattern_clusters.itervalues():
-            if c.as_cluster_branch(nodes):
+            if c.as_cluster(nodes):
                 return True
         return False
 
