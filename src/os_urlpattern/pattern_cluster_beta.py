@@ -33,6 +33,9 @@ class PatternCluster(object):
         self._min_cluster_num = processor.config.getint(
             'make', 'min_cluster_num')
 
+    def as_cluster_branch(self, nodes):
+        return False
+
     def cluster(self):
         pass
 
@@ -76,6 +79,9 @@ class PiecePatternCluster(PatternCluster):
     def __init__(self, processor):
         super(PiecePatternCluster, self).__init__(processor)
         self._piece_bags = {}
+
+    def as_cluster_branch(self, nodes):
+        return False
 
     def get_piece_bag(self, piece):
         return self._piece_bags.get(piece, None)
@@ -130,11 +136,8 @@ class PiecePatternCluster(PatternCluster):
             if piece_bag.skip \
                     or piece_bag.count < self._min_cluster_num \
                     or self._pre_level_skip(piece_bag) \
-                    or not self._isolated(piece_bag):
+                    or not self._processor.seek_cluster_branch(piece_bag.p_nodes):
                 forward_cluster.add(piece_bag)
-
-    def _isolated(self, piece_bag):
-        return True
 
     def _pre_level_skip(self, piece_bag):
         pre_pp_cluster = self._processor.pre_level_processor.get_cluster(
@@ -271,6 +274,12 @@ class ClusterProcessor(object):
         self._pattern_clusters = OrderedDict(
             [(c.__name__, c(self)) for c in CLUSTER_CLASSES])
         self._pre_level_processor = pre_level_processor
+
+    def seek_cluster_branch(self, nodes):
+        for c in self._pattern_clusters.itervalues():
+            if c.as_cluster_branch(nodes):
+                return True
+        return False
 
     def get_cluster(self, cluster_cls):
         return self._pattern_clusters[cluster_cls.__name__]
