@@ -63,8 +63,13 @@ class PBag(CBag):
         return self._p_nodes
 
 
-def confused(all, part, threshold):
-    return 2 * part - all < threshold - 1
+def uncertain(total, part, threshold):
+    if total < threshold:
+        return False
+    o_part = total - part
+    if part >= threshold and o_part >= threshold:
+        return True
+    return abs(part - o_part) < threshold - 1
 
 
 class PiecePatternCluster(PatternCluster):
@@ -93,10 +98,7 @@ class PiecePatternCluster(PatternCluster):
         if p_node is None or p_node.children_num == 1:
             return
 
-        ppc = piece_pattern_node.count
-        pnc = p_node.count
-        mcn = self._min_cluster_num
-        if ppc >= mcn and ((pnc - ppc >= mcn) or confused(pnc, ppc, mcn)):
+        if p_node.count - piece_pattern_node.count >= self._min_cluster_num:
             bag.skip = True
             return
 
@@ -137,12 +139,10 @@ class PiecePatternCluster(PatternCluster):
     def _pre_level_skip(self, piece_bag):
         pre_pp_cluster = self._processor.pre_level_processor.get_cluster(
             PiecePatternCluster)
-        s = sum([pre_pp_cluster.get_piece_bag(
+        total = sum([pre_pp_cluster.get_piece_bag(
             p.piece).count for p in piece_bag.p_nodes])
 
-        mcn = self._min_cluster_num
-        pbc = piece_bag.count
-        if (s - pbc > mcn) or confused(s, pbc, mcn):
+        if uncertain(total, piece_bag.count, self._min_cluster_num):
             return True
 
         return False
