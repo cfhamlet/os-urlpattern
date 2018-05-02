@@ -142,10 +142,7 @@ class PiecePatternCluster(PatternCluster):
         total = sum([pre_pp_cluster.get_piece_bag(
             p.piece).count for p in piece_bag.p_nodes])
 
-        if uncertain(total, piece_bag.count, self._min_cluster_num):
-            return True
-
-        return False
+        return uncertain(total, piece_bag.count, self._min_cluster_num):
 
 
 class LengthPatternCluster(PatternCluster):
