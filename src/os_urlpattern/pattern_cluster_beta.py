@@ -271,7 +271,7 @@ class FuzzyPatternCluster(PatternCluster):
             if len(self._cached_bag) >= self._min_cluster_num:
                 self._force_pattern = True
 
-    def _cluster(self):
+    def cluster(self):
         cbc = self._cached_bag.count
         if cbc <= 0:
             return
@@ -331,9 +331,6 @@ class ClusterProcessor(object):
     def get_cluster(self, cluster_cls):
         return self._pattern_clusters[cluster_cls.__name__]
 
-    def add(self, obj, cluster_cls):
-        self.get_cluster(cluster_cls).add(obj)
-
     @property
     def meta_info(self):
         return self._meta_info
@@ -390,13 +387,11 @@ def split(piece_pattern_tree):
 def process(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info, None)
-    processor.add(piece_pattern_tree.root, PiecePatternCluster)
+    processor.get_cluster(PiecePatternCluster).add(piece_pattern_tree.root)
     processor.process()
 
 
 def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    if piece_pattern_tree.count < config.getint('make', 'min_cluster_num'):
-        return
     process(config, url_meta, piece_pattern_tree, **kwargs)
 
     return
