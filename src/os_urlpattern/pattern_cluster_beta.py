@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from .compat import itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .node_viewer import BaseViewer, LengthViewer, MixedViewer, PieceViewer
@@ -31,16 +33,8 @@ class PatternCluster(object):
         self._min_cluster_num = processor.config.getint(
             'make', 'min_cluster_num')
 
-    def _cluster(self):
-        pass
-
-    def _forward_clusters(self):
-        yield
-
     def cluster(self):
-        self._cluster()
-        for c in self._forward_clusters():
-            yield c
+        pass
 
     def add(self, obj):
         pass
@@ -130,7 +124,6 @@ class PiecePatternCluster(PatternCluster):
     def __init__(self, processor):
         super(PiecePatternCluster, self).__init__(processor)
         self._piece_bags = {}
-        self._forward_cluster = None
 
     def get_piece_bag(self, piece):
         return self._piece_bags.get(piece, None)
@@ -170,34 +163,34 @@ class PiecePatternCluster(PatternCluster):
                 bag.skip = True
                 break
 
-    def _create_forward_cluster(self):
+    def _get_forward_cluster(self):
         cluster_cls = LengthPatternCluster
         piece_pattern_node = self._piece_bags.values()[0].pick()
         if len(piece_pattern_node.parsed_piece.pieces) > 1:
             cluster_cls = BasePatternCluster
-        return cluster_cls(self._processor)
+        return self._processor.get_cluster(cluster_cls)
 
-    def _cluster(self):
+    def cluster(self):
         n = len(self._piece_bags)
         if n == 1:
             return
 
-        if self._forward_cluster is None:
-            self._forward_cluster = self._create_forward_cluster()
-
-        iso_piece_bags = []
+        forward_cluster = self._get_forward_cluster()
 
         for piece_bag in itervalues(self._piece_bags):
             if piece_bag.skip \
                     or piece_bag.count < self._min_cluster_num \
-                    or self._pre_level_skip(piece_bag):
-                self._forward_cluster.add(piece_bag)
-            else:
-                iso_piece_bags.append(piece_bag)
+                    or self._pre_level_skip(piece_bag) \
+                    or not self._isolated(piece_bag):
+                forward_cluster.add(piece_bag)
+
+    def _isolated(self, piece_bag):
+        return True
 
     def _pre_level_skip(self, piece_bag):
-        pre_processor = self._processor.pre_level_processor
-        s = sum([pre_processor.get_piece_bag(
+        pre_pp_cluster = self._processor.pre_level_processor.get_cluster(
+            PiecePatternCluster)
+        s = sum([pre_pp_cluster.get_piece_bag(
             p.piece).count for p in piece_bag.p_nodes])
 
         mcn = self._min_cluster_num
@@ -207,14 +200,10 @@ class PiecePatternCluster(PatternCluster):
 
         return False
 
-    def _forward_clusters(self):
-        yield self._forward_cluster
-
 
 class LengthPatternCluster(PatternCluster):
     def __init__(self, processor):
         super(LengthPatternCluster, self).__init__(processor)
-        self._forward_cluster = FuzzyPatternCluster(processor)
         self._length_bags = {}
 
     def add(self, piece_bag):
@@ -223,19 +212,17 @@ class LengthPatternCluster(PatternCluster):
             self._length_bags[piece_length] = CBag()
         self._length_bags[piece_length].add(piece_bag)
 
-    def _cluster(self):
+    def cluster(self):
+        forward_cluster = self._processor.get_cluster(FuzzyPatternCluster)
         for length_bag in itervalues(self._length_bags):
             if length_bag.count < self._min_cluster_num:
-                self._forward_cluster.add(length_bag)
+                forward_cluster.add(length_bag)
 
     def _set_pattern(self, length_bag):
         parsed_piece = length_bag.pick().parsed_piece
         length = parsed_piece.piece_length
         pattern = Pattern(number_rule(parsed_piece.fuzzy_rule, length))
         length_bag.set_pattern(pattern)
-
-    def _forward_clusters(self):
-        yield self._forward_cluster
 
 
 class MultiPartPatternCluster(PatternCluster):
@@ -245,6 +232,22 @@ class MultiPartPatternCluster(PatternCluster):
 class BasePatternCluster(MultiPartPatternCluster):
     def __init__(self, processor):
         super(BasePatternCluster, self).__init__(processor)
+
+    def add(self, piece_bag):
+        pass
+
+
+class MixedPatternCluster(MultiPartPatternCluster):
+    def __init__(self, processor):
+        super(MixedPatternCluster, self).__init__(processor)
+
+    def add(self, piece_bag):
+        pass
+
+
+class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
+    def __init__(self, processor):
+        super(LastDotSplitFuzzyPatternCluster, self).__init__(processor)
 
     def add(self, piece_bag):
         pass
@@ -312,15 +315,24 @@ class MetaInfo(object):
         return MetaInfo(self.url_meta, self.current_level + 1)
 
 
+CLUSTER_CLASSES = [PiecePatternCluster, BasePatternCluster, MixedPatternCluster,
+                   LastDotSplitFuzzyPatternCluster, LengthPatternCluster,
+                   FuzzyPatternCluster]
+
+
 class ClusterProcessor(object):
     def __init__(self, config, meta_info, pre_level_processor):
         self._config = config
         self._meta_info = meta_info
-        self._entry_cluster = PiecePatternCluster(self)
+        self._pattern_clusters = OrderedDict(
+            [(c.__name__, c(self)) for c in CLUSTER_CLASSES])
         self._pre_level_processor = pre_level_processor
 
-    def get_piece_bag(self, piece):
-        return self._entry_cluster.get_piece_bag(piece)
+    def get_cluster(self, cluster_cls):
+        return self._pattern_clusters[cluster_cls.__name__]
+
+    def add(self, obj, cluster_cls):
+        self.get_cluster(cluster_cls).add(obj)
 
     @property
     def meta_info(self):
@@ -334,34 +346,36 @@ class ClusterProcessor(object):
     def pre_level_processor(self):
         return self._pre_level_processor
 
-    def add_node(self, node):
-        self._entry_cluster.add(node)
-
-    def add_children(self, node):
-        for child in node.iter_children():
-            self.add_node(child)
-
-    def _process(self, pattern_cluster):
-        if pattern_cluster is not None:
-            for c in pattern_cluster.cluster():
-                self._process(c)
+    def _process(self, ):
+        for c in self._pattern_clusters.itervalues():
+            c.cluster()
 
     def process(self):
-        self._process(self._entry_cluster)
+        self._process()
         if self._meta_info.is_last_level():
             return
 
+        next_level_processors = self._create_next_level_processors()
+
+        for processor in itervalues(next_level_processors):
+            processor.process()
+
+    def _create_next_level_processors(self):
+        pp_cluster = self.get_cluster(PiecePatternCluster)
         next_level_processors = {}
-        for node in self._entry_cluster.iter_nodes():
+
+        for node in pp_cluster.iter_nodes():
             pattern = node.pattern
             if pattern not in next_level_processors:
                 next_level_processors[pattern] = self._create_next_level_processor(
                 )
             next_level_processor = next_level_processors[pattern]
-            next_level_processor.add_children(node)
+            next_pp_cluster = next_level_processor.get_cluster(
+                PiecePatternCluster)
+            for child in node.iter_children():
+                next_pp_cluster.add(child)
 
-        for processor in itervalues(next_level_processors):
-            processor.process()
+        return next_level_processors
 
     def _create_next_level_processor(self):
         return ClusterProcessor(self._config,
@@ -376,7 +390,7 @@ def split(piece_pattern_tree):
 def process(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info, None)
-    processor.add_node(piece_pattern_tree.root)
+    processor.add(piece_pattern_tree.root, PiecePatternCluster)
     processor.process()
 
 
