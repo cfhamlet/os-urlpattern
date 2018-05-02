@@ -40,63 +40,6 @@ class PatternCluster(object):
         pass
 
 
-class TBucket(object):
-    def __init__(self, viewer_cls_list):
-        self._viewer_cls_list = viewer_cls_list
-        self._viewer_cls_idx = 0
-        self._last_viewer = None
-        self._nodes = set()
-
-    def nodes(self):
-        return self._nodes
-
-    def _get_viewer_cls(self):
-        return self._viewer_cls_list[self._viewer_cls_idx]
-
-    def _next_viewer_cls(self):
-        if self._get_viewer_cls() is None:
-            return None
-        self._viewer_cls_idx += 1
-        return self._get_viewer_cls()
-
-    def check(self, node):
-        if self._last_viewer is None:
-            return True
-        v_cls = self._get_viewer_cls()
-        viewer = v_cls(node)
-        return self._last_viewer.view() == viewer.view()
-
-    def add_and_check(self, node):
-        if self._last_viewer is None:
-            v_cls = self._get_viewer_cls()
-            self._last_viewer = v_cls(node)
-            self._nodes.add(node)
-            return True
-
-        while self._get_viewer_cls() is not None:
-            if self.check(node):
-                self._nodes.add(node)
-                return True
-            else:
-                self._next_viewer_cls()
-        return False
-
-
-def create_tbucket(node):
-    cls_list = None
-    if len(node.parsed_piece.pieces) > 1:
-        cls_list = [PieceViewer,
-                    BaseViewer,
-                    MixedViewer,
-                    LengthViewer,
-                    None, ]
-    else:
-        cls_list = [PieceViewer,
-                    LengthViewer,
-                    None, ]
-    return TBucket(cls_list)
-
-
 class PBag(CBag):
     def __init__(self):
         super(PBag, self).__init__()
@@ -118,6 +61,10 @@ class PBag(CBag):
     @property
     def p_nodes(self):
         return self._p_nodes
+
+
+def confused(all, part, threshold):
+    return 2 * part - all < threshold - 1
 
 
 class PiecePatternCluster(PatternCluster):
@@ -149,7 +96,7 @@ class PiecePatternCluster(PatternCluster):
         ppc = piece_pattern_node.count
         pnc = p_node.count
         mcn = self._min_cluster_num
-        if ppc >= mcn and ((pnc - ppc >= mcn) or (2 * ppc - pnc < mcn - 1)):
+        if ppc >= mcn and ((pnc - ppc >= mcn) or confused(pnc, ppc, mcn)):
             bag.skip = True
             return
 
@@ -195,7 +142,7 @@ class PiecePatternCluster(PatternCluster):
 
         mcn = self._min_cluster_num
         pbc = piece_bag.count
-        if (s - pbc > mcn) or (2 * pbc - s < mcn - 1):
+        if (s - pbc > mcn) or confused(s, pbc, mcn):
             return True
 
         return False
