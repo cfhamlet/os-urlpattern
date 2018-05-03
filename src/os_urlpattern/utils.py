@@ -6,24 +6,23 @@ from importlib import import_module
 
 class Bag(object):
     def __init__(self):
-        self._objs = []
+        self._objs = set()
 
     def add(self, obj):
-        self._objs.append(obj)
+        self._objs.add(obj)
 
     def __len__(self):
         return len(self._objs)
 
-    def _pick(self, obj):
-        if isinstance(obj, Bag):
-            return self._pick(obj[0])
+    def pick(self):
+        obj = self._get()
+        while isinstance(obj, Bag):
+            obj = obj._get()
         return obj
 
-    def __getitem__(self, idx):
-        return self._objs[idx]
-
-    def pick(self):
-        return self._pick(self._objs[0])
+    def _get(self):
+        for obj in self._objs:
+            return obj
 
     def __iter__(self):
         return iter(self._objs)

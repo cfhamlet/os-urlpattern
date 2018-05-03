@@ -333,6 +333,9 @@ class ParsedPiece(object):
             return False
         return self.piece == o.piece
 
+    def __hash__(self):
+        return hash(self.piece)
+
     @property
     def piece(self):
         if self._piece is None:
