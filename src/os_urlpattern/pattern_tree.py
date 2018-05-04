@@ -89,8 +89,6 @@ class PatternNode(object):
             yield path
 
 
-
-
 class PatternTree(object):
     def __init__(self, url_meta):
         self._url_meta = url_meta

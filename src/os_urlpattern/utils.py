@@ -28,7 +28,7 @@ class Bag(object):
         return iter(self._objs)
 
     def iter_all(self):
-        for obj in self._objs:
+        for obj in self:
             if isinstance(obj, Bag):
                 for o in obj.iter_all():
                     yield o
