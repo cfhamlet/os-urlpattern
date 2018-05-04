@@ -47,29 +47,6 @@ class PieceBag(TBag):
         return self._p_counter
 
 
-def create_piece_bucket(obj_cls):
-    def add_piece_bag(self, piece_bag):
-        piece = piece_bag.pick().piece
-        if piece in self._objs:
-            raise ValueError('duplicated')
-        self._objs[piece] = piece_bag
-        self._count += piece_bag.count
-
-    def add_piece_pattern_node(self, piece_pattern_node):
-        piece = piece_pattern_node.piece
-        if piece not in self._objs:
-            self._objs[piece] = PieceBag()
-        self._objs[piece].add(piece_pattern_node)
-        self._count += piece_pattern_node.count
-
-    add_methods = {PieceBag: add_piece_bag,
-                   PiecePatternNode: add_piece_pattern_node}
-
-    pb = PieceBucket()
-    pb.add = MethodType(add_methods[obj_cls], pb)
-    return pb
-
-
 class PieceBucket(TBag):
     def __init__(self):
         super(PieceBucket, self).__init__()
@@ -95,6 +72,29 @@ class PieceBucket(TBag):
         if re_cal:
             self._count = sum([o.count for o in itervalues(self._objs)])
         return self._count
+
+
+def create_piece_bucket(obj_cls):
+    def add_piece_bag(self, piece_bag):
+        piece = piece_bag.pick().piece
+        if piece in self._objs:
+            raise ValueError('duplicated')
+        self._objs[piece] = piece_bag
+        self._count += piece_bag.count
+
+    def add_piece_pattern_node(self, piece_pattern_node):
+        piece = piece_pattern_node.piece
+        if piece not in self._objs:
+            self._objs[piece] = PieceBag()
+        self._objs[piece].add(piece_pattern_node)
+        self._count += piece_pattern_node.count
+
+    add_methods = {PieceBag: add_piece_bag,
+                   PiecePatternNode: add_piece_pattern_node}
+
+    pb = PieceBucket()
+    pb.add = MethodType(add_methods[obj_cls], pb)
+    return pb
 
 
 def confused(total, part, threshold):
@@ -199,7 +199,7 @@ class PiecePatternCluster(PatternCluster):
                     or not self.get_processor(1).seek_cluster(piece_bag.p_counter):
                 forward_cluster.add(piece_bag)
             else:
-                self._processor.pre_level_processor.revise(piece_bag.p_counter)
+                self.get_processor(1).revise(piece_bag.p_counter)
 
 
 class LengthPatternCluster(PatternCluster):
