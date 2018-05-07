@@ -72,13 +72,8 @@ class PieceBucket(TBag):
     def __iter__(self):
         return itervalues(self._objs)
 
-    def count(self, re_cal=False):
-        if re_cal:
-            self._count = sum([o.count for o in itervalues(self._objs)])
-        return self._count
 
-
-def LengthPieceBucket(PieceBucket):
+class LengthPieceBucket(PieceBucket):
 
     def __init__(self):
         super(LengthPieceBucket, self).__init__()
@@ -87,7 +82,9 @@ def LengthPieceBucket(PieceBucket):
     @property
     def p_counter(self):
         if self._p_counter is None:
-            pass
+            self._p_counter = Counter()
+            for p in self:
+                self._p_counter.update(p.p_counter)
         return self._p_counter
 
     def add(self, piece_bag):
@@ -212,9 +209,10 @@ class LengthPatternCluster(PatternCluster):
         self._length_buckets = {}
 
     def as_cluster(self, p_counter):
+        print '================', p_counter
+        return False
         total = sum([self._length_buckets[p.piece_length]
                      [p.piece].count for p in p_counter])
-        max_count =
 
         max_count = 0
         total_count = 0
@@ -247,7 +245,7 @@ class LengthPatternCluster(PatternCluster):
             total = sum([c.count for c in itervalues(self._length_buckets)])
             if total < self._min_cluster_num:
                 return
-            max_bucket = max(itervalue(self._length_buckets),
+            max_bucket = max(itervalues(self._length_buckets),
                              key=lambda x: x.count)
             if not confused(total, max_bucket.count, self._min_cluster_num):
                 if self._length_as_cluster(max_bucket):
@@ -256,7 +254,7 @@ class LengthPatternCluster(PatternCluster):
 
         forward_cluster = self._processor.get_cluster(FuzzyPatternCluster)
         for length_bucket in itervalues(self._length_buckets):
-            if length_bucket.count < self._min_cluster_num \
+            if not self._length_as_cluster(length_bucket) \
                     or not self.get_processor(1).seek_cluster(length_bucket.p_counter):
                 forward_cluster.add(length_bucket)
             else:
