@@ -47,17 +47,11 @@ class PieceBag(TBag):
         return self._p_counter
 
 
-class PieceBucket(TBag):
-    def __init__(self):
-        super(PieceBucket, self).__init__()
-        self._objs = {}
+class Bucket(TBag):
 
-    def add(self, piece_pattern_node):
-        piece = piece_pattern_node.piece
-        if piece not in self._objs:
-            self._objs[piece] = PieceBag()
-        self._objs[piece].add(piece_pattern_node)
-        self._count += piece_pattern_node.count
+    def __init__(self):
+        super(Bucket, self).__init__()
+        self._objs = {}
 
     def __getitem__(self, key):
         return self._objs[key]
@@ -73,10 +67,20 @@ class PieceBucket(TBag):
         return itervalues(self._objs)
 
 
-class LengthPieceBucket(PieceBucket):
+class PieceNodeBucket(Bucket):
+
+    def add(self, piece_pattern_node):
+        piece = piece_pattern_node.piece
+        if piece not in self._objs:
+            self._objs[piece] = PieceBag()
+        self._objs[piece].add(piece_pattern_node)
+        self._count += piece_pattern_node.count
+
+
+class PieceBagBucket(Bucket):
 
     def __init__(self):
-        super(LengthPieceBucket, self).__init__()
+        super(PieceBagBucket, self).__init__()
         self._p_counter = None
 
     @property
@@ -134,7 +138,7 @@ class PatternCluster(object):
 class PiecePatternCluster(PatternCluster):
     def __init__(self, processor):
         super(PiecePatternCluster, self).__init__(processor)
-        self._piece_bucket = PieceBucket()
+        self._piece_bucket = PieceNodeBucket()
         self._piece_skip = defaultdict(lambda: False)
 
     def revise(self, p_counter):
@@ -227,7 +231,7 @@ class LengthPatternCluster(PatternCluster):
     def add(self, piece_bag):
         piece_length = piece_bag.pick().parsed_piece.piece_length
         if piece_length not in self._length_buckets:
-            self._length_buckets[piece_length] = LengthPieceBucket()
+            self._length_buckets[piece_length] = PieceBagBucket()
         self._length_buckets[piece_length].add(piece_bag)
 
     def _length_as_cluster(self, length_bucket):
@@ -254,12 +258,14 @@ class LengthPatternCluster(PatternCluster):
 
         forward_cluster = self._processor.get_cluster(FuzzyPatternCluster)
         for length_bucket in itervalues(self._length_buckets):
-            if not self._length_as_cluster(length_bucket) \
-                    or not self.get_processor(1).seek_cluster(length_bucket.p_counter):
-                forward_cluster.add(length_bucket)
-            else:
+            if self._length_as_cluster(length_bucket):
                 self._set_pattern(length_bucket)
-                self.get_processor(1).revise(length_bucket.p_counter)
+
+                pl_processor = self.get_processor(1)
+                if pl_processor.seek_cluster(length_bucket.p_counter):
+                    pl_processor.revise(length_bucket.p_counter)
+                    continue
+            forward_cluster.add(length_bucket)
 
     def _set_pattern(self, length_bucket):
         parsed_piece = length_bucket.pick().parsed_piece
