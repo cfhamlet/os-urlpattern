@@ -149,7 +149,7 @@ class PiecePatternCluster(PatternCluster):
         if len(p_counter) >= self._min_cluster_num:
             return False
         total = sum([self._piece_bucket[p.piece].count for p in p_counter])
-        max_count = p_counter.most_common(1)[0][1]
+        _, max_count = p_counter.most_common(1)[0]
         return not confused(total, max_count, self._min_cluster_num)
 
     def iter_nodes(self):
@@ -213,20 +213,20 @@ class LengthPatternCluster(PatternCluster):
         self._length_buckets = {}
 
     def as_cluster(self, p_counter):
-        print '================', p_counter
-        return False
-        total = sum([self._length_buckets[p.piece_length]
-                     [p.piece].count for p in p_counter])
+        length_counter = Counter()
+        p_total = 0
+        for parsed_piece, count in iteritems(p_counter):
+            length = parsed_piece.piece_length
+            length_counter[length] += count
+            if len(length_counter) >= self._min_cluster_num:
+                return False
+            p_total += count
+        max_length, max_count = length_counter.most_common(1)[0]
+        if confused(p_total, max_count, self._min_cluster_num):
+            return False
 
-        max_count = 0
-        total_count = 0
-        for length in lengths:
-            length_bag = self._length_bags[length]
-            if length_bag.count > max_count:
-                max_count = length_bag.count
-            total_count += length_bag.count
-
-        return not confused(total_count, max_count, self._min_cluster_num)
+        l_total = sum([c.count for c in self._length_buckets[max_length]])
+        return not confused(l_total, max_count, self._min_cluster_num)
 
     def add(self, piece_bag):
         piece_length = piece_bag.pick().parsed_piece.piece_length
@@ -261,9 +261,9 @@ class LengthPatternCluster(PatternCluster):
             if self._length_as_cluster(length_bucket):
                 self._set_pattern(length_bucket)
 
-                pl_processor = self.get_processor(1)
-                if pl_processor.seek_cluster(length_bucket.p_counter):
-                    pl_processor.revise(length_bucket.p_counter)
+                p = self.get_processor(1)
+                if p.seek_cluster(length_bucket.p_counter):
+                    p.revise(length_bucket.p_counter)
                     continue
             forward_cluster.add(length_bucket)
 
@@ -305,34 +305,27 @@ class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
 class FuzzyPatternCluster(PatternCluster):
     def __init__(self, processor):
         super(FuzzyPatternCluster, self).__init__(processor)
-        self._cached_bag = TBag()
+        self._cached = TBag()
         self._force_pattern = False
         self._fuzzy_pattern = None
-        self._mc_bag = None
 
-    def add(self, bag):
+    def add(self, bucket):
         if self._force_pattern:
-            self._set_pattern(bag)
+            self._set_pattern(bucket)
         else:
-            self._cached_bag.add(bag)
-            if self._mc_bag is None or bag.count > self._mc_bag.count:
-                self._mc_bag = bag
-            if len(self._cached_bag) >= self._min_cluster_num:
+            self._cached.add(bucket)
+            if len(self._cached) >= self._min_cluster_num:
                 self._force_pattern = True
 
     def cluster(self):
-        cbc = self._cached_bag.count
-        if cbc <= 0:
-            return
-        mcn = self._min_cluster_num
-        mbc = self._mc_bag.count
-        if self._force_pattern \
-            or (len(self._cached_bag) > 1
-                and cbc >= mcn
-                and (mbc < mcn
-                     or cbc - mbc >= mcn
-                     or 2 * mbc - cbc < mcn - 1)):
-            self._set_pattern(self._cached_bag)
+        if self._force_pattern:
+            self._set_pattern(self._cached)
+        else:
+            if self._cached.count < self._min_cluster_num:
+                return
+            max_count = max(self._cached, key=lambda x: x.count).count
+            if confused(self._cached.count, max_count, self._min_cluster_num):
+                self._set_pattern(self._cached)
 
     def _set_pattern(self, bag):
         if self._fuzzy_pattern is None:
