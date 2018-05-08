@@ -5,6 +5,7 @@ from .compat import iteritems, itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .node_viewer import BaseViewer, LengthViewer, MixedViewer, PieceViewer
 from .parse_utils import URLMeta, number_rule, wildcard_rule
+from .parsed_piece_viewer import BaseViewer
 from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternNode, PiecePatternTree
 from .utils import Bag
@@ -66,6 +67,9 @@ class Bucket(TBag):
     def __iter__(self):
         return itervalues(self._objs)
 
+    def add(self, obj):
+        raise NotImplementedError
+
 
 class PieceNodeBucket(Bucket):
 
@@ -97,6 +101,17 @@ class PieceBagBucket(Bucket):
             raise ValueError('duplicated')
         self._objs[piece] = piece_bag
         self._count += piece_bag.count
+
+
+class PieceBagTreeBucket(PieceBagBucket):
+    def __init__(self):
+        super(PieceBagTreeBucket, self).__init__()
+        self._tree = PiecePatternTree()
+
+    def add(self, piece_bag, parsed_piece_viewer):
+        super(PieceBagTreeBucket, self).add(piece_bag)
+        self._tree.add_from_parsed_pieces(
+            parsed_piece_viewer.parsed_pieces(), count=piece_bag.count, uniq=False)
 
 
 def confused(total, part, threshold):
@@ -274,19 +289,27 @@ class LengthPatternCluster(PatternCluster):
         length_bucket.set_pattern(pattern)
 
 
-class MultiPartPatternCluster(PatternCluster):
-    pass
-
-
-class BasePatternCluster(MultiPartPatternCluster):
+class BasePatternCluster(PatternCluster):
     def __init__(self, processor):
         super(BasePatternCluster, self).__init__(processor)
+        self._buckets = {}
+
+    def as_cluster(self, p_counter):
+        pass
 
     def add(self, piece_bag):
+        parsed_piece = piece_bag.pick().parsed_piece
+        pp_viewer = BaseViewer(parsed_piece)
+        v = pp_viewer.view()
+        if v not in self._buckets:
+            self._buckets[v] = PieceBagTreeBucket()
+        self._buckets[v].add(piece_bag, pp_viewer)
+
+    def cluster(self):
         pass
 
 
-class MixedPatternCluster(MultiPartPatternCluster):
+class MixedPatternCluster(PatternCluster):
     def __init__(self, processor):
         super(MixedPatternCluster, self).__init__(processor)
 
@@ -294,7 +317,7 @@ class MixedPatternCluster(MultiPartPatternCluster):
         pass
 
 
-class LastDotSplitFuzzyPatternCluster(MultiPartPatternCluster):
+class LastDotSplitFuzzyPatternCluster(PatternCluster):
     def __init__(self, processor):
         super(LastDotSplitFuzzyPatternCluster, self).__init__(processor)
 
