@@ -1,11 +1,12 @@
-from collections import Counter, OrderedDict, defaultdict
+from collections import Counter, OrderedDict, defaultdict, namedtuple
 from types import MethodType
 
 from .compat import iteritems, itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .node_viewer import BaseViewer, LengthViewer, MixedViewer, PieceViewer
 from .parse_utils import URLMeta, number_rule, wildcard_rule
-from .parsed_piece_viewer import BaseViewer
+from .parsed_piece_viewer import (BaseViewer, LastDotSplitFuzzyViewer,
+                                  MixedViewer)
 from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternNode, PiecePatternTree
 from .utils import Bag
@@ -103,6 +104,9 @@ class PieceBagBucket(Bucket):
         self._count += piece_bag.count
 
 
+PieceBagViewer = namedtuple('PieceBagViewer', ['piece_bag', 'viewer'])
+
+
 class PieceBagTreeBucket(PieceBagBucket):
     def __init__(self):
         super(PieceBagTreeBucket, self).__init__()
@@ -111,7 +115,9 @@ class PieceBagTreeBucket(PieceBagBucket):
     def add(self, piece_bag, parsed_piece_viewer):
         super(PieceBagTreeBucket, self).add(piece_bag)
         self._tree.add_from_parsed_pieces(
-            parsed_piece_viewer.parsed_pieces(), count=piece_bag.count, uniq=False)
+            parsed_piece_viewer.parsed_pieces(),
+            count=piece_bag.count,
+            uniq=False)
 
 
 def confused(total, part, threshold):
@@ -195,13 +201,6 @@ class PiecePatternCluster(PatternCluster):
                 self._piece_skip[piece] = True
                 break
 
-    def _get_forward_cluster(self):
-        cluster_cls = LengthPatternCluster
-        piece_pattern_node = self._piece_bucket.pick()
-        if len(piece_pattern_node.parsed_piece.pieces) > 1:
-            cluster_cls = BasePatternCluster
-        return self._processor.get_cluster(cluster_cls)
-
     def cluster(self):
         if len(self._piece_bucket) < self._min_cluster_num:
             if self._piece_bucket.count < self._min_cluster_num:
@@ -210,16 +209,21 @@ class PiecePatternCluster(PatternCluster):
             if not confused(self._piece_bucket.count, max_count, self._min_cluster_num):
                 return
 
-        forward_cluster = self._get_forward_cluster()
-
         for piece_bag in self._piece_bucket:
             piece = piece_bag.pick().piece
             if self._piece_skip[piece] \
                     or piece_bag.count < self._min_cluster_num \
                     or not self.get_processor(1).seek_cluster(piece_bag.p_counter):
-                forward_cluster.add(piece_bag)
+                self._add_to_forward_cluster(piece_bag)
             else:
                 self.get_processor(1).revise(piece_bag.p_counter)
+
+    def _add_to_forward_cluster(self, piece_bag):
+        parsed_piece = piece_bag.pick().parsed_piece
+        if parsed_piece.pieces == 1:
+            self._processor.get_cluster(LengthPatternCluster).add(piece_bag)
+        else:
+            pass
 
 
 class LengthPatternCluster(PatternCluster):
@@ -297,16 +301,17 @@ class BasePatternCluster(PatternCluster):
     def as_cluster(self, p_counter):
         pass
 
-    def add(self, piece_bag):
-        parsed_piece = piece_bag.pick().parsed_piece
-        pp_viewer = BaseViewer(parsed_piece)
-        v = pp_viewer.view()
+    def add(self, piece_bag_viewer):
+        viewer = piece_bag_viewer.viewer
+        v = viewer.view
         if v not in self._buckets:
             self._buckets[v] = PieceBagTreeBucket()
-        self._buckets[v].add(piece_bag, pp_viewer)
+        self._buckets[v].add(piece_bag_viewer)
 
     def cluster(self):
-        pass
+        for bucket in itervalues(self._buckets):
+            if bucket.count < self._min_cluster_num:
+                continue
 
 
 class MixedPatternCluster(PatternCluster):

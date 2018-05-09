@@ -6,15 +6,21 @@ class ParsedPieceViewer(object):
         self._parsed_piece = parsed_piece
         self._parsed_pieces = None
 
+    @property
+    def parsed_piece(self):
+        return self._parsed_piece
+
     def __eq__(self, o):
-        return self.view() == o.view()
+        return self.view == o.view
 
     def __hash__(self):
-        return hash(self.view())
+        return hash(self.view)
 
+    @property
     def view(self):
-        return ' '.join([p.fuzzy_rule for p in self.parsed_pieces()])
+        return ' '.join([p.fuzzy_rule for p in self.parsed_pieces])
 
+    @property
     def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
