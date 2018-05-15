@@ -3,7 +3,6 @@ from types import MethodType
 
 from .compat import iteritems, itervalues
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
-from .node_viewer import BaseViewer, LengthViewer, MixedViewer, PieceViewer
 from .parse_utils import URLMeta, number_rule, wildcard_rule
 from .parsed_piece_viewer import (BaseViewer, LastDotSplitFuzzyViewer,
                                   MixedViewer)
@@ -117,22 +116,22 @@ class PieceBagMixin(object):
         return self.piece_bag.pick()
 
 
-class PieceBagViewer(PieceBagMixin,
-                     namedtuple('PieceBagViewer', ['piece_bag', 'viewer'])):
+class PieceViewerBag(PieceBagMixin,
+                     namedtuple('PieceViewerBag', ['piece_bag', 'viewer'])):
     __slots__ = ()
 
 
-class PieceBagTreeBucket(PieceBagBucket):
+class PieceViewerBagBucket(PieceBagBucket):
     def __init__(self):
-        super(PieceBagTreeBucket, self).__init__()
+        super(PieceViewerBagBucket, self).__init__()
         self._tree = PiecePatternTree()
 
-    def add(self, piece_bag_viewer):
-        super(PieceBagTreeBucket, self).add(piece_bag_viewer)
-        viewer = piece_bag_viewer.viewer
+    def add(self, piece_viewer_bag):
+        super(PieceViewerBagBucket, self).add(piece_viewer_bag)
+        viewer = piece_viewer_bag.viewer
         self._tree.add_from_parsed_pieces(
             viewer.parsed_pieces,
-            count=piece_bag_viewer.count,
+            count=piece_viewer_bag.count,
             uniq=False)
 
 
@@ -225,23 +224,42 @@ class PiecePatternCluster(PatternCluster):
             if not confused(self._piece_bucket.count, max_count, self._min_cluster_num):
                 return
 
-        forward_cluster = self._get_forward_cluster()
-
         for piece_bag in self._piece_bucket:
             piece = piece_bag.pick().piece
             if self._piece_skip[piece] \
                     or piece_bag.count < self._min_cluster_num \
                     or not self.get_processor(1).seek_cluster(piece_bag.p_counter):
-                forward_cluster.add(piece_bag)
+                self._add_to_forward_cluster(piece_bag)
             else:
                 self.get_processor(1).revise(piece_bag.p_counter)
 
-    def _get_forward_cluster(self):
-        cluster_cls = LengthPatternCluster
-        if len(self._piece_bucket.pick().parsed_piece.pieces) > 1:
-            cluster_cls = BasePatternCluster
+    def _add_to_forward_cluster(self, piece_bag):
+        parsed_piece = piece_bag.pick().parsed_piece
+        if len(parsed_piece.pieces) == 1:
+            self._processor.get_cluster(LengthPatternCluster).add(piece_bag)
+            return
 
-        return self._processor.get_cluster(cluster_cls)
+        viewer = BaseViewer(parsed_piece)
+        p_cls = BasePatternCluster
+        if len(viewer.parsed_pieces) > self._min_cluster_num:
+            mixed_viewer = MixedViewer(parsed_piece)
+            mvl = len(mixed_viewer.parsed_pieces)
+            if mvl == 1:
+                self._processor.get_cluster(
+                    LengthPatternCluster).add(piece_bag)
+                return
+            elif mvl == 3 and self._processor.meta_info.is_last_path():
+                ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
+                if viewer.view != ldsf_viewer.view:
+                    viewer = ldsf_viewer
+                    p_cls = LastDotSplitFuzzyPatternCluster
+
+            elif len(viewer.parsed_pieces) - mvl >= self._min_cluster_num:
+                viewer = mixed_viewer
+                p_cls = MixedPatternCluster
+
+        self._processor.get_cluster(p_cls).add(
+            PieceViewerBag(piece_bag, viewer))
 
 
 class LengthPatternCluster(PatternCluster):
@@ -321,18 +339,14 @@ class BasePatternCluster(PatternCluster):
     def as_cluster(self, p_counter):
         pass
 
-    def add(self, piece_bag):
-        viewer = BaseViewer(piece_bag.pick().parsed_piece)
-        piece_bag_viewer = PieceBagViewer(piece_bag, viewer)
+    def add(self, piece_viewer_bag):
+        viewer = piece_viewer_bag.viewer
         view = viewer.view
         if view not in self._buckets:
-            self._buckets[view] = PieceBagTreeBucket()
-        self._buckets[view].add(piece_bag_viewer)
+            self._buckets[view] = PieceViewerBagBucket()
+        self._buckets[view].add(piece_viewer_bag)
 
     def cluster(self):
-        import sys
-        print >> sys.stderr, len(self._buckets), sum(
-            [c.count for c in itervalues(self._buckets)])
         for bucket in itervalues(self._buckets):
             if bucket.count < self._min_cluster_num:
                 continue
@@ -352,9 +366,14 @@ class MixedPatternCluster(PatternCluster):
 class LastDotSplitFuzzyPatternCluster(PatternCluster):
     def __init__(self, processor):
         super(LastDotSplitFuzzyPatternCluster, self).__init__(processor)
+        self._buckets = {}
 
-    def add(self, piece_bag):
-        pass
+    def add(self, piece_viewer_bag):
+        viewer = piece_viewer_bag.viewer
+        view = viewer.view
+        if view not in self._buckets:
+            self._buckets[view] = PieceViewerBagBucket()
+        self._buckets[view].add(piece_viewer_bag)
 
 
 class FuzzyPatternCluster(PatternCluster):

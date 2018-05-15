@@ -1,3 +1,4 @@
+from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .parse_utils import ParsedPiece, mix
 
 
@@ -31,11 +32,13 @@ class ParsedPieceViewer(object):
 
 
 class PieceViewer(ParsedPieceViewer):
+    @property
     def view(self):
         return self._parsed_piece.piece
 
 
 class LengthViewer(ParsedPieceViewer):
+    @property
     def view(self):
         return self._parsed_piece.piece_length
 
@@ -46,6 +49,7 @@ class BaseViewer(ParsedPieceViewer):
 
 class MixedViewer(ParsedPieceViewer):
 
+    @property
     def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
@@ -63,6 +67,7 @@ class MixedViewer(ParsedPieceViewer):
 
 class LastDotSplitFuzzyViewer(ParsedPieceViewer):
 
+    @property
     def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
@@ -102,10 +107,12 @@ class LastDotSplitFuzzyViewer(ParsedPieceViewer):
 
 
 class FuzzyViewer(ParsedPieceViewer):
+    @property
     def view(self):
         return self._parsed_piece.fuzzy_rule
 
-    def view_parsed_pieces(self):
+    @property
+    def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
         self._parsed_pieces = [ParsedPiece([self._parsed_piece.piece],
