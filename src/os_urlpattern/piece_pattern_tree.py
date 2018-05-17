@@ -5,23 +5,14 @@ from .compat import itervalues
 
 class PiecePatternNode(object):
     __slots__ = ('_parrent', '_children', '_count',
-                 '_pattern', '_parsed_piece', '_meta')
+                 '_pattern', '_parsed_piece')
 
     def __init__(self, parsed_piece, pattern=None):
         self._parrent = None
         self._children = None
         self._count = 0
-        self._meta = None
         self._parsed_piece = parsed_piece
         self._pattern = Pattern(self.piece) if pattern is None else pattern
-
-    @property
-    def meta(self):
-        return self._meta
-
-    @meta.setter
-    def meta(self, v):
-        self._meta = v
 
     def piece_eq_pattern(self):
         return self.piece == self._pattern.pattern_string
@@ -122,6 +113,16 @@ class PiecePatternTree(object):
     @property
     def count(self):
         return self._root.count
+
+    def add_from_piece_pattern_node_path(self, piece_pattern_node_path):
+        count = piece_pattern_node_path[-1].count
+        node = self._root
+        node.incr_count(count)
+        is_new = None
+        for p_node in piece_pattern_node_path:
+            node, is_new = node.add_child_node_from_parsed_piece(
+                p_node.parsed_piece, count, p_node.pattern)
+        return is_new
 
     def add_from_parsed_pieces(self, parsed_pieces, count=1, uniq=True):
         node = self._root

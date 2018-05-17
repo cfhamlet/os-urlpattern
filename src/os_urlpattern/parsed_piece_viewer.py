@@ -3,9 +3,12 @@ from .parse_utils import ParsedPiece, mix
 
 
 class ParsedPieceViewer(object):
+    __slot__ = ('_parsed_piece', 'parsed_pieces', '_view')
+
     def __init__(self, parsed_piece):
         self._parsed_piece = parsed_piece
         self._parsed_pieces = None
+        self._view = None
 
     @property
     def parsed_piece(self):
@@ -19,7 +22,9 @@ class ParsedPieceViewer(object):
 
     @property
     def view(self):
-        return ' '.join([p.fuzzy_rule for p in self.parsed_pieces])
+        if self._view is None:
+            self._view = ' '.join([p.fuzzy_rule for p in self.parsed_pieces])
+        return self._view
 
     @property
     def parsed_pieces(self):
@@ -32,15 +37,16 @@ class ParsedPieceViewer(object):
 
 
 class PieceViewer(ParsedPieceViewer):
-    @property
-    def view(self):
-        return self._parsed_piece.piece
+
+    def __init__(self, parsed_piece):
+        super(PieceViewer, self).__init__(parsed_piece)
+        self._view = self._parsed_piece.piece
 
 
 class LengthViewer(ParsedPieceViewer):
-    @property
-    def view(self):
-        return self._parsed_piece.piece_length
+    def __init__(self, parsed_piece):
+        super(LengthViewer, self).__init__(parsed_piece)
+        self._view = self._parsed_piece.piece_length
 
 
 class BaseViewer(ParsedPieceViewer):
@@ -107,9 +113,9 @@ class LastDotSplitFuzzyViewer(ParsedPieceViewer):
 
 
 class FuzzyViewer(ParsedPieceViewer):
-    @property
-    def view(self):
-        return self._parsed_piece.fuzzy_rule
+    def __init__(self, parsed_piece):
+        super(FuzzyViewer, self).__init__(parsed_piece)
+        self._view = self._parsed_piece.fuzzy_rule
 
     @property
     def parsed_pieces(self):

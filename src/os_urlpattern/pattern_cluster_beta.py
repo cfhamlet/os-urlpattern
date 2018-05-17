@@ -32,19 +32,26 @@ class TBag(Bag):
 class PieceBag(TBag):
     def __init__(self):
         super(PieceBag, self).__init__()
-        self._p_counter = Counter()
+        self._p_nodes = set()
+        self._p_counter = None
 
     def incr(self, incr):
         self._count += incr
 
     def add(self, piece_node):
         super(PieceBag, self).add(piece_node)
-        p = piece_node.parrent
-        if p is not None:
-            self._p_counter[p.parsed_piece] += piece_node.count
+        self._p_nodes.add(piece_node.parrent)
+
+    @property
+    def p_nodes(self):
+        return self._p_nodes
 
     @property
     def p_counter(self):
+        if self._p_counter is None:
+            self._p_counter = Counter()
+            for p in self:
+                self._p_counter[p.parrent.parsed_piece] += p.count
         return self._p_counter
 
 
@@ -241,7 +248,7 @@ class PiecePatternCluster(PatternCluster):
 
         viewer = BaseViewer(parsed_piece)
         p_cls = BasePatternCluster
-        if len(viewer.parsed_pieces) > self._min_cluster_num:
+        if len(viewer.parsed_pieces) >= self._min_cluster_num:
             mixed_viewer = MixedViewer(parsed_piece)
             mvl = len(mixed_viewer.parsed_pieces)
             if mvl == 1:
@@ -250,11 +257,12 @@ class PiecePatternCluster(PatternCluster):
                 return
             elif mvl == 3 and self._processor.meta_info.is_last_path():
                 ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-                if viewer.view != ldsf_viewer.view:
+                if mixed_viewer.view == ldsf_viewer.view:
                     viewer = ldsf_viewer
                     p_cls = LastDotSplitFuzzyPatternCluster
+                    return
 
-            elif len(viewer.parsed_pieces) - mvl >= self._min_cluster_num:
+            if len(viewer.parsed_pieces) - mvl >= self._min_cluster_num:
                 viewer = mixed_viewer
                 p_cls = MixedPatternCluster
 
@@ -507,7 +515,16 @@ class ClusterProcessor(object):
 
 
 def split(piece_pattern_tree):
-    yield
+    trees = {}
+    for path in piece_pattern_tree.dump_paths():
+        pid = hash('/'.join([str(p.pattern) for p in path]))
+        if pid not in trees:
+            trees[pid] = PiecePatternTree()
+        tree = trees[pid]
+        tree.add_from_piece_pattern_node_path(path[1:])
+
+    import sys
+    print >> sys.stderr, len(trees)
 
 
 def process(config, url_meta, piece_pattern_tree, **kwargs):
@@ -518,7 +535,8 @@ def process(config, url_meta, piece_pattern_tree, **kwargs):
 
 
 def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    process(config, url_meta, piece_pattern_tree, **kwargs)
+    split(piece_pattern_tree)
+    #process(config, url_meta, piece_pattern_tree, **kwargs)
 
     return
     for sub_piece_pattern_tree in split(piece_pattern_tree):
