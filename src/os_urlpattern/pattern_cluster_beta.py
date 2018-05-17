@@ -1,9 +1,8 @@
 from collections import Counter, OrderedDict, defaultdict, namedtuple
-from types import MethodType
 
 from .compat import iteritems, itervalues
-from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
-from .parse_utils import URLMeta, number_rule, wildcard_rule
+from .definition import BasePatternRule
+from .parse_utils import number_rule, wildcard_rule
 from .parsed_piece_viewer import (BaseViewer, LastDotSplitFuzzyViewer,
                                   MixedViewer)
 from .pattern import Pattern
@@ -32,26 +31,28 @@ class TBag(Bag):
 class PieceBag(TBag):
     def __init__(self):
         super(PieceBag, self).__init__()
-        self._p_nodes = set()
+        self._p_nodes = None
         self._p_counter = None
 
-    def incr(self, incr):
-        self._count += incr
-
-    def add(self, piece_node):
-        super(PieceBag, self).add(piece_node)
-        self._p_nodes.add(piece_node.parrent)
+    def _lazy_build(self):
+        if len(self) <= 0:
+            return
+        self._p_counter = Counter()
+        self._p_nodes = set()
+        for p in self:
+            self._p_counter[p.parrent.parsed_piece] += p.count
+            self._p_nodes.add(p.parrent)
 
     @property
     def p_nodes(self):
+        if self._p_nodes is None:
+            self._lazy_build()
         return self._p_nodes
 
     @property
     def p_counter(self):
-        if self._p_counter is None:
-            self._p_counter = Counter()
-            for p in self:
-                self._p_counter[p.parrent.parsed_piece] += p.count
+        if not self._p_counter is None:
+            self._lazy_build()
         return self._p_counter
 
 
@@ -78,16 +79,6 @@ class Bucket(TBag):
         raise NotImplementedError
 
 
-class PieceNodeBucket(Bucket):
-
-    def add(self, piece_pattern_node):
-        piece = piece_pattern_node.piece
-        if piece not in self._objs:
-            self._objs[piece] = PieceBag()
-        self._objs[piece].add(piece_pattern_node)
-        self._count += piece_pattern_node.count
-
-
 class PieceBagBucket(Bucket):
 
     def __init__(self):
@@ -102,12 +93,20 @@ class PieceBagBucket(Bucket):
                 self._p_counter.update(p.p_counter)
         return self._p_counter
 
-    def add(self, piece_bag):
-        piece = piece_bag.pick().piece
-        if piece in self._objs:
-            raise ValueError('duplicated')
-        self._objs[piece] = piece_bag
-        self._count += piece_bag.count
+    def add(self, obj):
+        if isinstance(obj, PiecePatternNode):
+            piece = obj.piece
+            if piece not in self._objs:
+                self._objs[piece] = PieceBag()
+            self._objs[piece].add(obj)
+        elif isinstance(obj, PieceBag):
+            piece = obj.pick().piece
+            if piece in self._objs:
+                raise ValueError('duplicated')
+            self._objs[piece] = obj
+        else:
+            raise ValueError('not PiecePatternNode nor PieceBag')
+        self._count += obj.count
 
 
 class PieceBagMixin(object):
@@ -135,6 +134,7 @@ class PieceViewerBagBucket(PieceBagBucket):
 
     def add(self, piece_viewer_bag):
         super(PieceViewerBagBucket, self).add(piece_viewer_bag)
+
         viewer = piece_viewer_bag.viewer
         self._tree.add_from_parsed_pieces(
             viewer.parsed_pieces,
@@ -157,18 +157,11 @@ class PatternCluster(object):
         self._min_cluster_num = processor.config.getint(
             'make', 'min_cluster_num')
 
-    def get_processor(self, n):
-        processor = self._processor
-        while n > 0 and processor is not None:
-            processor = processor.pre_level_processor
-            n -= 1
-        return processor
-
     @property
     def pre_level_processor(self):
         return self._processor.pre_level_processor
 
-    def as_cluster(self, p_counter):
+    def seek_cluster(self, p_counter):
         return False
 
     def cluster(self):
@@ -181,27 +174,23 @@ class PatternCluster(object):
 class PiecePatternCluster(PatternCluster):
     def __init__(self, processor):
         super(PiecePatternCluster, self).__init__(processor)
-        self._piece_bucket = PieceNodeBucket()
+        self._bucket = PieceBagBucket()
         self._piece_skip = defaultdict(lambda: False)
 
-    def revise(self, p_counter):
-        for parsed_piece, count in iteritems(p_counter):
-            self._piece_bucket[parsed_piece.piece].incr(0 - count)
-
     def as_cluster(self, p_counter):
-        if len(p_counter) >= self._min_cluster_num or len(self._piece_bucket) <= 1:
+        if len(p_counter) >= self._min_cluster_num or len(self._bucket) <= 1:
             return False
-        total = sum([self._piece_bucket[p.piece].count for p in p_counter])
+        total = sum([self._bucket[p.piece].count for p in p_counter])
         _, max_count = p_counter.most_common(1)[0]
         return not confused(total, max_count, self._min_cluster_num)
 
     def iter_nodes(self):
-        return self._piece_bucket.iter_all()
+        return self._bucket.iter_all()
 
     def add(self, piece_pattern_node):
         piece = piece_pattern_node.piece
-        self._piece_bucket.add(piece_pattern_node)
-        bag = self._piece_bucket[piece]
+        self._bucket.add(piece_pattern_node)
+        bag = self._bucket[piece]
         if self._piece_skip[piece] or bag.count < self._min_cluster_num:
             return
 
@@ -215,30 +204,28 @@ class PiecePatternCluster(PatternCluster):
 
         for b_node in p_node.iter_children():
             b_piece = b_node.piece
-            if b_piece == piece or b_piece not in self._piece_bucket:
+            if b_piece == piece or b_piece not in self._bucket:
                 continue
-            b_bag = self._piece_bucket[b_piece]
+            b_bag = self._bucket[b_piece]
             if b_bag.count >= self._min_cluster_num:
                 self._piece_skip[b_piece] = True
                 self._piece_skip[piece] = True
                 break
 
     def cluster(self):
-        if len(self._piece_bucket) < self._min_cluster_num:
-            if self._piece_bucket.count < self._min_cluster_num:
+        if len(self._bucket) < self._min_cluster_num:
+            if self._bucket.count < self._min_cluster_num:
                 return
-            max_count = max(self._piece_bucket, key=lambda x: x.count).count
-            if not confused(self._piece_bucket.count, max_count, self._min_cluster_num):
+            max_count = max(self._bucket, key=lambda x: x.count).count
+            if not confused(self._bucket.count, max_count, self._min_cluster_num):
                 return
 
-        for piece_bag in self._piece_bucket:
+        for piece_bag in self._bucket:
             piece = piece_bag.pick().piece
             if self._piece_skip[piece] \
                     or piece_bag.count < self._min_cluster_num \
-                    or not self.get_processor(1).seek_cluster(piece_bag.p_counter):
+                    or not self.pre_level_processor.seek_cluster(piece_bag.p_counter):
                 self._add_to_forward_cluster(piece_bag)
-            else:
-                self.get_processor(1).revise(piece_bag.p_counter)
 
     def _add_to_forward_cluster(self, piece_bag):
         parsed_piece = piece_bag.pick().parsed_piece
@@ -328,7 +315,6 @@ class LengthPatternCluster(PatternCluster):
 
                 p = self.get_processor(1)
                 if p.seek_cluster(length_bucket.p_counter):
-                    p.revise(length_bucket.p_counter)
                     continue
             forward_cluster.add(length_bucket)
 
@@ -439,8 +425,11 @@ class MetaInfo(object):
         return MetaInfo(self.url_meta, self.current_level + 1)
 
 
-CLUSTER_CLASSES = [PiecePatternCluster, BasePatternCluster, MixedPatternCluster,
-                   LastDotSplitFuzzyPatternCluster, LengthPatternCluster,
+CLUSTER_CLASSES = [PiecePatternCluster,
+                   BasePatternCluster,
+                   MixedPatternCluster,
+                   LastDotSplitFuzzyPatternCluster,
+                   LengthPatternCluster,
                    FuzzyPatternCluster]
 
 
@@ -454,13 +443,13 @@ class ClusterProcessor(object):
 
     def seek_cluster(self, p_counter):
         for c in self._pattern_clusters.itervalues():
-            if c.as_cluster(p_counter):
+            if c.seek_cluster(p_counter):
                 return True
 
-        return False
+        if self._pre_level_processor is not None:
+            return self._pre_level_processor.seek_cluster()
 
-    def revise(self, p_counter):
-        self.get_cluster(PiecePatternCluster).revise(p_counter)
+        return False
 
     def get_cluster(self, cluster_cls):
         return self._pattern_clusters[cluster_cls.__name__]
@@ -535,8 +524,8 @@ def process(config, url_meta, piece_pattern_tree, **kwargs):
 
 
 def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    split(piece_pattern_tree)
-    #process(config, url_meta, piece_pattern_tree, **kwargs)
+    # split(piece_pattern_tree)
+    process(config, url_meta, piece_pattern_tree, **kwargs)
 
     return
     for sub_piece_pattern_tree in split(piece_pattern_tree):
