@@ -1,8 +1,9 @@
+import hashlib
 from collections import Counter, OrderedDict, defaultdict, namedtuple
 
 from .compat import iteritems, itervalues
 from .definition import BasePatternRule
-from .parse_utils import number_rule, wildcard_rule
+from .parse_utils import digest, number_rule, wildcard_rule
 from .parsed_piece_viewer import (BaseViewer, LastDotSplitFuzzyViewer,
                                   MixedViewer)
 from .pattern import Pattern
@@ -470,17 +471,18 @@ class ClusterProcessor(object):
         for c in self._pattern_clusters.itervalues():
             c.cluster()
 
+    def add(self, node):
+        self._pattern_clusters[PiecePatternCluster].add(node)
+
     def process(self):
         self._process()
         if self._meta_info.is_last_level():
             return
 
-        next_level_processors = self._create_next_level_processors()
-
-        for processor in itervalues(next_level_processors):
+        for processor in itervalues(self._generate_next_level_processors()):
             processor.process()
 
-    def _create_next_level_processors(self):
+    def _generate_next_level_processors(self):
         pp_cluster = self.get_cluster(PiecePatternCluster)
         next_level_processors = {}
 
@@ -490,10 +492,8 @@ class ClusterProcessor(object):
                 next_level_processors[pattern] = self._create_next_level_processor(
                 )
             next_level_processor = next_level_processors[pattern]
-            next_pp_cluster = next_level_processor.get_cluster(
-                PiecePatternCluster)
             for child in node.iter_children():
-                next_pp_cluster.add(child)
+                next_level_processor.add(child)
 
         return next_level_processors
 
@@ -503,10 +503,10 @@ class ClusterProcessor(object):
                                 self)
 
 
-def split(piece_pattern_tree):
+def split(url_meta, piece_pattern_tree):
     trees = {}
     for path in piece_pattern_tree.dump_paths():
-        pid = hash('/'.join([str(p.pattern) for p in path]))
+        pid = digest(url_meta, [p.pattern for p in path[1:]])
         if pid not in trees:
             trees[pid] = PiecePatternTree()
         tree = trees[pid]
@@ -519,14 +519,14 @@ def split(piece_pattern_tree):
 def process(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info, None)
-    processor.get_cluster(PiecePatternCluster).add(piece_pattern_tree.root)
+    processor.add(piece_pattern_tree.root)
     processor.process()
 
 
 def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    # split(piece_pattern_tree)
+    # split(url_meta,piece_pattern_tree)
     process(config, url_meta, piece_pattern_tree, **kwargs)
 
     return
-    for sub_piece_pattern_tree in split(piece_pattern_tree):
+    for sub_piece_pattern_tree in split(url_meta, piece_pattern_tree):
         process(config, url_meta, sub_piece_pattern_tree)

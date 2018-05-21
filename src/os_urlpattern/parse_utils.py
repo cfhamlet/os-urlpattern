@@ -400,11 +400,8 @@ class PieceParser(object):
         return piece_rule
 
 
-def struct_id(url_meta, parsed_pieces):
-    meta_hash = url_meta.hashcode
-    pieces_hash = hashlib.md5(
-        '/'.join([p.fuzzy_rule for p in parsed_pieces]).encode()).hexdigest()
-    return '-'.join((meta_hash, pieces_hash))
+def digest(url_meta, parts):
+    return hashlib.md5(pack(url_meta, parts).encode()).hexdigest()
 
 
 def analyze_url_pattern(url_pattern_string):
