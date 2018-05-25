@@ -15,12 +15,12 @@ class Bag(object):
         return len(self._objs)
 
     def pick(self):
-        obj = self._get()
+        obj = self._pick()
         while isinstance(obj, Bag):
-            obj = obj._get()
+            obj = obj._pick()
         return obj
 
-    def _get(self):
+    def _pick(self):
         for obj in self._objs:
             return obj
 

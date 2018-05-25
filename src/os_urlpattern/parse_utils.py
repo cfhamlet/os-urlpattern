@@ -320,8 +320,7 @@ class ParsedPiece(object):
                 elif c == '{':
                     if self.piece[idx - 1] == ']':
                         e = self.piece.index('}', idx)
-                        length += int(self.piece[idx + 1:e]
-                                      ) - 1 - (e - idx + 1)
+                        length += int(self.piece[idx + 1:e]) - 1 - (e - idx + 1)
                         idx = e
                 idx += 1
 

@@ -3,7 +3,7 @@ from .parse_utils import ParsedPiece, mix
 
 
 class ParsedPieceViewer(object):
-    __slot__ = ('_parsed_piece', 'parsed_pieces', '_view')
+    __slot__ = ('_parsed_piece', '_view')
 
     def __init__(self, parsed_piece):
         self._parsed_piece = parsed_piece
@@ -15,6 +15,8 @@ class ParsedPieceViewer(object):
         return self._parsed_piece
 
     def __eq__(self, o):
+        if not isinstance(o, ParsedPieceViewer):
+            return False
         return self.view == o.view
 
     def __hash__(self):
