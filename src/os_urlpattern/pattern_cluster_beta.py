@@ -126,6 +126,7 @@ class PatternCluster(object):
         self._processor = processor
         self._min_cluster_num = processor.config.getint(
             'make', 'min_cluster_num')
+        self._patterns = set()
 
     @property
     def pre_level_processor(self):
@@ -139,6 +140,10 @@ class PatternCluster(object):
 
     def add(self, obj):
         pass
+
+    @property
+    def pattern_num(self):
+        return len(self._patterns)
 
 
 class PiecePatternCluster(PatternCluster):
@@ -155,11 +160,18 @@ class PiecePatternCluster(PatternCluster):
     def add(self, piece_pattern_node):
         self._bucket.add(piece_pattern_node)
 
+    def _set_pattern(self, piece_bag):
+        pattern = Pattern(piece_bag.pick().piece)
+        piece_bag.set_pattern(pattern)
+        self._patterns.add(pattern)
+
     def cluster(self):
         if len(self._bucket) < self._min_cluster_num:
             max_count = max(
                 self._bucket, key=lambda x: x.count).count
             if not confused(self._bucket.count, max_count, self._min_cluster_num):
+                for piece_bag in self._bucket:
+                    self._set_pattern(piece_bag)
                 return
 
         mcn = self._min_cluster_num
@@ -168,6 +180,8 @@ class PiecePatternCluster(PatternCluster):
             count = piece_bag.count
             if count < mcn or stats['p_nodes_count'] - count >= mcn:
                 self._add_to_forward_cluster(piece_bag)
+            else:
+                self._set_pattern(piece_bag)
 
     def _add_to_forward_cluster(self, piece_bag):
         parsed_piece = piece_bag.pick().parsed_piece
@@ -436,6 +450,11 @@ class ClusterProcessor(object):
         self._pattern_clusters = OrderedDict(
             [(c.__name__, c(self)) for c in CLUSTER_CLASSES])
         self._pre_level_processor = pre_level_processor
+        self._next_level_processors = {}
+
+    @property
+    def next_level_processors(self):
+        return self._next_level_processors.values()
 
     def seek_cluster(self, package):
         return False
@@ -467,31 +486,32 @@ class ClusterProcessor(object):
         else:
             c.add(node)
 
+    @property
+    def pattern_num(self):
+        return sum([c.pattern_num for c in itervalues(self._pattern_clusters)])
+
     def process(self):
         self._process()
         if self._meta_info.is_last_level():
             return
 
-        for processor in self._next_level_processors():
+        self._create_next_level_processors()
+
+        for processor in itervalues(self._next_level_processors):
             processor.process()
 
-    def _next_level_processors(self):
+    def _create_next_level_processors(self):
+
         pp_cluster = self.get_cluster(PiecePatternCluster)
-        processors = {}
+        processors = self._next_level_processors
 
         for node in pp_cluster.iter_nodes():
             pattern = node.pattern
             if pattern not in processors:
-                processors[pattern] = self._create_next_level_processor()
+                processors[pattern] = ClusterProcessor(
+                    self._config, self._meta_info.next_level_meta_info(), self)
             processor = processors[pattern]
             processor.add(node, add_children=True)
-
-        return itervalues(processors)
-
-    def _create_next_level_processor(self):
-        return ClusterProcessor(self._config,
-                                self._meta_info.next_level_meta_info(),
-                                self)
 
 
 def split_by_pattern(url_meta, piece_pattern_tree):
@@ -506,16 +526,32 @@ def split_by_pattern(url_meta, piece_pattern_tree):
     return itervalues(trees)
 
 
+def _can_be_splited(processor):
+    while True:
+        if processor.pattern_num > 1:
+            return True
+        l = len(processor.next_level_processors)
+        if l <= 0:
+            break
+        elif l > 1:
+            return True
+        processor = processor.next_level_processors[0]
+
+    return False
+
+
 def process(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info, None)
     processor.add(piece_pattern_tree.root)
     processor.process()
+    return _can_be_splited(processor)
 
 
 def cluster(config, url_meta, piece_pattern_tree, **kwargs):
     # split_by_pattern(url_meta, piece_pattern_tree)
-    process(config, url_meta, piece_pattern_tree, **kwargs)
+    if not process(config, url_meta, piece_pattern_tree, **kwargs):
+        yield piece_pattern_tree
 
     # for sub_piece_pattern_tree in split_by_pattern(url_meta, piece_pattern_tree):
-    #     process(config, url_meta, sub_piece_pattern_tree)
+    #     yield cluster(config, url_meta, sub_piece_pattern_tree, **kwargs)

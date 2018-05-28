@@ -45,9 +45,9 @@ class Maker(object):
                 dest.load_path(path[index:])
 
     def make(self):
-        self._cluster(self._config, self._url_meta,
-                      self._piece_pattern_tree)
-
         pattern_tree = PatternTree(self._url_meta)
-        self._path_dump_and_load(self._piece_pattern_tree, pattern_tree, 1)
+
+        for pp_tree in self._cluster(self._config, self._url_meta,
+                                     self._piece_pattern_tree):
+            self._path_dump_and_load(pp_tree, pattern_tree, 1)
         return pattern_tree
