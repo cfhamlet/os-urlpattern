@@ -132,9 +132,6 @@ class PatternCluster(object):
     def pre_level_processor(self):
         return self._processor.pre_level_processor
 
-    def seek_cluster(self, package):
-        return False
-
     def cluster(self):
         pass
 
@@ -160,28 +157,29 @@ class PiecePatternCluster(PatternCluster):
     def add(self, piece_pattern_node):
         self._bucket.add(piece_pattern_node)
 
-    def _set_pattern(self, piece_bag):
+    def _set_pattern(self, piece_bag, update_patterns=False):
         pattern = Pattern(piece_bag.pick().piece)
         piece_bag.set_pattern(pattern)
-        self._patterns.add(pattern)
+        if update_patterns:
+            self._patterns.add(pattern)
 
     def cluster(self):
-        if len(self._bucket) < self._min_cluster_num:
-            max_count = max(
-                self._bucket, key=lambda x: x.count).count
-            if not confused(self._bucket.count, max_count, self._min_cluster_num):
+        mcn = self._min_cluster_num
+        if len(self._bucket) < mcn:
+            max_count = max(self._bucket, key=lambda x: x.count).count
+            if not confused(self._bucket.count, max_count, mcn):
                 for piece_bag in self._bucket:
-                    self._set_pattern(piece_bag)
+                    self._set_pattern(piece_bag, True)
                 return
 
-        mcn = self._min_cluster_num
         for piece_bag in self._bucket:
             stats = piece_bag.stats
             count = piece_bag.count
             if count < mcn or stats['p_nodes_count'] - count >= mcn:
+                self._set_pattern(piece_bag)
                 self._add_to_forward_cluster(piece_bag)
             else:
-                self._set_pattern(piece_bag)
+                self._set_pattern(piece_bag, True)
 
     def _add_to_forward_cluster(self, piece_bag):
         parsed_piece = piece_bag.pick().parsed_piece
@@ -243,17 +241,25 @@ class LengthPatternCluster(PatternCluster):
 
         return True
 
+    def _update_patterns(self, bucket):
+        for piece_bag in bucket:
+            self._patterns.add(piece_bag.pick().pattern)
+
     def cluster(self):
-        if len(self._length_buckets) < self._min_cluster_num:
+        if not self._length_buckets:
+            return
+        mcn = self._min_cluster_num
+        if len(self._length_buckets) < mcn:
             total = sum([c.count for c in itervalues(self._length_buckets)])
-            if total < self._min_cluster_num:
-                return
             max_bucket = max(itervalues(self._length_buckets),
                              key=lambda x: x.count)
-            if not confused(total, max_bucket.count, self._min_cluster_num):
-                if self._length_as_cluster(max_bucket):
-                    self._set_pattern(max_bucket)
-                    return
+            if not confused(total, max_bucket.count, mcn):
+                for bucket in itervalues(self._length_buckets):
+                    if self._length_as_cluster(bucket):
+                        self._set_pattern(bucket, True)
+                    else:
+                        self._update_patterns(bucket)
+                return
 
         forward_cluster = self._processor.get_cluster(FuzzyPatternCluster)
         for length_bucket in itervalues(self._length_buckets):
@@ -262,11 +268,12 @@ class LengthPatternCluster(PatternCluster):
 
             forward_cluster.add(length_bucket)
 
-    def _set_pattern(self, length_bucket):
+    def _set_pattern(self, length_bucket, update_patterns=False):
         parsed_piece = length_bucket.pick().parsed_piece
         length = parsed_piece.piece_length
         pattern = Pattern(number_rule(parsed_piece.fuzzy_rule, length))
-        length_bucket.set_pattern(pattern)
+        if update_patterns:
+            length_bucket.set_pattern(pattern)
 
 
 class BasePatternCluster(PatternCluster):
@@ -395,20 +402,29 @@ class FuzzyPatternCluster(PatternCluster):
             if len(self._cached) >= self._min_cluster_num:
                 self._force_pattern = True
 
+    def _update_patterns(self):
+        for bucket in self._cached:
+            for piece_bag in bucket:
+                self._patterns.add(piece_bag.pick().pattern)
+
     def cluster(self):
         if self._force_pattern:
             self._set_pattern(self._cached)
         else:
             if self._cached.count < self._min_cluster_num:
+                self._update_patterns()
                 return
             max_count = max(self._cached, key=lambda x: x.count).count
             if confused(self._cached.count, max_count, self._min_cluster_num):
                 self._set_pattern(self._cached)
+            else:
+                self._update_patterns()
 
     def _set_pattern(self, package):
         if self._fuzzy_pattern is None:
             self._fuzzy_pattern = Pattern(
                 wildcard_rule(package.pick().parsed_piece.fuzzy_rule))
+            self._patterns.add(self._fuzzy_pattern)
         package.set_pattern(self._fuzzy_pattern)
 
 
@@ -528,7 +544,8 @@ def split_by_pattern(url_meta, piece_pattern_tree):
 
 def _can_be_splited(processor):
     while True:
-        if processor.pattern_num > 1:
+        pattern_num = processor.pattern_num
+        if pattern_num > 1:
             return True
         l = len(processor.next_level_processors)
         if l <= 0:
@@ -549,9 +566,9 @@ def process(config, url_meta, piece_pattern_tree, **kwargs):
 
 
 def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    # split_by_pattern(url_meta, piece_pattern_tree)
     if not process(config, url_meta, piece_pattern_tree, **kwargs):
         yield piece_pattern_tree
-
-    # for sub_piece_pattern_tree in split_by_pattern(url_meta, piece_pattern_tree):
-    #     yield cluster(config, url_meta, sub_piece_pattern_tree, **kwargs)
+        return
+    for sub_piece_pattern_tree in split_by_pattern(url_meta, piece_pattern_tree):
+        for tree in cluster(config, url_meta, sub_piece_pattern_tree, **kwargs):
+            yield tree

@@ -1,4 +1,4 @@
-from .parse_utils import PieceParser, parse_url, digest
+from .parse_utils import PieceParser, digest, parse_url
 from .pattern_tree import PatternTree
 from .piece_pattern_tree import PiecePatternTree
 from .utils import load_obj
