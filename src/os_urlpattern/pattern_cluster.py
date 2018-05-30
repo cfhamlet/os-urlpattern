@@ -195,6 +195,7 @@ class PiecePatternCluster(PatternCluster):
         p_nodes_count = sum([p.count for p in package.p_nodes])
         if p_nodes_count - package.count >= self._min_cluster_num:
             return SeekResult.IMPOSSIBLE
+        
         return SeekResult.UNKNOW
 
     def iter_nodes(self):
