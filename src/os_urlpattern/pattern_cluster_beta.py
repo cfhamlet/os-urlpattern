@@ -58,18 +58,25 @@ class PieceBag(TBag):
 
     def __init__(self):
         super(PieceBag, self).__init__()
+        self._p_nodes = set()
 
     def add(self, piece_pattern_node):
         super(PieceBag, self).add(piece_pattern_node)
+        self._p_nodes.add(piece_pattern_node.parrent)
         self._stats['p_nodes_count'] += piece_pattern_node.parrent.count \
             if piece_pattern_node.parrent is not None \
             else piece_pattern_node.count
+
+    @property
+    def p_nodes(self):
+        return self._p_nodes
 
 
 class PieceBagBucket(TBucket):
 
     def __init__(self):
         super(PieceBagBucket, self).__init__()
+        self._p_nodes = set()
 
     def add(self, obj):
         if isinstance(obj, PiecePatternNode):
@@ -86,6 +93,13 @@ class PieceBagBucket(TBucket):
             raise ValueError('not PiecePatternNode nor PieceBag')
 
         self._stats['count'] += obj.count
+
+    @property
+    def p_nodes(self):
+        if not self._p_nodes:
+            for piece_bag in self:
+                self._p_nodes.update(piece_bag.p_nodes)
+        return self._p_nodes
 
 
 class ViewerPieceBag(namedtuple('ViewerPieceBag', ['viewer', 'piece_bag'])):
@@ -140,6 +154,13 @@ def confused(total, part, threshold):
     return abs(part - o_part) < threshold - 1
 
 
+class SeekResult(object):
+    FOUND = 1
+    IMPOSSIBLE = 2
+    UNKNOW = 3
+    BACKWARD = 4
+
+
 class PatternCluster(object):
     def __init__(self, processor):
         self._processor = processor
@@ -161,6 +182,9 @@ class PatternCluster(object):
     def pattern_num(self):
         return len(self._patterns)
 
+    def seek_cluster(self, package):
+        return SeekResult.UNKNOW
+
 
 class PiecePatternCluster(PatternCluster):
     def __init__(self, processor):
@@ -168,7 +192,10 @@ class PiecePatternCluster(PatternCluster):
         self._bucket = PieceBagBucket()
 
     def seek_cluster(self, package):
-        return False
+        p_nodes_count = sum([p.count for p in package.p_nodes])
+        if p_nodes_count - package.count >= self._min_cluster_num:
+            return SeekResult.IMPOSSIBLE
+        return SeekResult.UNKNOW
 
     def iter_nodes(self):
         return self._bucket.iter_all()
@@ -194,7 +221,9 @@ class PiecePatternCluster(PatternCluster):
         for piece_bag in self._bucket:
             stats = piece_bag.stats
             count = piece_bag.count
-            if count < mcn or stats['p_nodes_count'] - count >= mcn:
+            if count < mcn \
+                    or stats['p_nodes_count'] - count >= mcn \
+                    or not self.pre_level_processor.seek_cluster(piece_bag):
                 self._set_pattern(piece_bag)
                 self._add_to_forward_cluster(piece_bag)
             else:
@@ -283,6 +312,9 @@ class LengthPatternCluster(PatternCluster):
         forward_cluster = self._processor.get_cluster(FuzzyPatternCluster)
         for length_bucket in itervalues(self._length_buckets):
             if self._length_as_cluster(length_bucket):
+                if self.pre_level_processor.seek_cluster(length_bucket):
+                    self._set_pattern(length_bucket, True)
+                    continue
                 self._set_pattern(length_bucket)
 
             forward_cluster.add(length_bucket)
@@ -494,7 +526,31 @@ class ClusterProcessor(object):
     def next_level_processors(self):
         return self._next_level_processors.values()
 
+    def _backward_package(self, package):
+        bucket = PieceBagBucket()
+        for p_node in package.p_nodes:
+            if p_node.piece in bucket:
+                continue
+            bucket.add(p_node)
+        return bucket
+
     def seek_cluster(self, package):
+        if self._pre_level_processor is None:
+            return False
+        for c in itervalues(self._pattern_clusters):
+            res = c.seek_cluster(package)
+            if res == SeekResult.FOUND:
+                return True
+            elif res == SeekResult.IMPOSSIBLE:
+                break
+            elif res == SeekResult.BACKWARD:
+                pack = self._backward_package(package)
+                return self._pre_level_processor.seek_cluster(pack)
+            elif res == SeekResult.UNKNOW:
+                continue
+            else:
+                raise ValueError('invalid seek result')
+
         return False
 
     def get_cluster(self, cluster_cls):
