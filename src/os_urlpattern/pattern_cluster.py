@@ -195,7 +195,7 @@ class PiecePatternCluster(PatternCluster):
         p_nodes_count = sum([p.count for p in package.p_nodes])
         if p_nodes_count - package.count >= self._min_cluster_num:
             return SeekResult.IMPOSSIBLE
-        
+
         return SeekResult.UNKNOW
 
     def iter_nodes(self):
@@ -238,32 +238,29 @@ class PiecePatternCluster(PatternCluster):
 
         viewer = BaseViewer(parsed_piece)
         p_cls = BasePatternCluster
-        if len(viewer.parsed_pieces) > self._min_cluster_num:
+        vl = len(viewer.parsed_pieces)
+
+        if vl == 3 and self._processor.meta_info.is_last_path():
+            ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
+            if viewer.view == ldsf_viewer.view:
+                viewer = ldsf_viewer
+                p_cls = LastDotSplitFuzzyPatternCluster
+        elif vl > 3:
             mixed_viewer = MixedViewer(parsed_piece)
             mvl = len(mixed_viewer.parsed_pieces)
             if mvl == 1:
                 self._processor.get_cluster(
                     LengthPatternCluster).add(piece_bag)
                 return
-            elif mvl == 3 and self._processor.meta_info.is_last_path():
-                ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-                if mixed_viewer.view == ldsf_viewer.view:
-                    viewer = ldsf_viewer
-                    p_cls = LastDotSplitFuzzyPatternCluster
-                    self._processor.get_cluster(p_cls).add(
-                        ViewerPieceBag(viewer, piece_bag))
-                    return
-
-            if len(viewer.parsed_pieces) - mvl >= self._min_cluster_num:
-                viewer = mixed_viewer
-                p_cls = MixedPatternCluster
-        else:
-            if len(viewer.parsed_pieces) == 3 \
-                    and self._processor.meta_info.is_last_path():
-                ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-                if viewer.view == ldsf_viewer.view:
-                    viewer = ldsf_viewer
-                    p_cls = LastDotSplitFuzzyPatternCluster
+            elif vl - mvl >= self._min_cluster_num:
+                if mvl == 3 and self._processor.meta_info.is_last_path():
+                    ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
+                    if mixed_viewer.view == ldsf_viewer.view:
+                        viewer = ldsf_viewer
+                        p_cls = LastDotSplitFuzzyPatternCluster
+                else:
+                    viewer = mixed_viewer
+                    p_cls = MixedPatternCluster
 
         self._processor.get_cluster(p_cls).add(
             ViewerPieceBag(viewer, piece_bag))
