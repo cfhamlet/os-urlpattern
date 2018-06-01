@@ -127,16 +127,16 @@ class ViewerPieceBagBucket(PieceBagBucket):
             count=piece_bag.count,
             uniq=False)
 
-    def cluster(self, config):
+    def cluster(self, config, **kwargs):
         p_num = len(self.pick().viewer.parsed_pieces)
         url_meta = URLMeta(p_num, [], False)
-        for tree in cluster(config, url_meta, self._tree):
-            yield self._transfer(tree)
+        for single_tree in cluster(config, url_meta, self._tree, **kwargs):
+            yield self._transfer(single_tree)
 
-    def _transfer(self, tree):
+    def _transfer(self, single_tree):
         pattern = None
         bucket = ViewerPieceBagBucket()
-        for path in tree.dump_paths():
+        for path in single_tree.dump_paths():
             piece = ''.join([p.piece for p in path[1:]])
             viewer_piece_bag = self[piece]
             bucket.add(viewer_piece_bag, False)
@@ -211,6 +211,14 @@ class PiecePatternCluster(PatternCluster):
             self._patterns.add(pattern)
 
     def cluster(self):
+        procesor = self._processor
+        if procesor.meta_info.is_last_level() \
+                and 'last_path_as_pattern' in procesor.kwargs \
+                and procesor.kwargs['last_path_as_pattern']:
+            for piece_bag in self._bucket:
+                self._set_pattern(piece_bag, True)
+            return
+
         mcn = self._min_cluster_num
         if len(self._bucket) < mcn:
             max_count = max(self._bucket, key=lambda x: x.count).count
@@ -258,6 +266,9 @@ class PiecePatternCluster(PatternCluster):
                     if mixed_viewer.view == ldsf_viewer.view:
                         viewer = ldsf_viewer
                         p_cls = LastDotSplitFuzzyPatternCluster
+                    else:
+                        viewer = mixed_viewer
+                        p_cls = MixedPatternCluster
                 else:
                     viewer = mixed_viewer
                     p_cls = MixedPatternCluster
@@ -335,11 +346,15 @@ class MultiPatternCluster(PatternCluster):
             if bucket.count < self._min_cluster_num:
                 self._to_forward_cluster(bucket)
                 continue
-            for b, pattern in bucket.cluster(self._processor.config):
+            for b, pattern in self._cluster(bucket):
                 if self._as_cluster(b, pattern):
                     self._set_pattern(b, pattern)
                 else:
                     self._to_forward_cluster(b)
+
+    def _cluster(self, bucket):
+        for b, pattern in bucket.cluster(self._processor.config):
+            yield b, pattern
 
     def _to_forward_cluster(self, bucket):
         for viewer_piece_bag in bucket:
@@ -434,6 +449,11 @@ class MixedPatternCluster(MultiPatternCluster):
 
 class LastDotSplitFuzzyPatternCluster(MultiPatternCluster):
 
+    def _cluster(self, bucket):
+        for b, pattern in bucket.cluster(self._processor.config,
+                                         last_path_as_pattern=True):
+            yield b, pattern
+
     def _add_to_forward_cluster(self, viewer_piece_bag):
         self._processor.get_cluster(LengthPatternCluster).add(
             viewer_piece_bag.piece_bag)
@@ -512,13 +532,18 @@ CLUSTER_CLASSES = [PiecePatternCluster,
 
 
 class ClusterProcessor(object):
-    def __init__(self, config, meta_info, pre_level_processor):
+    def __init__(self, config, meta_info, pre_level_processor, **kwargs):
         self._config = config
         self._meta_info = meta_info
         self._pattern_clusters = OrderedDict(
             [(c.__name__, c(self)) for c in CLUSTER_CLASSES])
         self._pre_level_processor = pre_level_processor
         self._next_level_processors = {}
+        self._kwargs = kwargs
+
+    @property
+    def kwargs(self):
+        return self._kwargs
 
     @property
     def next_level_processors(self):
@@ -601,7 +626,10 @@ class ClusterProcessor(object):
             pattern = node.pattern
             if pattern not in processors:
                 processors[pattern] = ClusterProcessor(
-                    self._config, self._meta_info.next_level_meta_info(), self)
+                    self._config,
+                    self._meta_info.next_level_meta_info(),
+                    self,
+                    **self.kwargs)
             processor = processors[pattern]
             processor.add(node, add_children=True)
 
@@ -635,7 +663,7 @@ def _can_be_splited(processor):
 
 def process(config, url_meta, piece_pattern_tree, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
-    processor = ClusterProcessor(config, meta_info, None)
+    processor = ClusterProcessor(config, meta_info, None, **kwargs)
     processor.add(piece_pattern_tree.root)
     processor.process()
     return _can_be_splited(processor)
