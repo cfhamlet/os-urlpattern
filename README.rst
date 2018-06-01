@@ -29,8 +29,22 @@ Install
 Usage
 ------
 
-API
-------
+* Command line:
+::
+  
+  $ pattern-make -h
+  usage: pattern-make [-h] [-c CONFIG] [-f FILE]
+                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] [-F {JSON,ETE}]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -c CONFIG, --config CONFIG
+                          config file
+    -f FILE, --file FILE  file to be processed (default: stdin)
+    -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                          log level (default: NOTSET)
+    -F {JSON,ETE}, --formatter {JSON,ETE}
+                          output formatter (default: JSON)
 
 
 Unit Tests
