@@ -41,7 +41,9 @@ class Command(object):
 
         parser.add_argument('-f', '--file',
                             help='file to be processed (default: stdin)',
-                            action='store',
+                            nargs='?',
+                            type=argparse.FileType('r'),
+                            default=sys.stdin,
                             dest='file')
 
         parser.add_argument('-L', '--loglevel',
@@ -65,15 +67,14 @@ class MakePatternCommand(Command):
     def process_args(self, args):
         super(MakePatternCommand, self).process_args(args)
         if args.config:
-            if os.path.exists(args.config):
-                self._config.read(args.config)
-            else:
-                raise ValueError('File not exist: %s' % args.config)
+            self._config.readfp(args.config)
 
     def add_argument(self, parser):
         super(MakePatternCommand, self).add_argument(parser)
         parser.add_argument('-c', '--config',
                             help='config file',
+                            nargs='+',
+                            type=argparse.FileType('r'),
                             action='store',
                             dest='config')
 
@@ -87,15 +88,9 @@ class MakePatternCommand(Command):
                             )
 
     def _load(self, pattern_maker, args):
-        inputs = sys.stdin
-        if args.file and os.path.exists(args.file):
-            if os.path.exists(args.file):
-                inputs = open(args.file, 'r')
-            else:
-                raise ValueError('File not exist: %s' % args.file)
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
-        for url in inputs:
+        for url in args.file:
             url = url.strip()
             stats['ALL'] += 1
             speed_logger.debug('[LOADING]')
@@ -137,6 +132,19 @@ class MakePatternCommand(Command):
 
 
 class MatchPatternCommand(Command):
+    def __init__(self):
+        super(MatchPatternCommand, self).__init__()
+
+    def add_argument(self, parser):
+        super(MatchPatternCommand, self).add_argument(parser)
+        parser.add_argument('-p', '--pattern-file',
+                            help='pattern file to be loaded',
+                            nargs='+',
+                            type=argparse.FileType('r'),
+                            required=True,
+                            action='store',
+                            dest='pattern_file')
+
     def run(self, args):
         pattern_matcher = PatternMatcher()
 
@@ -170,4 +178,4 @@ def make(argv=None):
 
 
 def match(argv=None):
-    _execute(MatchPatternCommand(_default_config()), argv)
+    _execute(MatchPatternCommand(), argv)
