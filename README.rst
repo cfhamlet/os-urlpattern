@@ -30,6 +30,7 @@ Usage
 ------
 
 * Command line:
+
 ::
   
   $ pattern-make -h
@@ -43,7 +44,7 @@ Usage
     -f FILE, --file FILE  file to be processed (default: stdin)
     -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
                           log level (default: NOTSET)
-    -F {JSON,ETE}, --formatter {JSON,ETE}
+    -F {JSON}, --formatter {JSON}
                           output formatter (default: JSON)
 
 

@@ -628,8 +628,7 @@ class ClusterProcessor(object):
                 processors[pattern] = ClusterProcessor(
                     self._config,
                     self._meta_info.next_level_meta_info(),
-                    self,
-                    **self.kwargs)
+                    self, **self.kwargs)
             processor = processors[pattern]
             processor.add(node, add_children=True)
 

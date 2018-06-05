@@ -12,6 +12,7 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
+from .pattern_matcher import PatternMatcher
 from .utils import LogSpeedAdapter, load_obj
 
 
@@ -32,15 +33,11 @@ def _config_logging(log_level):
 
 
 class Command(object):
-    def __init__(self, config):
+    def __init__(self, config=None):
         self._config = config
         self._logger = logging.getLogger(self.__class__.__name__)
 
     def add_argument(self, parser):
-        parser.add_argument('-c', '--config',
-                            help='config file',
-                            action='store',
-                            dest='config')
 
         parser.add_argument('-f', '--file',
                             help='file to be processed (default: stdin)',
@@ -57,11 +54,6 @@ class Command(object):
                             type=lambda s: s.upper())
 
     def process_args(self, args):
-        if args.config:
-            if os.path.exists(args.config):
-                self._config.read(args.config)
-            else:
-                raise ValueError('File not exist: %s' % args.config)
         _config_logging(args.log_level)
 
     def run(self, args):
@@ -70,8 +62,20 @@ class Command(object):
 
 class MakePatternCommand(Command):
 
+    def process_args(self, args):
+        super(MakePatternCommand, self).process_args(args)
+        if args.config:
+            if os.path.exists(args.config):
+                self._config.read(args.config)
+            else:
+                raise ValueError('File not exist: %s' % args.config)
+
     def add_argument(self, parser):
         super(MakePatternCommand, self).add_argument(parser)
+        parser.add_argument('-c', '--config',
+                            help='config file',
+                            action='store',
+                            dest='config')
 
         parser.add_argument('-F', '--formatter',
                             help='output formatter (default: JSON)',
@@ -133,7 +137,8 @@ class MakePatternCommand(Command):
 
 
 class MatchPatternCommand(Command):
-    pass
+    def run(self, args):
+        pattern_matcher = PatternMatcher()
 
 
 _DEFAULT_LOGGING = {
