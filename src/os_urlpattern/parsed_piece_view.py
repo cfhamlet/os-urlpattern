@@ -2,7 +2,7 @@ from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .parse_utils import ParsedPiece, mix
 
 
-class ParsedPieceViewer(object):
+class ParsedPieceView(object):
     __slot__ = ('_parsed_piece', '_view')
 
     def __init__(self, parsed_piece):
@@ -15,7 +15,7 @@ class ParsedPieceViewer(object):
         return self._parsed_piece
 
     def __eq__(self, o):
-        if not isinstance(o, ParsedPieceViewer):
+        if not isinstance(o, ParsedPieceView):
             return False
         return self.view == o.view
 
@@ -38,24 +38,24 @@ class ParsedPieceViewer(object):
         return self._parsed_pieces
 
 
-class PieceViewer(ParsedPieceViewer):
+class PieceView(ParsedPieceView):
 
     def __init__(self, parsed_piece):
-        super(PieceViewer, self).__init__(parsed_piece)
+        super(PieceView, self).__init__(parsed_piece)
         self._view = self._parsed_piece.piece
 
 
-class LengthViewer(ParsedPieceViewer):
+class LengthView(ParsedPieceView):
     def __init__(self, parsed_piece):
-        super(LengthViewer, self).__init__(parsed_piece)
+        super(LengthView, self).__init__(parsed_piece)
         self._view = self._parsed_piece.piece_length
 
 
-class BaseViewer(ParsedPieceViewer):
+class BaseView(ParsedPieceView):
     pass
 
 
-class MixedViewer(ParsedPieceViewer):
+class MixedView(ParsedPieceView):
 
     @property
     def parsed_pieces(self):
@@ -73,7 +73,7 @@ class MixedViewer(ParsedPieceViewer):
         return self._parsed_pieces
 
 
-class LastDotSplitFuzzyViewer(ParsedPieceViewer):
+class LastDotSplitFuzzyView(ParsedPieceView):
 
     @property
     def parsed_pieces(self):
@@ -114,9 +114,9 @@ class LastDotSplitFuzzyViewer(ParsedPieceViewer):
         return self._parsed_pieces
 
 
-class FuzzyViewer(ParsedPieceViewer):
+class FuzzyView(ParsedPieceView):
     def __init__(self, parsed_piece):
-        super(FuzzyViewer, self).__init__(parsed_piece)
+        super(FuzzyView, self).__init__(parsed_piece)
         self._view = self._parsed_piece.fuzzy_rule
 
     @property

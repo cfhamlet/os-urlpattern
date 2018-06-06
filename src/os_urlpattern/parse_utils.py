@@ -242,7 +242,8 @@ def mix(pieces, rules):
 def unpack(result, norm_query_key=True):
     pieces = filter_useless_part(result.path.split('/')[1:])
     path_depth = len(pieces)
-    assert path_depth > 0
+    if path_depth <= 0:
+        raise IrregularURLException('Invalid url depth')
 
     key_list, value_list = parse_query_string(result.query)
     if norm_query_key:

@@ -1,3 +1,4 @@
+from .compat import itervalues
 from .parse_utils import PieceParser, digest, parse_url
 from .pattern_tree import PatternTree
 from .piece_pattern_tree import PiecePatternTree
@@ -19,7 +20,7 @@ class PatternMaker(object):
         return self._makers[sid].load(parsed_pieces)
 
     def process(self):
-        for maker in self._makers.values():
+        for maker in itervalues(self._makers):
             yield maker.make()
 
     def process_and_dump(self):

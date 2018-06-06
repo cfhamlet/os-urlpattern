@@ -2,8 +2,8 @@ from collections import Counter, OrderedDict, namedtuple
 
 from .compat import iteritems, itervalues
 from .parse_utils import URLMeta, digest, number_rule, wildcard_rule
-from .parsed_piece_viewer import (BaseViewer, LastDotSplitFuzzyViewer,
-                                  MixedViewer)
+from .parsed_piece_view import (BaseView, LastDotSplitFuzzyView,
+                                MixedView)
 from .pattern import Pattern
 from .piece_pattern_tree import PiecePatternNode, PiecePatternTree
 from .utils import Bag
@@ -48,7 +48,7 @@ class TBucket(TBag):
             return obj
 
     def __iter__(self):
-        return itervalues(self._objs)
+        return iter(itervalues(self._objs))
 
     def add(self, obj):
         raise NotImplementedError
@@ -102,44 +102,44 @@ class PieceBagBucket(TBucket):
         return self._p_nodes
 
 
-class ViewerPieceBag(namedtuple('ViewerPieceBag', ['viewer', 'piece_bag'])):
+class ViewPieceBag(namedtuple('ViewPieceBag', ['view', 'piece_bag'])):
     __slots__ = ()
 
     def set_pattern(self, pattern):
         return self.piece_bag.set_pattern(pattern)
 
 
-class ViewerPieceBagBucket(PieceBagBucket):
+class ViewPieceBagBucket(PieceBagBucket):
     def __init__(self):
-        super(ViewerPieceBagBucket, self).__init__()
+        super(ViewPieceBagBucket, self).__init__()
         self._tree = PiecePatternTree()
 
-    def add(self, viewer_piece_bag, build_tree=True):
-        piece_bag = viewer_piece_bag.piece_bag
-        self._objs[piece_bag.pick().piece] = viewer_piece_bag
+    def add(self, view_piece_bag, build_tree=True):
+        piece_bag = view_piece_bag.piece_bag
+        self._objs[piece_bag.pick().piece] = view_piece_bag
         self.stats['count'] += piece_bag.count
 
         if not build_tree:
             return
-        viewer = viewer_piece_bag.viewer
+        view = view_piece_bag.view
         self._tree.add_from_parsed_pieces(
-            viewer.parsed_pieces,
+            view.parsed_pieces,
             count=piece_bag.count,
             uniq=False)
 
     def cluster(self, config, **kwargs):
-        p_num = len(self.pick().viewer.parsed_pieces)
+        p_num = len(self.pick().view.parsed_pieces)
         url_meta = URLMeta(p_num, [], False)
         for single_tree in cluster(config, url_meta, self._tree, **kwargs):
             yield self._transfer(single_tree)
 
     def _transfer(self, single_tree):
         pattern = None
-        bucket = ViewerPieceBagBucket()
+        bucket = ViewPieceBagBucket()
         for path in single_tree.dump_paths():
             piece = ''.join([p.piece for p in path[1:]])
-            viewer_piece_bag = self[piece]
-            bucket.add(viewer_piece_bag, False)
+            view_piece_bag = self[piece]
+            bucket.add(view_piece_bag, False)
             if pattern is None:
                 pattern = Pattern(''.join([str(p.pattern) for p in path[1:]]))
         return bucket, pattern
@@ -211,6 +211,8 @@ class PiecePatternCluster(PatternCluster):
             self._patterns.add(pattern)
 
     def cluster(self):
+        if not self._bucket:
+            return
         procesor = self._processor
         if procesor.meta_info.is_last_level() \
                 and 'last_path_as_pattern' in procesor.kwargs \
@@ -244,37 +246,37 @@ class PiecePatternCluster(PatternCluster):
             self._processor.get_cluster(LengthPatternCluster).add(piece_bag)
             return
 
-        viewer = BaseViewer(parsed_piece)
+        view = BaseView(parsed_piece)
         p_cls = BasePatternCluster
-        vl = len(viewer.parsed_pieces)
+        vl = len(view.parsed_pieces)
 
         if vl == 3 and self._processor.meta_info.is_last_path():
-            ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-            if viewer.view == ldsf_viewer.view:
-                viewer = ldsf_viewer
+            ldsf_view = LastDotSplitFuzzyView(parsed_piece)
+            if view.view == ldsf_view.view:
+                view = ldsf_view
                 p_cls = LastDotSplitFuzzyPatternCluster
         elif vl > 3:
-            mixed_viewer = MixedViewer(parsed_piece)
-            mvl = len(mixed_viewer.parsed_pieces)
+            mixed_view = MixedView(parsed_piece)
+            mvl = len(mixed_view.parsed_pieces)
             if mvl == 1:
                 self._processor.get_cluster(
                     LengthPatternCluster).add(piece_bag)
                 return
             elif vl - mvl >= self._min_cluster_num:
                 if mvl == 3 and self._processor.meta_info.is_last_path():
-                    ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-                    if mixed_viewer.view == ldsf_viewer.view:
-                        viewer = ldsf_viewer
+                    ldsf_view = LastDotSplitFuzzyView(parsed_piece)
+                    if mixed_view.view == ldsf_view.view:
+                        view = ldsf_view
                         p_cls = LastDotSplitFuzzyPatternCluster
                     else:
-                        viewer = mixed_viewer
+                        view = mixed_view
                         p_cls = MixedPatternCluster
                 else:
-                    viewer = mixed_viewer
+                    view = mixed_view
                     p_cls = MixedPatternCluster
 
         self._processor.get_cluster(p_cls).add(
-            ViewerPieceBag(viewer, piece_bag))
+            ViewPieceBag(view, piece_bag))
 
 
 class LengthPatternCluster(PatternCluster):
@@ -357,10 +359,10 @@ class MultiPatternCluster(PatternCluster):
             yield b, pattern
 
     def _to_forward_cluster(self, bucket):
-        for viewer_piece_bag in bucket:
-            self._add_to_forward_cluster(viewer_piece_bag)
+        for view_piece_bag in bucket:
+            self._add_to_forward_cluster(view_piece_bag)
 
-    def _add_to_forward_cluster(self, viewer_piece_bag):
+    def _add_to_forward_cluster(self, view_piece_bag):
         pass
 
     def _as_cluster(self, bucket, pattern):
@@ -372,71 +374,71 @@ class MultiPatternCluster(PatternCluster):
         bucket.set_pattern(pattern)
         self._patterns.add(pattern)
 
-    def add(self, viewer_piece_bag):
-        viewer = viewer_piece_bag.viewer
-        view = viewer.view
+    def add(self, view_piece_bag):
+        view = view_piece_bag.view
+        view = view.view
         if view not in self._buckets:
-            self._buckets[view] = ViewerPieceBagBucket()
-        self._buckets[view].add(viewer_piece_bag)
+            self._buckets[view] = ViewPieceBagBucket()
+        self._buckets[view].add(view_piece_bag)
 
 
 class BasePatternCluster(MultiPatternCluster):
 
-    def _add_to_forward_cluster(self, viewer_piece_bag):
-        viewer = viewer_piece_bag.viewer
-        piece_bag = viewer_piece_bag.piece_bag
+    def _add_to_forward_cluster(self, view_piece_bag):
+        view = view_piece_bag.view
+        piece_bag = view_piece_bag.piece_bag
         parsed_piece = piece_bag.pick().parsed_piece
 
-        mixed_viewer = MixedViewer(parsed_piece)
-        mvl = len(mixed_viewer.parsed_pieces)
+        mixed_view = MixedView(parsed_piece)
+        mvl = len(mixed_view.parsed_pieces)
 
         p_cls = MixedPatternCluster
 
-        if viewer.view == mixed_viewer.view:
+        if view.view == mixed_view.view:
             if self._processor.meta_info.is_last_path():
-                ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-                if len(ldsf_viewer.parsed_pieces) == 1:
+                ldsf_view = LastDotSplitFuzzyView(parsed_piece)
+                if len(ldsf_view.parsed_pieces) == 1:
                     self._processor.get_cluster(
                         LengthPatternCluster).add(piece_bag)
                     return
                 else:
-                    viewer = ldsf_viewer
+                    view = ldsf_view
                     p_cls = LastDotSplitFuzzyPatternCluster
             else:
                 self._processor.get_cluster(
                     LengthPatternCluster).add(piece_bag)
                 return
         else:
-            viewer = mixed_viewer
+            view = mixed_view
             if mvl == 1:
                 self._processor.get_cluster(
                     LengthPatternCluster).add(piece_bag)
                 return
             elif mvl == 3 and self._processor.meta_info.is_last_path():
-                ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-                if mixed_viewer.view == ldsf_viewer.view:
-                    viewer = ldsf_viewer
+                ldsf_view = LastDotSplitFuzzyView(parsed_piece)
+                if mixed_view.view == ldsf_view.view:
+                    view = ldsf_view
                     p_cls = LastDotSplitFuzzyPatternCluster
 
         self._processor.get_cluster(p_cls).add(
-            ViewerPieceBag(viewer, piece_bag))
+            ViewPieceBag(view, piece_bag))
 
 
 class MixedPatternCluster(MultiPatternCluster):
 
-    def _add_to_forward_cluster(self, viewer_piece_bag):
-        viewer = viewer_piece_bag.viewer
-        piece_bag = viewer_piece_bag.piece_bag
+    def _add_to_forward_cluster(self, view_piece_bag):
+        view = view_piece_bag.view
+        piece_bag = view_piece_bag.piece_bag
         parsed_piece = piece_bag.pick().parsed_piece
 
         if self._processor.meta_info.is_last_path():
-            ldsf_viewer = LastDotSplitFuzzyViewer(parsed_piece)
-            if len(ldsf_viewer.parsed_pieces) == 1:
+            ldsf_view = LastDotSplitFuzzyView(parsed_piece)
+            if len(ldsf_view.parsed_pieces) == 1:
                 self._processor.get_cluster(
                     LengthPatternCluster).add(piece_bag)
                 return
             else:
-                viewer = ldsf_viewer
+                view = ldsf_view
                 p_cls = LastDotSplitFuzzyPatternCluster
         else:
             self._processor.get_cluster(
@@ -444,7 +446,7 @@ class MixedPatternCluster(MultiPatternCluster):
             return
 
         self._processor.get_cluster(p_cls).add(
-            ViewerPieceBag(viewer, piece_bag))
+            ViewPieceBag(view, piece_bag))
 
 
 class LastDotSplitFuzzyPatternCluster(MultiPatternCluster):
@@ -454,9 +456,9 @@ class LastDotSplitFuzzyPatternCluster(MultiPatternCluster):
                                          last_path_as_pattern=True):
             yield b, pattern
 
-    def _add_to_forward_cluster(self, viewer_piece_bag):
+    def _add_to_forward_cluster(self, view_piece_bag):
         self._processor.get_cluster(LengthPatternCluster).add(
-            viewer_piece_bag.piece_bag)
+            view_piece_bag.piece_bag)
 
 
 class FuzzyPatternCluster(PatternCluster):
@@ -547,7 +549,7 @@ class ClusterProcessor(object):
 
     @property
     def next_level_processors(self):
-        return self._next_level_processors.values()
+        return itervalues(self._next_level_processors)
 
     def _backward_package(self, package):
         bucket = PieceBagBucket()
@@ -592,7 +594,7 @@ class ClusterProcessor(object):
         return self._pre_level_processor
 
     def _process(self):
-        for c in self._pattern_clusters.itervalues():
+        for c in itervalues(self._pattern_clusters):
             c.cluster()
 
     def add(self, node, add_children=False):
@@ -655,7 +657,7 @@ def _can_be_splited(processor):
             break
         elif l > 1:
             return True
-        processor = processor.next_level_processors[0]
+        processor = list(processor.next_level_processors)[0]
 
     return False
 
