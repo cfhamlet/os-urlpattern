@@ -1,5 +1,6 @@
 import json
 
+from .definition import Symbols
 from .pattern_tree import PatternPath, PatternTree
 from .utils import get_ete_tree
 
@@ -34,17 +35,17 @@ class ETEFormatter(Formatter):
         url_meta = pattern_tree.url_meta
 
         def f(pattern_node):
-            sep = ''
-            query_key = ''
+            sep = Symbols.EMPTY
+            query_key = Symbols.EMPTY
             if url_meta.path_depth < pattern_node.current_level <= (url_meta.path_depth + url_meta.query_depth):
-                sep = '&'
+                sep = Symbols.AMPERSAND
                 if pattern_node.current_level == url_meta.path_depth + 1:
-                    sep = '[\\?]'
+                    sep = u'[\\?]'
                 query_key = url_meta.query_keys[pattern_node.current_level -
                                                 url_meta.path_depth - 1]
             elif pattern_node.current_level == url_meta.path_depth + url_meta.query_depth + 1:
-                sep = '#'
-            return ' {sep}{query_key}{pattern_string}({count}) '.format(
+                sep = Symbols.NUMBER
+            return u' {sep}{query_key}{pattern_string}({count}) '.format(
                 count=pattern_node.count,
                 pattern_string=pattern_node,
                 query_key=query_key,

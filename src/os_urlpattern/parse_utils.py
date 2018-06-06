@@ -5,12 +5,12 @@ from .compat import ParseResult, StringIO, urlparse
 from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
                          DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
                          LITERAL_RULES_PRIFIX, QUERY_PART_RESERVED_CHARS,
-                         SIGN_RULE_SET)
+                         SIGN_RULE_SET, Symbols)
 from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
 
 MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
-MIXED_RULE_SET.add('%')
+MIXED_RULE_SET.add(Symbols.PERCENT)
 
 
 class URLMeta(object):
@@ -36,10 +36,10 @@ class URLMeta(object):
             s = StringIO()
             s.write(str(self._path_depth))
             if self._query_keys:
-                s.write('?')
-                s.write('&'.join(self._query_keys))
+                s.write(Symbols.QUESTION)
+                s.write(Symbols.AMPERSAND.join(self._query_keys))
             if self._has_fragment:
-                s.write('#')
+                s.write(Symbols.NUMBER)
             s.seek(0)
             self._hashcode = hashlib.md5(s.read().encode()).hexdigest()
         return self._hashcode
@@ -75,12 +75,12 @@ class URLMeta(object):
 
 def number_rule(rule, num):
     if num == 1:
-        return '[%s]' % rule
-    return '[%s]{%d}' % (rule, num)
+        return u'[%s]' % rule
+    return u'[%s]{%d}' % (rule, num)
 
 
 def wildcard_rule(rule):
-    return '[%s]+' % rule if rule else ''
+    return u'[%s]+' % rule if rule else u''
 
 
 def normalize_str_list(str_list, reserved_chars):
@@ -132,14 +132,14 @@ def normalize_str(raw_string, reserved_chars=None):
 def analyze_url(url):
     scheme, netloc, path, params, query, fragment = urlparse(url)
     if not fragment:
-        if url[-1] != '#':
+        if url[-1] != Symbols.NUMBER:
             fragment = None
-            if not query and url[-1] != '?':
+            if not query and url[-1] != Symbols.QUESTION:
                 query = None
-        elif not query and url[-2] != '?':
+        elif not query and url[-2] != Symbols.QUESTION:
             query = None
     elif not query:
-        if url[len(url) - len(fragment) - 2] != '?':
+        if url[len(url) - len(fragment) - 2] != Symbols.QUESTION:
             query = None
     return ParseResult(scheme, netloc, path, params, query, fragment)
 
@@ -162,31 +162,31 @@ def filter_useless_part(parts):
 def parse_query_string(query_string):
     if query_string is None:
         return EMPTY_LIST, EMPTY_LIST
-    elif query_string == '':
+    elif query_string == Symbols.EMPTY:
         return BLANK_LIST, BLANK_LIST
-    elif query_string.endswith('&'):
+    elif query_string.endswith(Symbols.AMPERSAND):
         raise IrregularURLException('Invalid url query')
     kv_type = True  # qkey True, qvalue False
     last_c = None
     kv_buf = {True: StringIO(), False: StringIO()}
     kv_list = {True: [], False: []}
     for i in query_string:
-        if i == '=' and kv_type:
+        if i == Symbols.EQUALS and kv_type:
             s = kv_buf[kv_type]
             s.write(i)
             s.seek(0)
             kv_list[kv_type].append(s.read())
             kv_buf[kv_type] = StringIO()
             kv_type = not kv_type
-        elif i == '&':
-            if last_c is None or last_c == '&':
+        elif i == Symbols.AMPERSAND:
+            if last_c is None or last_c == Symbols.AMPERSAND:
                 raise IrregularURLException('Invalid url query')
             s = kv_buf[kv_type]
             s.seek(0)
             kv_list[kv_type].append(s.read())
             kv_buf[kv_type] = StringIO()
             if kv_type:
-                kv_list[False].append('')  # treat as value-less
+                kv_list[False].append(Symbols.EMPTY)  # treat as value-less
             else:
                 kv_type = not kv_type
         else:
@@ -198,10 +198,10 @@ def parse_query_string(query_string):
     s.seek(0)
     kv_list[kv_type].append(s.read())
     if kv_type:  # treat as value-less
-        kv_list[False].append('')
+        kv_list[False].append(Symbols.EMPTY)
 
     # only one query without value, treat as key-less
-    if len(kv_list[True]) == 1 and not kv_list[True][0].endswith('='):
+    if len(kv_list[True]) == 1 and not kv_list[True][0].endswith(Symbols.EQUALS):
         kv_list[False][0], kv_list[True][0] = kv_list[True][0], kv_list[False][0]
     return kv_list[True], kv_list[False]
 
@@ -223,16 +223,16 @@ def mix(pieces, rules):
             t_mix = True
         else:
             if t_rules and t_mix:
-                mixed_pieces.append(''.join(t_pieces))
-                mixed_rules.append(''.join(sorted(set(t_rules))))
+                mixed_pieces.append(u''.join(t_pieces))
+                mixed_rules.append(u''.join(sorted(set(t_rules))))
                 t_pieces = []
                 t_rules = []
             t_mix = False
         t_pieces.append(piece)
         t_rules.append(rule)
     if t_mix:
-        mixed_pieces.append(''.join(t_pieces))
-        mixed_rules.append(''.join(sorted(set(t_rules))))
+        mixed_pieces.append(u''.join(t_pieces))
+        mixed_rules.append(u''.join(sorted(set(t_rules))))
     else:
         mixed_pieces.extend(t_pieces)
         mixed_rules.extend(t_rules)
@@ -240,7 +240,7 @@ def mix(pieces, rules):
 
 
 def unpack(result, norm_query_key=True):
-    pieces = filter_useless_part(result.path.split('/')[1:])
+    pieces = filter_useless_part(result.path.split(Symbols.SLASH)[1:])
     path_depth = len(pieces)
     if path_depth <= 0:
         raise IrregularURLException('Invalid url depth')
@@ -259,19 +259,20 @@ def unpack(result, norm_query_key=True):
 
 def pack(url_meta, paths):
     s = StringIO()
-    s.write('/')
+    s.write(Symbols.SLASH)
     idx = url_meta.path_depth + url_meta.query_depth
-    p = '/'.join([str(p) for p in paths[0:url_meta.path_depth]])
+    p = Symbols.SLASH.join([str(p) for p in paths[0:url_meta.path_depth]])
     s.write(p)
     if url_meta.query_depth > 0:
-        s.write('[\\?]')
+        s.write(u'[\\?]')
         kv = zip(url_meta.query_keys,
                  [str(p) for p in paths[url_meta.path_depth:idx]])
-        s.write('&'.join([''.join((str(k), str(v))) for k, v in kv]))
+        s.write(Symbols.AMPERSAND.join(
+            [u''.join((str(k), str(v))) for k, v in kv]))
 
     if url_meta.has_fragment:
-        s.write('#')
-        s.write(''.join([str(p) for p in paths[idx:]]))
+        s.write(Symbols.NUMBER)
+        s.write(u''.join([str(p) for p in paths[idx:]]))
     s.seek(0)
     return s.read()
 
@@ -294,7 +295,7 @@ class ParsedPiece(object):
     @property
     def fuzzy_rule(self):
         if not self._fuzzy_rule:
-            self._fuzzy_rule = ''.join(sorted(set(self.rules)))
+            self._fuzzy_rule = u''.join(sorted(set(self.rules)))
         return self._fuzzy_rule
 
     @property
@@ -312,16 +313,17 @@ class ParsedPiece(object):
             idx = 0
             while idx < length_base:
                 c = self.piece[idx]
-                if c == '[' or c == ']':
-                    if idx == 0 or self.piece[idx - 1] != '\\':
+                if c == Symbols.BRACKETS_L or c == Symbols.BRACKETS_R:
+                    if idx == 0 or self.piece[idx - 1] != Symbols.BACKSLASH:
                         length += -1
-                elif c == '\\':
-                    if self.piece[idx + 1] != '\\':
+                elif c == Symbols.BACKSLASH:
+                    if self.piece[idx + 1] != Symbols.BACKSLASH:
                         length += -1
-                elif c == '{':
-                    if self.piece[idx - 1] == ']':
-                        e = self.piece.index('}', idx)
-                        length += int(self.piece[idx + 1:e]) - 1 - (e - idx + 1)
+                elif c == Symbols.BRACES_L:
+                    if self.piece[idx - 1] == Symbols.BRACKETS_R:
+                        e = self.piece.index(Symbols.BRACES_R, idx)
+                        length += int(self.piece[idx + 1:e]
+                                      ) - 1 - (e - idx + 1)
                         idx = e
                 idx += 1
 
@@ -339,7 +341,7 @@ class ParsedPiece(object):
     @property
     def piece(self):
         if self._piece is None:
-            self._piece = ''.join(self._pieces)
+            self._piece = u''.join(self._pieces)
         return self._piece
 
     def __str__(self):
@@ -348,7 +350,7 @@ class ParsedPiece(object):
     __repr__ = __str__
 
 
-EMPTY_PARSED_PIECE = ParsedPiece([], [])
+EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_LIST, EMPTY_LIST)
 
 
 class PieceParser(object):
@@ -406,8 +408,8 @@ def digest(url_meta, parts):
 
 def analyze_url_pattern(url_pattern_string):
     idx_p = 0
-    idx_q = url_pattern_string.find('[\\?]')
-    idx_f = url_pattern_string.find('#')
+    idx_q = url_pattern_string.find(u'[\\?]')
+    idx_f = url_pattern_string.find(Symbols.NUMBER)
     path = query = fragment = None
     if idx_q < 0 and idx_f < 0:
         path = url_pattern_string[idx_p:]
@@ -425,7 +427,7 @@ def analyze_url_pattern(url_pattern_string):
         path = url_pattern_string[idx_p:idx_q]
         query = url_pattern_string[idx_q + 4:]
 
-    scheme = netloc = params = ''
+    scheme = netloc = params = u''
     return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
@@ -435,8 +437,8 @@ def parse_url_pattern_string(url_pattern_string):
 
 
 def parse_pattern_string(pattern_string):
-    if pattern_string == '':
-        return ['']
+    if pattern_string == Symbols.EMPTY:
+        return BLANK_LIST
     pattern_units = []
     l = len(pattern_string)
     s = StringIO()
@@ -444,7 +446,7 @@ def parse_pattern_string(pattern_string):
     last_rule = None
     while idx < l:
         c = pattern_string[idx]
-        if c == '[':
+        if c == Symbols.BRACKETS_L:
             if last_rule is not None:
                 s.seek(0)
                 pattern_units.append(s.read())
@@ -453,18 +455,18 @@ def parse_pattern_string(pattern_string):
 
             idx_s = idx
             while True:
-                idx = pattern_string.find(']', idx + 1)
+                idx = pattern_string.find(Symbols.BRACKETS_R, idx + 1)
                 if idx < 0:
                     raise InvalidPatternException
-                elif pattern_string[idx - 1] == '\\':
+                elif pattern_string[idx - 1] == Symbols.BACKSLASH:
                     continue
                 break
             if idx + 1 < l:
-                if pattern_string[idx + 1] == '{':
-                    idx = pattern_string.find('}', idx + 1)
+                if pattern_string[idx + 1] == Symbols.BRACES_L:
+                    idx = pattern_string.find(Symbols.BRACES_R, idx + 1)
                     if idx < 0:
                         raise InvalidPatternException
-                elif pattern_string[idx + 1] == '+':
+                elif pattern_string[idx + 1] == Symbols.PLUS:
                     idx += 1
             idx += 1
             pattern_units.append(pattern_string[idx_s:idx])
@@ -492,19 +494,19 @@ def parse_pattern_string(pattern_string):
 def parse_pattern_unit_string(pattern_unit_string):
     rules = set()
     num = 1
-    if pattern_unit_string == '':
-        rules.add('')
-    elif pattern_unit_string[0] != '[':
+    if pattern_unit_string == Symbols.EMPTY:
+        rules.add(Symbols.EMPTY)
+    elif pattern_unit_string[0] != Symbols.BRACKETS_L:
         rules.add(CHAR_RULE_DICT[pattern_unit_string[0]])
     else:
-        if pattern_unit_string[-1] == ']':
+        if pattern_unit_string[-1] == Symbols.BRACKETS_R:
             num = 1
-        elif pattern_unit_string[-1] == '}':
-            t = pattern_unit_string.rfind('{')
+        elif pattern_unit_string[-1] == Symbols.BRACES_R:
+            t = pattern_unit_string.rfind(Symbols.BRACES_L)
             num = int(pattern_unit_string[t + 1:-1])
-        elif pattern_unit_string[-1] == '+':
+        elif pattern_unit_string[-1] == Symbols.PLUS:
             num = -1
-        t = pattern_unit_string.rfind(']')
+        t = pattern_unit_string.rfind(Symbols.BRACES_R)
         p_str = pattern_unit_string[1:t]
         l = len(p_str)
         idx = 0
@@ -513,7 +515,7 @@ def parse_pattern_unit_string(pattern_unit_string):
             n = 3
             if c in LITERAL_RULES_PRIFIX:
                 pass
-            elif c == '\\':
+            elif c == Symbols.BACKSLASH:
                 n = 2
             else:
                 n = 1

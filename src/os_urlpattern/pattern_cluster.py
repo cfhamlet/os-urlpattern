@@ -549,7 +549,7 @@ class ClusterProcessor(object):
 
     @property
     def next_level_processors(self):
-        return itervalues(self._next_level_processors)
+        return self._next_level_processors.values()
 
     def _backward_package(self, package):
         bucket = PieceBagBucket()

@@ -8,7 +8,10 @@ import time
 from collections import Counter
 from logging.config import dictConfig
 
-from .exceptions import (InvalidCharException, InvalidPatternException,
+from .compat import binary_stdin
+from .definition import DEFAULT_ENCODING
+from .exceptions import (InvalidCharException,
+                         InvalidPatternException,
                          IrregularURLException)
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
@@ -43,7 +46,7 @@ class Command(object):
                             help='file to be processed (default: stdin)',
                             nargs='?',
                             type=argparse.FileType('rb'),
-                            default=sys.stdin,
+                            default=binary_stdin,
                             dest='file')
 
         parser.add_argument('-L', '--loglevel',
@@ -95,12 +98,14 @@ class MakePatternCommand(Command):
             stats['ALL'] += 1
             speed_logger.debug('[LOADING]')
             try:
+                url = url.decode(DEFAULT_ENCODING)
                 if pattern_maker.load(url):
                     stats['UNIQ'] += 1
                 stats['VALID'] += 1
             except (InvalidPatternException,
                     IrregularURLException,
-                    InvalidCharException) as e:
+                    InvalidCharException,
+                    UnicodeDecodeError) as e:
                 self._logger.warn('%s, %s' % (str(e), url))
                 stats['INVALID'] += 1
                 continue
