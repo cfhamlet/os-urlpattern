@@ -11,7 +11,7 @@ class PatternUnit(object):
     @property
     def fuzzy_rule(self):
         if self._fuzzy_rule is None:
-            self._fuzzy_rule = ''.join(sorted(self._rules))
+            self._fuzzy_rule = u''.join(sorted(self._rules))
         return self._fuzzy_rule
 
     @property
@@ -64,12 +64,12 @@ class Pattern(object):
     def match(self, piece):
         if not self._pattern_regex:
             self._pattern_regex = re.compile(
-                ''.join(('^', self._pattern_string, '$')))
+                u''.join((u'^', self._pattern_string, u'$')))
         return True if re.match(self._pattern_regex, piece) else False
 
     @property
     def fuzzy_rule(self):
         if self._fuzzy_rule is None:
-            self._fuzzy_rule = ''.join(sorted(set.union(
+            self._fuzzy_rule = u''.join(sorted(set.union(
                 *[u.rules for u in self.pattern_units])))
         return self._fuzzy_rule

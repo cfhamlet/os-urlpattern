@@ -44,7 +44,7 @@ class Command(object):
 
         parser.add_argument('-f', '--file',
                             help='file to be processed (default: stdin)',
-                            nargs='?',
+                            nargs='+',
                             type=argparse.FileType('rb'),
                             default=binary_stdin,
                             dest='file')

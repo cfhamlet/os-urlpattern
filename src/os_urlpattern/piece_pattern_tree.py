@@ -76,7 +76,7 @@ class PiecePatternNode(object):
         return child, is_new
 
     def __str__(self):
-        return ' '.join((self.piece, str(self.pattern)))
+        return u' '.join((self.piece, str(self.pattern)))
 
     def set_parrent(self, parrent):
         if not self._parrent:

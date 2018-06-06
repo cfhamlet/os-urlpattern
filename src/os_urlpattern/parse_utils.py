@@ -3,9 +3,10 @@ import hashlib
 
 from .compat import ParseResult, StringIO, urlparse
 from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
-                         DIGIT_AND_ASCII_RULE_SET, EMPTY_LIST,
-                         LITERAL_RULES_PRIFIX, QUERY_PART_RESERVED_CHARS,
-                         SIGN_RULE_SET, Symbols)
+                         DEFAULT_ENCODING, DIGIT_AND_ASCII_RULE_SET,
+                         EMPTY_LIST, LITERAL_RULES_PRIFIX,
+                         QUERY_PART_RESERVED_CHARS, SIGN_RULE_SET,
+                         BasePatternRule, Symbols)
 from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
 
@@ -264,7 +265,7 @@ def pack(url_meta, paths):
     p = Symbols.SLASH.join([str(p) for p in paths[0:url_meta.path_depth]])
     s.write(p)
     if url_meta.query_depth > 0:
-        s.write(u'[\\?]')
+        s.write(BasePatternRule.SINGLE_QUESTION)
         kv = zip(url_meta.query_keys,
                  [str(p) for p in paths[url_meta.path_depth:idx]])
         s.write(Symbols.AMPERSAND.join(
@@ -403,12 +404,12 @@ class PieceParser(object):
 
 
 def digest(url_meta, parts):
-    return hashlib.md5(pack(url_meta, parts).encode()).hexdigest()
+    return hashlib.md5(pack(url_meta, parts).encode(DEFAULT_ENCODING)).hexdigest()
 
 
 def analyze_url_pattern(url_pattern_string):
     idx_p = 0
-    idx_q = url_pattern_string.find(u'[\\?]')
+    idx_q = url_pattern_string.find(BasePatternRule.SINGLE_QUESTION)
     idx_f = url_pattern_string.find(Symbols.NUMBER)
     path = query = fragment = None
     if idx_q < 0 and idx_f < 0:
@@ -506,7 +507,7 @@ def parse_pattern_unit_string(pattern_unit_string):
             num = int(pattern_unit_string[t + 1:-1])
         elif pattern_unit_string[-1] == Symbols.PLUS:
             num = -1
-        t = pattern_unit_string.rfind(Symbols.BRACES_R)
+        t = pattern_unit_string.rfind(Symbols.BRACKETS_R)
         p_str = pattern_unit_string[1:t]
         l = len(p_str)
         idx = 0

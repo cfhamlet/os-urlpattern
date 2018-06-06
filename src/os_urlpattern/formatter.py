@@ -1,6 +1,6 @@
 import json
 
-from .definition import Symbols
+from .definition import BasePatternRule, Symbols
 from .pattern_tree import PatternPath, PatternTree
 from .utils import get_ete_tree
 
@@ -40,7 +40,7 @@ class ETEFormatter(Formatter):
             if url_meta.path_depth < pattern_node.current_level <= (url_meta.path_depth + url_meta.query_depth):
                 sep = Symbols.AMPERSAND
                 if pattern_node.current_level == url_meta.path_depth + 1:
-                    sep = u'[\\?]'
+                    sep = BasePatternRule.SINGLE_QUESTION
                 query_key = url_meta.query_keys[pattern_node.current_level -
                                                 url_meta.path_depth - 1]
             elif pattern_node.current_level == url_meta.path_depth + url_meta.query_depth + 1:

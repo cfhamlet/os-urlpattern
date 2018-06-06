@@ -1,7 +1,7 @@
 import hashlib
 import json
 
-from .definition import BasePattern
+from .definition import BasePattern, DEFAULT_ENCODING
 from .parse_utils import pack
 
 
@@ -17,7 +17,7 @@ class PatternPath(object):
 
     @property
     def pattern_id(self):
-        return hashlib.md5(self.pattern_path_string.encode()).hexdigest()
+        return hashlib.md5(self.pattern_path_string.encode(DEFAULT_ENCODING)).hexdigest()
 
     @property
     def pattern_path_string(self):

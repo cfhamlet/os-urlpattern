@@ -37,7 +37,7 @@ def test_parse_url():
         assert parts == p
         for k, v in m:
             assert getattr(url_meta, k) == v
-    with pytest.raises(AssertionError):
+    with pytest.raises(IrregularURLException):
         parse_url('http://www.g.com')
 
 

@@ -25,7 +25,7 @@ class ParsedPieceView(object):
     @property
     def view(self):
         if self._view is None:
-            self._view = ' '.join([p.fuzzy_rule for p in self.parsed_pieces])
+            self._view = u' '.join([p.fuzzy_rule for p in self.parsed_pieces])
         return self._view
 
     @property
@@ -99,10 +99,10 @@ class LastDotSplitFuzzyView(ParsedPieceView):
             if not skip:
                 pieces = []
                 rules = []
-                pieces.append(''.join(self._parsed_piece.pieces[0:dot_idx]))
+                pieces.append(u''.join(self._parsed_piece.pieces[0:dot_idx]))
                 pieces.append(self._parsed_piece.pieces[dot_idx])
                 rules.append(
-                    ''.join(sorted(set(self._parsed_piece.rules[0:dot_idx]))))
+                    u''.join(sorted(set(self._parsed_piece.rules[0:dot_idx]))))
                 rules.append(self._parsed_piece.rules[dot_idx])
                 mixed_pieces, mixed_rules = mix(
                     self._parsed_piece.pieces[dot_idx + 1:],

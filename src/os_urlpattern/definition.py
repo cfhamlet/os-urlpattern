@@ -44,6 +44,7 @@ class BasePatternRule(object):
     DOT = u'\\.'
     ALL_MATCH = u'.*?'
     EMPTY = u''
+    SINGLE_QUESTION = u'[\\?]'
 
 
 ZERO_DIGEST = hashlib.md5(b'0').hexdigest().upper()

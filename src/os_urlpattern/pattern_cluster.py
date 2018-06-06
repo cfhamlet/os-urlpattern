@@ -137,11 +137,11 @@ class ViewPieceBagBucket(PieceBagBucket):
         pattern = None
         bucket = ViewPieceBagBucket()
         for path in single_tree.dump_paths():
-            piece = ''.join([p.piece for p in path[1:]])
+            piece = u''.join([p.piece for p in path[1:]])
             view_piece_bag = self[piece]
             bucket.add(view_piece_bag, False)
             if pattern is None:
-                pattern = Pattern(''.join([str(p.pattern) for p in path[1:]]))
+                pattern = Pattern(u''.join([str(p.pattern) for p in path[1:]]))
         return bucket, pattern
 
 
