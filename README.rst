@@ -23,8 +23,24 @@ Automatically generate URL pattern.
 
 Install
 -------
+* Install with pip
 
-``$ pip install os-urlpattern``
+  ``$ pip install os-urlpattern``
+
+* Install extra packages
+
+  .. list-table::
+      :header-rows: 1
+        
+      * - subpackage 
+        - install command
+        - enables
+      * - memory
+        - ``pip install os-urlpattern[memroy]``
+        - Show memory useage
+      * - ete-tree
+        - ``pip install os-urlpattern[ete_tree]``
+        - Enable ete3 pattern tree formatter
 
 Usage
 ------
@@ -34,19 +50,20 @@ Usage
 ::
   
   $ pattern-make -h
-  usage: pattern-make [-h] [-c CONFIG] [-f FILE]
-                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] [-F {JSON,ETE}]
+  sage: pattern-make [-h] [-f FILE [FILE ...]]
+                    [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
+                    [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
 
   optional arguments:
     -h, --help            show this help message and exit
-    -c CONFIG, --config CONFIG
-                          config file
-    -f FILE, --file FILE  file to be processed (default: stdin)
+    -f FILE [FILE ...], --file FILE [FILE ...]
+                          file to be processed (default: stdin)
     -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
                           log level (default: NOTSET)
-    -F {JSON}, --formatter {JSON}
-                          output formatter (default: JSON)
-
+    -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                          config file
+    -F {JSON,ETE}, --formatter {JSON,ETE}
+                          output formatter (default: JSON)  
 
 Unit Tests
 ----------

@@ -32,7 +32,7 @@ setup(
             'pattern-match = os_urlpattern.cmdline:match',
         ]
     },
-    extras_require={'Memory': ['psutil'], 'ETE': ['six', 'ete3']},
+    extras_require={'memory': ['psutil'], 'ete_tree': ['six', 'ete3']},
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
