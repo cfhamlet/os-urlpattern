@@ -1,19 +1,18 @@
 import hashlib
-import json
 
-from .definition import BasePattern, DEFAULT_ENCODING
+from .definition import DEFAULT_ENCODING, BasePattern
 from .parse_utils import pack
 
 
 class PatternPath(object):
-    def __init__(self, pattern_node_path, url_meta):
-        self._pattern_node_path = pattern_node_path
+    def __init__(self, pattern_nodes, url_meta):
+        self._pattern_nodes = pattern_nodes
         self._url_meta = url_meta
         self._pattern_path_string = None
 
     @property
     def count(self):
-        return self._pattern_node_path[-1].count
+        return self._pattern_nodes[-1].count
 
     @property
     def pattern_id(self):
@@ -23,7 +22,7 @@ class PatternPath(object):
     def pattern_path_string(self):
         if self._pattern_path_string is None:
             self._pattern_path_string = pack(
-                self._url_meta, [p.pattern for p in self._pattern_node_path[1:]])
+                self._url_meta, [p.pattern for p in self._pattern_nodes[1:]])
         return self._pattern_path_string
 
 
@@ -31,7 +30,7 @@ class PatternNode(object):
     __slots__ = ('_pattern', '_children',
                  '_parrent', '_count', '_current_level')
 
-    def __init__(self, pattern):  # , base_pattern):
+    def __init__(self, pattern):
         self._pattern = pattern
         self._children = {}
         self._parrent = None
@@ -110,5 +109,5 @@ class PatternTree(object):
             node = node.add_child(piece_pattern_node.pattern, count)
 
     def dumps(self):
-        for patten_node_path in self._root.dump_paths():
-            yield PatternPath(patten_node_path, self._url_meta)
+        for patten_nodes in self._root.dump_paths():
+            yield PatternPath(patten_nodes, self._url_meta)

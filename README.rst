@@ -50,9 +50,9 @@ Usage
 ::
   
   $ pattern-make -h
-  sage: pattern-make [-h] [-f FILE [FILE ...]]
-                    [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
-                    [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
+  usage: pattern-make [-h] [-f FILE [FILE ...]]
+                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
+                      [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
 
   optional arguments:
     -h, --help            show this help message and exit
@@ -64,6 +64,23 @@ Usage
                           config file
     -F {JSON,ETE}, --formatter {JSON,ETE}
                           output formatter (default: JSON)  
+
+::
+  
+  $ pattern-match -h
+  usage: pattern-match [-h] [-f FILE [FILE ...]]
+                     [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
+                     [PATTERN_FILE ...]
+
+  optional arguments:
+    -h, --help            show this help message and exit
+    -f FILE [FILE ...], --file FILE [FILE ...]
+                          file to be processed (default: stdin)
+    -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                          log level (default: NOTSET)
+    -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
+                          pattern file to be loaded
+
 
 Unit Tests
 ----------

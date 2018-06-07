@@ -432,7 +432,7 @@ def analyze_url_pattern(url_pattern_string):
     return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
-def parse_url_pattern_string(url_pattern_string):
+def parse_pattern_path_string(url_pattern_string):
     result = analyze_url_pattern(url_pattern_string)
     return unpack(result, False)
 

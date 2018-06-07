@@ -1,6 +1,7 @@
 from __future__ import print_function
 
 import argparse
+import json
 import logging
 import os
 import sys
@@ -8,10 +9,9 @@ import time
 from collections import Counter
 from logging.config import dictConfig
 
-from .compat import binary_stdin
+from .compat import binary_stdin, binary_stdout
 from .definition import DEFAULT_ENCODING
-from .exceptions import (InvalidCharException,
-                         InvalidPatternException,
+from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
@@ -46,7 +46,7 @@ class Command(object):
                             help='file to be processed (default: stdin)',
                             nargs='+',
                             type=argparse.FileType('rb'),
-                            default=binary_stdin,
+                            default=[binary_stdin],
                             dest='file')
 
         parser.add_argument('-L', '--loglevel',
@@ -70,7 +70,7 @@ class MakePatternCommand(Command):
     def process_args(self, args):
         super(MakePatternCommand, self).process_args(args)
         if args.config:
-            self._config.readfp(args.config)
+            self._config.readfp(args.config[0])
 
     def add_argument(self, parser):
         super(MakePatternCommand, self).add_argument(parser)
@@ -93,7 +93,8 @@ class MakePatternCommand(Command):
     def _load(self, pattern_maker, args):
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
-        for url in args.file:
+        input = args.file[0]
+        for url in input:
             url = url.strip()
             stats['ALL'] += 1
             speed_logger.debug('[LOADING]')
@@ -106,18 +107,18 @@ class MakePatternCommand(Command):
                     IrregularURLException,
                     InvalidCharException,
                     UnicodeDecodeError) as e:
-                self._logger.warn('%s, %s' % (str(e), url))
+                self._logger.warn('%s, %s', str(e), url)
                 stats['INVALID'] += 1
                 continue
-        self._logger.debug('[LOADED] %s' % str(stats))
+        self._logger.debug('[LOADED] %s', str(stats))
 
     def _dump(self, pattern_maker, args):
         formatter = FORMATTERS[args.formatter](self._config)
         s = time.time()
         for pattern_tree in pattern_maker.process():
             e = time.time()
-            self._logger.debug('[CLUSTER] %d %.2fs' %
-                               (pattern_tree.root.count, e - s))
+            self._logger.debug('[CLUSTER] %d %.2fs',
+                               pattern_tree.root.count, e - s)
             formatter.format(pattern_tree)
             s = time.time()
 
@@ -145,13 +146,48 @@ class MatchPatternCommand(Command):
         parser.add_argument('-p', '--pattern-file',
                             help='pattern file to be loaded',
                             nargs='+',
-                            type=argparse.FileType('r'),
+                            type=argparse.FileType('rb'),
                             required=True,
                             action='store',
                             dest='pattern_file')
 
+    def _load(self, pattern_matcher, args):
+        io_input = args.pattern_file[0]
+        self._logger.debug('[LOAD] START %s', io_input.name)
+        for line in io_input:
+            line = line.strip()
+            try:
+                info = json.loads(line)
+                pattern_matcher.load(info)
+            except Exception as e:
+                self._logger.warn("%s, %s", str(e), line)
+
+        self._logger.debug('[LOAD] FINISHED')
+
+    def _match(self, pattern_matcher, args):
+        for line in args.file[0]:
+            line = line.strip()
+            result = None
+            try:
+                url = line.decode(DEFAULT_ENCODING)
+                result = pattern_matcher.match(url)
+            except (InvalidPatternException,
+                    IrregularURLException,
+                    InvalidCharException,
+                    UnicodeDecodeError) as e:
+                result = b'E'
+                self._logger.warn("%s, %s", str(e), line)
+            if result is None:
+                result = b'N'
+            binary_stdout.write(result)
+            binary_stdout.write(b'\t')
+            binary_stdout.write(line)
+            binary_stdout.write(b'\n')
+
     def run(self, args):
         pattern_matcher = PatternMatcher()
+        self._load(pattern_matcher, args)
+        self._match(pattern_matcher, args)
 
 
 _DEFAULT_LOGGING = {
