@@ -93,8 +93,7 @@ class MakePatternCommand(Command):
     def _load(self, pattern_maker, args):
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
-        input = args.file[0]
-        for url in input:
+        for url in args.file[0]:
             url = url.strip()
             stats['ALL'] += 1
             speed_logger.debug('[LOADING]')
@@ -106,8 +105,13 @@ class MakePatternCommand(Command):
             except (InvalidPatternException,
                     IrregularURLException,
                     InvalidCharException,
-                    UnicodeDecodeError) as e:
+                    UnicodeDecodeError,
+                    ValueError) as e:
                 self._logger.warn('%s, %s', str(e), url)
+                stats['INVALID'] += 1
+                continue
+            except Exception as e:
+                self._logger.error('%s, %s', str(e), url)
                 stats['INVALID'] += 1
                 continue
         self._logger.debug('[LOADED] %s', str(stats))
@@ -165,7 +169,9 @@ class MatchPatternCommand(Command):
         self._logger.debug('[LOAD] FINISHED')
 
     def _match(self, pattern_matcher, args):
+        speed_logger = LogSpeedAdapter(self._logger, 5000)
         for line in args.file[0]:
+            speed_logger.debug('[MATCHING]')
             line = line.strip()
             result = None
             try:
@@ -174,9 +180,14 @@ class MatchPatternCommand(Command):
             except (InvalidPatternException,
                     IrregularURLException,
                     InvalidCharException,
-                    UnicodeDecodeError) as e:
+                    UnicodeDecodeError,
+                    ValueError) as e:
                 result = b'E'
                 self._logger.warn("%s, %s", str(e), line)
+            except Exception as e:
+                result = b'E'
+                self._logger.error("%s, %s", str(e), line)
+
             if result is None:
                 result = b'N'
             binary_stdout.write(result)

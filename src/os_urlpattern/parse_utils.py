@@ -356,7 +356,6 @@ EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_LIST, EMPTY_LIST)
 
 class PieceParser(object):
     def __init__(self):
-        self._cache = {}
         self._rule_list = None
         self._piece_list = None
         self._reset()
@@ -366,11 +365,9 @@ class PieceParser(object):
         self._piece_list = []
 
     def parse(self, piece):
-        if piece not in self._cache:
-            self._reset()
-            self._preprocess(piece)
-            self._cache[piece] = self._create_parsed_piece()
-        return self._cache[piece]
+        self._reset()
+        self._preprocess(piece)
+        return self._create_parsed_piece()
 
     def _preprocess(self, piece):
         for c in piece:
@@ -399,8 +396,7 @@ class PieceParser(object):
         return letter
 
     def _create_parsed_piece(self):
-        piece_rule = ParsedPiece(self._piece_list, self._rule_list)
-        return piece_rule
+        return ParsedPiece(self._piece_list, self._rule_list)
 
 
 def digest(url_meta, parts):

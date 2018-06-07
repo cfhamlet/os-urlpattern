@@ -3,6 +3,7 @@ from .parse_utils import (PieceParser, digest, parse_pattern_path_string,
                           parse_url)
 from .pattern import Pattern
 from .pattern_tree import PatternTree
+from .compat import itervalues
 
 
 class PatternMatchNode(object):
@@ -11,6 +12,13 @@ class PatternMatchNode(object):
         self._info = info
         self._children = {}
         self._parrent = None
+
+    def iter_children(self):
+        return itervalues(self._children)
+
+    def match(self, parsed_pieces, idx):
+        if not self._children:
+            return self.info
 
     @property
     def pattern(self):
@@ -49,11 +57,10 @@ class PatternMathchTree(object):
         node = self._root
         for pattern in patterns:
             node = node.add_child(pattern)
-
         node.info = info
 
     def match(self, parsed_pieces):
-        pass
+        return self._root.match(parsed_pieces, 0)
 
 
 class PatternMatcher(object):
@@ -75,7 +82,5 @@ class PatternMatcher(object):
         url_meta, pieces = parse_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
-        if sid not in self._pattern_trees:
-            return None
-        pattern_tree = self._pattern_trees[sid]
-        return pattern_tree.match(parsed_pieces)
+        if sid in self._pattern_trees:
+            return self._pattern_trees[sid].match(parsed_pieces)
