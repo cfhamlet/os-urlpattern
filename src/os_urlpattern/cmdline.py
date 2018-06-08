@@ -162,7 +162,7 @@ class MatchPatternCommand(Command):
             line = line.strip()
             try:
                 info = json.loads(line)
-                pattern_matcher.load(info)
+                pattern_matcher.load(info['pat'], info)
             except Exception as e:
                 self._logger.warn("%s, %s", str(e), line)
 

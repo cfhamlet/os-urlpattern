@@ -66,21 +66,20 @@ class PatternMathchTree(object):
 class PatternMatcher(object):
     def __init__(self):
         self._parser = PieceParser()
-        self._pattern_trees = {}
+        self._pattern_match_trees = {}
 
-    def load(self, pattern_info):
-        pattern_path_string = pattern_info['pat']
+    def load(self, pattern_path_string, info=None):
         meta, pattern_strings = parse_pattern_path_string(pattern_path_string)
         patterns = [Pattern(p) for p in pattern_strings]
         sid = digest(meta, [p.fuzzy_rule for p in patterns])
-        if sid not in self._pattern_trees:
-            self._pattern_trees[sid] = PatternMathchTree()
-        pattern_tree = self._pattern_trees[sid]
-        pattern_tree.load_from_patterns(patterns, pattern_info)
+        if sid not in self._pattern_match_trees:
+            self._pattern_match_trees[sid] = PatternMathchTree()
+        self._pattern_match_trees[sid].load_from_patterns(
+            patterns, pattern_path_string if info is None else info)
 
     def match(self, url):
         url_meta, pieces = parse_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
-        if sid in self._pattern_trees:
-            return self._pattern_trees[sid].match(parsed_pieces)
+        if sid in self._pattern_match_trees:
+            return self._pattern_match_trees[sid].match(parsed_pieces)
