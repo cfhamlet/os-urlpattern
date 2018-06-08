@@ -18,7 +18,7 @@ class Formatter(object):
 class PatternPathEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, PatternPath):
-            return {'count': o.count, 'pat': o.pattern_path_string, 'pid': o.pattern_id}
+            return {'cnt': o.count, 'ptn': o.pattern_path_string, 'pid': o.pattern_id}
         return json.JSONEncoder.default(o)
 
 

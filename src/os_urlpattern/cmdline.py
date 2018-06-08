@@ -16,7 +16,7 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
 from .pattern_matcher import PatternMatcher
-from .utils import LogSpeedAdapter, load_obj
+from .utils import LogSpeedAdapter, load_obj, pretty_counter
 
 
 def _config_logging(log_level):
@@ -95,6 +95,8 @@ class MakePatternCommand(Command):
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in args.file[0]:
             url = url.strip()
+            if not url:
+                continue
             stats['ALL'] += 1
             speed_logger.debug('[LOADING]')
             try:
@@ -114,7 +116,7 @@ class MakePatternCommand(Command):
                 self._logger.error('%s, %s', str(e), url)
                 stats['INVALID'] += 1
                 continue
-        self._logger.debug('[LOADED] %s', str(stats))
+        self._logger.debug('[LOADED] %s', pretty_counter(stats))
 
     def _dump(self, pattern_maker, args):
         formatter = FORMATTERS[args.formatter](self._config)
@@ -156,17 +158,26 @@ class MatchPatternCommand(Command):
                             dest='pattern_file')
 
     def _load(self, pattern_matcher, args):
+        stats = Counter()
         io_input = args.pattern_file[0]
-        self._logger.debug('[LOAD] START %s', io_input.name)
+        self._logger.debug('[LOAD] Start %s', io_input.name)
         for line in io_input:
             line = line.strip()
+            if not line:
+                continue
+            stats['ALL'] += 1
             try:
                 info = json.loads(line)
-                pattern_matcher.load(info['pat'], info)
+                pattern_matcher.load(info['ptn'], info)
+                stats['VALID'] += 1
             except Exception as e:
                 self._logger.warn("%s, %s", str(e), line)
+                stats['INVALID'] += 1
+        self._logger.debug('[LOAD] Finished %s', pretty_counter(stats))
 
-        self._logger.debug('[LOAD] FINISHED')
+        self._logger.debug('[PREPROCESS] Start')
+        pattern_matcher.preprocess()
+        self._logger.debug('[PREPROCESS] Finished')
 
     def _match(self, pattern_matcher, args):
         speed_logger = LogSpeedAdapter(self._logger, 5000)

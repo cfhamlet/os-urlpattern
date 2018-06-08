@@ -3,7 +3,13 @@ from .parse_utils import (PieceParser, digest, parse_pattern_path_string,
                           parse_url)
 from .pattern import Pattern
 from .pattern_tree import PatternTree
-from .compat import itervalues
+from .compat import itervalues, iteritems
+from collections import OrderedDict
+
+
+def priority(pattern_and_match_node):
+    pattern, _ = pattern_and_match_node
+    return 1
 
 
 class PatternMatchNode(object):
@@ -12,6 +18,15 @@ class PatternMatchNode(object):
         self._info = info
         self._children = {}
         self._parrent = None
+
+    def sort_children(self):
+        if not self._children:
+            return
+        self._children = OrderedDict(
+            sorted(iteritems(self._children), key=priority))
+
+        for child in self.iter_children():
+            child.sort_children()
 
     def iter_children(self):
         return itervalues(self._children)
@@ -59,6 +74,10 @@ class PatternMathchTree(object):
             node = node.add_child(pattern)
         node.info = info
 
+    @property
+    def root(self):
+        return self._root
+
     def match(self, parsed_pieces):
         return self._root.match(parsed_pieces, 0)
 
@@ -76,6 +95,10 @@ class PatternMatcher(object):
             self._pattern_match_trees[sid] = PatternMathchTree()
         self._pattern_match_trees[sid].load_from_patterns(
             patterns, pattern_path_string if info is None else info)
+
+    def preprocess(self):
+        for match_tree in itervalues(self._pattern_match_trees):
+            match_tree.root.sort_children()
 
     def match(self, url):
         url_meta, pieces = parse_url(url)

@@ -356,8 +356,6 @@ EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_LIST, EMPTY_LIST)
 
 class PieceParser(object):
     def __init__(self):
-        self._rule_list = None
-        self._piece_list = None
         self._reset()
 
     def _reset(self):

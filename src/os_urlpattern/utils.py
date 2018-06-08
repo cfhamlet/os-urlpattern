@@ -4,6 +4,10 @@ import time
 from importlib import import_module
 
 
+def pretty_counter(counter):
+    return ", ".join(['{0}:{1}'.format(k, v) for k, v in counter.items()])
+
+
 class Bag(object):
     def __init__(self):
         self._objs = set()
