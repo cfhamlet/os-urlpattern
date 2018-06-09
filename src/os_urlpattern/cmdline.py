@@ -179,26 +179,29 @@ class MatchPatternCommand(Command):
         pattern_matcher.preprocess()
         self._logger.debug('[PREPROCESS] Finished')
 
+    def _match_result(self, pattern_matcher, raw_url):
+        result = None
+        try:
+            url = raw_url.decode(DEFAULT_ENCODING)
+            result = pattern_matcher.match(url)
+        except (InvalidPatternException,
+                IrregularURLException,
+                InvalidCharException,
+                UnicodeDecodeError,
+                ValueError) as e:
+            result = b'E'
+            self._logger.warn("%s, %s", str(e), raw_url)
+        except Exception as e:
+            result = b'E'
+            self._logger.error("%s, %s", str(e), raw_url)
+        return result
+
     def _match(self, pattern_matcher, args):
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for line in args.file[0]:
             speed_logger.debug('[MATCHING]')
             line = line.strip()
-            result = None
-            try:
-                url = line.decode(DEFAULT_ENCODING)
-                result = pattern_matcher.match(url)
-            except (InvalidPatternException,
-                    IrregularURLException,
-                    InvalidCharException,
-                    UnicodeDecodeError,
-                    ValueError) as e:
-                result = b'E'
-                self._logger.warn("%s, %s", str(e), line)
-            except Exception as e:
-                result = b'E'
-                self._logger.error("%s, %s", str(e), line)
-
+            result = self._match_result(pattern_matcher, line)
             if result is None:
                 result = b'N'
             binary_stdout.write(result)
