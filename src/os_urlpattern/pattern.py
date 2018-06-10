@@ -22,9 +22,6 @@ class PatternUnit(object):
     def num(self):  # return negative means wildcard '+'
         return self._num
 
-    def __str__(self):
-        return self._pattern_unit_string
-
 
 class Pattern(object):
     __slots__ = ('_pattern_string', '_pattern_regex',

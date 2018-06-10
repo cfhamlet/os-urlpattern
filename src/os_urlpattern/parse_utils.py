@@ -401,33 +401,33 @@ def digest(url_meta, parts):
     return hashlib.md5(pack(url_meta, parts).encode(DEFAULT_ENCODING)).hexdigest()
 
 
-def analyze_url_pattern(url_pattern_string):
+def analyze_pattern_path_string(pattern_path_string):
     idx_p = 0
-    idx_q = url_pattern_string.find(BasePatternRule.SINGLE_QUESTION)
-    idx_f = url_pattern_string.find(Symbols.NUMBER)
+    idx_q = pattern_path_string.find(BasePatternRule.SINGLE_QUESTION)
+    idx_f = pattern_path_string.find(Symbols.NUMBER)
     path = query = fragment = None
     if idx_q < 0 and idx_f < 0:
-        path = url_pattern_string[idx_p:]
+        path = pattern_path_string[idx_p:]
     elif idx_q > 0 and idx_f > 0:
         if idx_f > idx_q:
-            path = url_pattern_string[idx_p:idx_q]
-            query = url_pattern_string[idx_q + 4:idx_f]
+            path = pattern_path_string[idx_p:idx_q]
+            query = pattern_path_string[idx_q + 4:idx_f]
         else:
-            path = url_pattern_string[idx_p:idx_f]
-        fragment = url_pattern_string[idx_f + 1:]
+            path = pattern_path_string[idx_p:idx_f]
+        fragment = pattern_path_string[idx_f + 1:]
     elif idx_q < 0 and idx_f > 0:
-        path = url_pattern_string[idx_p:idx_f]
-        fragment = url_pattern_string[idx_f + 1:]
+        path = pattern_path_string[idx_p:idx_f]
+        fragment = pattern_path_string[idx_f + 1:]
     elif idx_q > 0 and idx_f < 0:
-        path = url_pattern_string[idx_p:idx_q]
-        query = url_pattern_string[idx_q + 4:]
+        path = pattern_path_string[idx_p:idx_q]
+        query = pattern_path_string[idx_q + 4:]
 
     scheme = netloc = params = u''
     return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
-def parse_pattern_path_string(url_pattern_string):
-    result = analyze_url_pattern(url_pattern_string)
+def parse_pattern_path_string(pattern_path_string):
+    result = analyze_pattern_path_string(pattern_path_string)
     return unpack(result, False)
 
 

@@ -126,3 +126,6 @@ class FuzzyView(ParsedPieceView):
         self._parsed_pieces = [ParsedPiece([self._parsed_piece.piece],
                                            [self._parsed_piece.fuzzy_rule])]
         return self._parsed_pieces
+
+
+# def view_from_pattern(pattern, is_last_path=False):

@@ -138,7 +138,6 @@ class MakePatternCommand(Command):
         self._freeze_config()
 
         pattern_maker = PatternMaker(self._config)
-
         self._load(pattern_maker, args)
         self._dump(pattern_maker, args)
 
