@@ -128,4 +128,28 @@ class FuzzyView(ParsedPieceView):
         return self._parsed_pieces
 
 
-# def view_from_pattern(pattern, is_last_path=False):
+def view_cls_from_pattern(pattern, is_last_path=False):
+    view_cls = PieceView
+    pattern_units = pattern.pattern_units
+    if len(pattern_units) == 1:
+        pattern_unit = pattern_units[0]
+        if not pattern_unit.is_literal():
+            if pattern_unit.num < 0:
+                view_cls = FuzzyView
+            else:
+                view_cls = LengthView
+    else:
+        for pattern_unit in pattern_units:
+            if not pattern_unit.is_literal():
+                if len(pattern_unit.rules) > 1:
+                    view_cls = MixedView
+                else:
+                    view_cls = BaseView
+        if is_last_path \
+                and len(pattern_units) == 3 \
+                and view_cls != PieceView \
+                and list(pattern_units[1].rules)[0] == BasePatternRule.DOT \
+                and not (set(pattern_units[-1].rules) - DIGIT_AND_ASCII_RULE_SET):
+            view_cls = LastDotSplitFuzzyView
+
+    return view_cls

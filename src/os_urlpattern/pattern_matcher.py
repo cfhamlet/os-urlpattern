@@ -1,10 +1,11 @@
+from collections import OrderedDict
+
+from .compat import iteritems, itervalues
 from .definition import BasePattern
 from .parse_utils import (PieceParser, digest, parse_pattern_path_string,
                           parse_url)
 from .pattern import Pattern
 from .pattern_tree import PatternTree
-from .compat import itervalues, iteritems
-from collections import OrderedDict
 
 
 def priority(pattern_and_match_node):

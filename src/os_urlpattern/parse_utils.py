@@ -493,6 +493,7 @@ def parse_pattern_unit_string(pattern_unit_string):
         rules.add(Symbols.EMPTY)
     elif pattern_unit_string[0] != Symbols.BRACKETS_L:
         rules.add(CHAR_RULE_DICT[pattern_unit_string[0]])
+        num = len(pattern_unit_string)
     else:
         if pattern_unit_string[-1] == Symbols.BRACKETS_R:
             num = 1

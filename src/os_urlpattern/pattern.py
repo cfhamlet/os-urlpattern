@@ -8,6 +8,22 @@ class PatternUnit(object):
         self._rules, self._num = parse_pattern_unit_string(pattern_unit_string)
         self._fuzzy_rule = None
 
+    def is_literal(self):
+        from .definition import DIGIT_AND_ASCII_RULE_SET, Symbols
+        r = False
+        if not self._pattern_unit_string.startswith(Symbols.BRACKETS_L):
+            r = True
+        elif len(self._rules) == 1:
+            if self._num > 0:
+                rule = list(self._rules)[0]
+                if rule not in DIGIT_AND_ASCII_RULE_SET:
+                    r = True
+        return r
+
+    @property
+    def pattern_unit_string(self):
+        return self._pattern_unit_string
+
     @property
     def fuzzy_rule(self):
         if self._fuzzy_rule is None:
@@ -21,6 +37,11 @@ class PatternUnit(object):
     @property
     def num(self):  # return negative means wildcard '+'
         return self._num
+
+    def __str__(self):
+        return u' '.join((self._pattern_unit_string, self.fuzzy_rule, str(self._num)))
+
+    __repr__ = __str__
 
 
 class Pattern(object):
