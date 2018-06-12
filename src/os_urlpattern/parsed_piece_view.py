@@ -2,6 +2,10 @@ from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .parse_utils import ParsedPiece, mix
 
 
+def fuzzy_view(fuzzy_rules):
+    return u'/'.join(fuzzy_rules)
+
+
 class ParsedPieceView(object):
     __slot__ = ('_parsed_piece', '_view')
 
@@ -25,7 +29,8 @@ class ParsedPieceView(object):
     @property
     def view(self):
         if self._view is None:
-            self._view = u' '.join([p.fuzzy_rule for p in self.parsed_pieces])
+            self._view = fuzzy_view(
+                [p.fuzzy_rule for p in self._parsed_pieces])
         return self._view
 
     @property
@@ -46,6 +51,7 @@ class PieceView(ParsedPieceView):
 
 
 class LengthView(ParsedPieceView):
+
     def __init__(self, parsed_piece):
         super(LengthView, self).__init__(parsed_piece)
         self._view = self._parsed_piece.piece_length
@@ -115,6 +121,7 @@ class LastDotSplitFuzzyView(ParsedPieceView):
 
 
 class FuzzyView(ParsedPieceView):
+
     def __init__(self, parsed_piece):
         super(FuzzyView, self).__init__(parsed_piece)
         self._view = self._parsed_piece.fuzzy_rule
