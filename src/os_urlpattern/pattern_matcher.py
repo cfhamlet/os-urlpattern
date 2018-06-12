@@ -55,7 +55,7 @@ class ViewMatcher(_ViewMatcher):
             return []
         parsed_pieces = [EMPTY_PARSED_PIECE, ]
         parsed_pieces.extend(view.parsed_pieces)
-        return self._nodes[view.view].match(parsed_pieces)
+        return [n.info for n in self._nodes[view.view].match(parsed_pieces)]
 
 
 class PiecePatternViewMatcher(_ViewMatcher):
@@ -140,6 +140,9 @@ class PatternMatchNode(object):
         self._view_matchers = OrderedDict([(view_cls, matcher_cls(view_cls))
                                            for view_cls, matcher_cls in VIEW_MATCHERS])
 
+    def leaf(self):
+        return len(self._children) == 0
+
     def preprocess(self):
         if not self._children:
             self._view_matchers = {}
@@ -158,9 +161,16 @@ class PatternMatchNode(object):
     def iter_children(self):
         return itervalues(self._children)
 
-    def match(self, parsed_pieces, idx):
-        if not self._children:
-            return self.info
+    def match(self, parsed_pieces, idx, matched_nodes):
+        parsed_piece = parsed_pieces[idx]
+        for matcher in itervalues(self._view_matchers):
+            nodes = matcher.match(parsed_piece)
+            for node in nodes:
+                if node.leaf():
+                    matched_nodes.append(node)
+                    return
+                else:
+                    node.match(parsed_pieces, idx+1, matched_nodes)
 
     @property
     def pattern(self):
@@ -209,7 +219,9 @@ class PatternMathchTree(object):
         return self._root
 
     def match(self, parsed_pieces):
-        return self._root.match(parsed_pieces, 0)
+        matched_nodes = []
+        self._root.match(parsed_pieces, 0, matched_nodes)
+        return matched_nodes
 
     def preprocess(self):
         self._root.preprocess()
@@ -240,3 +252,4 @@ class PatternMatcher(object):
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
         if sid in self._pattern_match_trees:
             return self._pattern_match_trees[sid].match(parsed_pieces)
+        return []

@@ -183,6 +183,7 @@ class MatchPatternCommand(Command):
         try:
             url = raw_url.decode(DEFAULT_ENCODING)
             result = pattern_matcher.match(url)
+            result = ", ".join([r.info['ptn'] for r in result])
         except (InvalidPatternException,
                 IrregularURLException,
                 InvalidCharException,
