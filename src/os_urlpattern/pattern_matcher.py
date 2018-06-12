@@ -11,7 +11,7 @@ from .pattern import Pattern
 from .pattern_tree import PatternTree
 
 
-class ViewMatcher(object):
+class _ViewMatcher(object):
     def __init__(self, view_cls):
         self._view_cls = view_cls
         self._nodes = {}
@@ -33,7 +33,7 @@ class ViewMatcher(object):
         pass
 
 
-class BaseViewMatcher(ViewMatcher):
+class ViewMatcher(_ViewMatcher):
 
     def preprocess(self):
         for tree in itervalues(self._nodes):
@@ -58,7 +58,7 @@ class BaseViewMatcher(ViewMatcher):
         return self._nodes[view.view].match(parsed_pieces)
 
 
-class PiecePatternViewMatcher(ViewMatcher):
+class PiecePatternViewMatcher(_ViewMatcher):
 
     def add_match_node(self, match_node):
         if match_node.pattern.pattern_string not in self._nodes:
@@ -69,7 +69,7 @@ class PiecePatternViewMatcher(ViewMatcher):
             else self._nodes[parsed_piece.piece]
 
 
-class LengthPatternViewMatcher(ViewMatcher):
+class LengthPatternViewMatcher(_ViewMatcher):
 
     def add_match_node(self, match_node):
         length = match_node.pattern.pattern_units[0].num
@@ -80,7 +80,7 @@ class LengthPatternViewMatcher(ViewMatcher):
             else self._nodes[parsed_piece.piece_length]
 
 
-class MixedPatternViewMatcher(BaseViewMatcher):
+class MixedPatternViewMatcher(ViewMatcher):
 
     def _pattern(self, pattern_units):
         return Pattern(u''.join([p.pattern_unit_string for p in pattern_units]))
@@ -107,7 +107,7 @@ class MixedPatternViewMatcher(BaseViewMatcher):
         self._nodes[r].load_from_patterns(patterns, match_node)
 
 
-class FuzzyPatternViewMatcher(ViewMatcher):
+class FuzzyPatternViewMatcher(_ViewMatcher):
 
     def __init__(self, view_cls):
         super(FuzzyPatternViewMatcher, self).__init__(view_cls)
@@ -122,9 +122,9 @@ class FuzzyPatternViewMatcher(ViewMatcher):
 
 VIEW_MATCHERS = [
     (PieceView, PiecePatternViewMatcher),
-    (BaseView, BaseViewMatcher),
-    (MixedView, BaseViewMatcher),
-    (LastDotSplitFuzzyView, BaseViewMatcher),
+    (BaseView, ViewMatcher),
+    (MixedView, ViewMatcher),
+    (LastDotSplitFuzzyView, ViewMatcher),
     (LengthView, LengthPatternViewMatcher),
     (FuzzyView, FuzzyPatternViewMatcher),
 ]
