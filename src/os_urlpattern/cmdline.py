@@ -201,7 +201,7 @@ class MatchPatternCommand(Command):
             speed_logger.debug('[MATCHING]')
             line = line.strip()
             result = self._match_result(pattern_matcher, line)
-            if result is None:
+            if not result:
                 result = b'N'
             binary_stdout.write(result)
             binary_stdout.write(b'\t')

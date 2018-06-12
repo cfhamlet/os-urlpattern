@@ -30,7 +30,7 @@ class ParsedPieceView(object):
     def view(self):
         if self._view is None:
             self._view = fuzzy_view(
-                [p.fuzzy_rule for p in self._parsed_pieces])
+                [p.fuzzy_rule for p in self.parsed_pieces])
         return self._view
 
     @property
