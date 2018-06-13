@@ -75,8 +75,6 @@ class Pattern(object):
         return hash(self.pattern_string)
 
     def __eq__(self, o):
-        if not isinstance(o, Pattern):
-            return False
         return self.pattern_string == o.pattern_string
 
     def match(self, piece):

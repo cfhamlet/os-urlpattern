@@ -15,7 +15,7 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
-from .pattern_matcher import PatternMatcher, most_matched
+from .pattern_matcher import PatternMatcher
 from .utils import LogSpeedAdapter, load_obj, pretty_counter
 
 
@@ -190,8 +190,10 @@ class MatchPatternCommand(Command):
             url = raw_url.decode(DEFAULT_ENCODING)
             result = pattern_matcher.match(url)
             if not args.all_matched:
-                result = most_matched(result)
-            result = ", ".join([r.info['ptn'] for r in result])
+                sorted(result, reverse=True)
+                result = result[:1]
+            result = "\t".join([r.info['ptn']
+                                for r in result]).encode(DEFAULT_ENCODING)
         except (InvalidPatternException,
                 IrregularURLException,
                 InvalidCharException,

@@ -1,7 +1,8 @@
 from collections import OrderedDict
+from functools import total_ordering
 
 from .compat import iteritems, itervalues
-from .definition import BasePattern
+from .definition import BasePatternRule
 from .parse_utils import (EMPTY_PARSED_PIECE, MIXED_RULE_SET, PieceParser,
                           digest, parse_pattern_path_string, parse_url)
 from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
@@ -9,6 +10,37 @@ from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
                                 view_cls_from_pattern)
 from .pattern import Pattern
 from .pattern_tree import PatternTree
+
+
+@total_ordering
+class MatchPattern(Pattern):
+    def __init__(self, pattern_string, is_last_path=False):
+        super(MatchPattern, self).__init__(pattern_string)
+        self._view_cls = view_cls_from_pattern(self, is_last_path)
+        self._cmp_key = None
+
+    @property
+    def cmp_key(self):
+        if self._cmp_key is None:
+            l = [MatchPattern(u.pattern_unit_string)
+                 for u in self.pattern_units[::-1]]
+            self._cmp_key = ''.join([str(VIEW_ORDER[p.view_cls]) for p in l])
+        return self._cmp_key
+
+    @property
+    def view_cls(self):
+        return self._view_cls
+
+    def __ne__(self, other):
+        return self._pattern_string != other.pattern_string
+
+    def __lt__(self, other):
+        if self.view_cls == other.view_cls:
+            return self.cmp_key > other.cmp_key
+        return VIEW_ORDER[self.view_cls] > VIEW_ORDER[other.view_cls]
+
+
+EMPTY_MATCH_PATTERN = MatchPattern(BasePatternRule.EMPTY)
 
 
 class _ViewMatcher(object):
@@ -44,8 +76,8 @@ class ViewMatcher(_ViewMatcher):
         r = fuzzy_view([u.fuzzy_rule for u in pattern.pattern_units])
         if r not in self._nodes:
             self._nodes[r] = PatternMathchTree()
-        patterns = [BasePattern.EMPTY, ]
-        patterns.extend([Pattern(p.pattern_unit_string)
+        patterns = [EMPTY_MATCH_PATTERN, ]
+        patterns.extend([MatchPattern(p.pattern_unit_string)
                          for p in pattern.pattern_units])
         self._nodes[r].load_from_patterns(patterns, match_node)
 
@@ -83,10 +115,10 @@ class LengthPatternViewMatcher(_ViewMatcher):
 class MixedPatternViewMatcher(ViewMatcher):
 
     def _pattern(self, pattern_units):
-        return Pattern(u''.join([p.pattern_unit_string for p in pattern_units]))
+        return MatchPattern(u''.join([p.pattern_unit_string for p in pattern_units]))
 
     def add_match_node(self, match_node):
-        patterns = [BasePattern.EMPTY]
+        patterns = [EMPTY_MATCH_PATTERN]
         t = []
         for pattern_unit in match_node.pattern.pattern_units:
             if not pattern_unit.is_literal() \
@@ -129,9 +161,11 @@ VIEW_MATCHERS = [
     (FuzzyView, FuzzyPatternViewMatcher),
 ]
 
+VIEW_ORDER = dict([(item[0], idx) for idx, item in enumerate(VIEW_MATCHERS)])
 
+
+@total_ordering
 class PatternMatchNode(object):
-    __slot__ = ()
 
     def __init__(self, pattern, info=None):
         self._pattern = pattern
@@ -140,6 +174,10 @@ class PatternMatchNode(object):
         self._parrent = None
         self._view_matchers = OrderedDict([(view_cls, matcher_cls(view_cls))
                                            for view_cls, matcher_cls in VIEW_MATCHERS])
+
+    @property
+    def view_cls(self):
+        return self._pattern.view_cls
 
     def leaf(self):
         return len(self._children) == 0
@@ -203,16 +241,25 @@ class PatternMatchNode(object):
             child = PatternMatchNode(pattern, info)
             child.parrent = self
             self._children[pattern] = child
-            view_cls = view_cls_from_pattern(pattern)
-            self._view_matchers[view_cls].add_match_node(child)
+            self._view_matchers[child.view_cls].add_match_node(child)
 
         return self._children[pattern]
+
+    def __lt__(self, other):
+        if id(self) == id(other) or self.parrent is None:
+            return False
+        if self.pattern == other.pattern:
+            return self.parrent < other.parrent
+        if self.view_cls == other.view_cls \
+                and self.pattern.cmp_key == other.pattern.cmp_key:
+            return self.parrent < other.parrent
+        return self.pattern < other.pattern
 
 
 class PatternMathchTree(object):
 
     def __init__(self):
-        self._root = PatternMatchNode(BasePattern.EMPTY)
+        self._root = PatternMatchNode(EMPTY_MATCH_PATTERN)
 
     def load_from_patterns(self, patterns, info):
         node = self._root
@@ -241,7 +288,8 @@ class PatternMatcher(object):
 
     def load(self, pattern_path_string, info=None):
         meta, pattern_strings = parse_pattern_path_string(pattern_path_string)
-        patterns = [Pattern(p) for p in pattern_strings]
+        patterns = [MatchPattern(p, idx + 1 == meta.path_depth)
+                    for idx, p in enumerate(pattern_strings)]
         sid = digest(meta, [p.fuzzy_rule for p in patterns])
         if sid not in self._pattern_match_trees:
             self._pattern_match_trees[sid] = PatternMathchTree()
@@ -259,7 +307,3 @@ class PatternMatcher(object):
         if sid in self._pattern_match_trees:
             return self._pattern_match_trees[sid].match(parsed_pieces)
         return []
-
-
-def most_matched(matched_nodes):
-    return matched_nodes[0:1]
