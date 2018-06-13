@@ -55,7 +55,7 @@ class ViewMatcher(_ViewMatcher):
             return []
         parsed_pieces = [EMPTY_PARSED_PIECE, ]
         parsed_pieces.extend(view.parsed_pieces)
-        return [n.info for n in self._nodes[view.view].match(parsed_pieces)]
+        return [n.info for n in self._nodes[view.view].match(parsed_pieces, match_all=True)]
 
 
 class PiecePatternViewMatcher(_ViewMatcher):
@@ -131,6 +131,7 @@ VIEW_MATCHERS = [
 
 
 class PatternMatchNode(object):
+    __slot__ = ()
 
     def __init__(self, pattern, info=None):
         self._pattern = pattern
@@ -161,16 +162,21 @@ class PatternMatchNode(object):
     def iter_children(self):
         return itervalues(self._children)
 
-    def match(self, parsed_pieces, idx, matched_nodes):
+    def match(self, parsed_pieces, idx, matched_nodes, match_all=False):
         parsed_piece = parsed_pieces[idx]
         for matcher in itervalues(self._view_matchers):
             nodes = matcher.match(parsed_piece)
-            for node in nodes:
-                if node.leaf():
-                    matched_nodes.append(node)
+            self._deep_match(nodes, parsed_pieces, idx,
+                             matched_nodes, match_all)
+
+    def _deep_match(self, nodes, parsed_pieces, idx, matched_nodes, match_all):
+        for node in nodes:
+            if node.leaf():
+                matched_nodes.append(node)
+                if not match_all:
                     return
-                else:
-                    node.match(parsed_pieces, idx+1, matched_nodes)
+            else:
+                node.match(parsed_pieces, idx + 1, matched_nodes, match_all)
 
     @property
     def pattern(self):
@@ -218,9 +224,9 @@ class PatternMathchTree(object):
     def root(self):
         return self._root
 
-    def match(self, parsed_pieces):
+    def match(self, parsed_pieces, match_all=False):
         matched_nodes = []
-        self._root.match(parsed_pieces, 0, matched_nodes)
+        self._root.match(parsed_pieces, 0, matched_nodes, match_all)
         return matched_nodes
 
     def preprocess(self):
@@ -253,3 +259,7 @@ class PatternMatcher(object):
         if sid in self._pattern_match_trees:
             return self._pattern_match_trees[sid].match(parsed_pieces)
         return []
+
+
+def most_matched(matched_nodes):
+    return matched_nodes[0:1]

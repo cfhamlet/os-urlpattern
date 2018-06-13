@@ -15,7 +15,7 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
-from .pattern_matcher import PatternMatcher
+from .pattern_matcher import PatternMatcher, most_matched
 from .utils import LogSpeedAdapter, load_obj, pretty_counter
 
 
@@ -156,6 +156,12 @@ class MatchPatternCommand(Command):
                             action='store',
                             dest='pattern_file')
 
+        parser.add_argument('-a', '--all_matched',
+                            help='all matched patterns',
+                            default=False,
+                            action='store_true',
+                            dest='all_matched')
+
     def _load(self, pattern_matcher, args):
         stats = Counter()
         io_input = args.pattern_file[0]
@@ -178,11 +184,13 @@ class MatchPatternCommand(Command):
         pattern_matcher.preprocess()
         self._logger.debug('[PREPROCESS] Finished')
 
-    def _match_result(self, pattern_matcher, raw_url):
+    def _match_result(self, pattern_matcher, raw_url, args):
         result = None
         try:
             url = raw_url.decode(DEFAULT_ENCODING)
             result = pattern_matcher.match(url)
+            if not args.all_matched:
+                result = most_matched(result)
             result = ", ".join([r.info['ptn'] for r in result])
         except (InvalidPatternException,
                 IrregularURLException,
@@ -201,7 +209,7 @@ class MatchPatternCommand(Command):
         for line in args.file[0]:
             speed_logger.debug('[MATCHING]')
             line = line.strip()
-            result = self._match_result(pattern_matcher, line)
+            result = self._match_result(pattern_matcher, line, args)
             if not result:
                 result = b'N'
             binary_stdout.write(result)
