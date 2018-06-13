@@ -19,6 +19,42 @@ os-urlpattern
 
 Automatically generate URL pattern.
 
+* Cluster similar URLs:
+
+  * **Similar URLs**
+  
+    URLs with the same **URL structure** and in the same character space.
+
+  * **URL structure** 
+
+    Typically, URL can be parsed into 6 components:
+
+    ``<scheme>://<netloc>/<path>;<params>?<query>#<fragment>``
+
+    We choose path, query, fragment to define URL structure.
+
+    If the URLs have the same path levels, same query keys and with the same fragment existence, their URL structure should be the same.
+
+    ::
+      
+      http://example.com/p1/p2?k1=v1&k2=v2#top
+
+      URL Structure:
+      path levels: 2
+      query keys: k1, k2
+      have fragment: True
+
+  * **Character space**
+
+    Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_, URL with the following characters would be legal:
+
+    ``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
+
+* Pattern definition:
+
+  * **Regular expression compatible**
+
+
 
 
 Install
