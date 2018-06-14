@@ -161,40 +161,66 @@ Usage
 
 * Command line:
 
-::
-  
-  $ pattern-make -h
-  usage: pattern-make [-h] [-f FILE [FILE ...]]
-                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
-                      [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
+  * **pattern-make**
+    
+    Load urls, cluster and dump pattern info.
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    -f FILE [FILE ...], --file FILE [FILE ...]
-                          file to be processed (default: stdin)
-    -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
-                          log level (default: NOTSET)
-    -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
-                          config file
-    -F {JSON,ETE}, --formatter {JSON,ETE}
-                          output formatter (default: JSON)  
+    ::
+      
+      $ pattern-make -h
+      usage: pattern-make [-h] [-f FILE [FILE ...]]
+                          [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
+                          [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
 
-::
-  
-  $ pattern-match -h
-  usage: pattern-match [-h] [-f FILE [FILE ...]]
-                     [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
-                     [PATTERN_FILE ...]
+      optional arguments:
+        -h, --help            show this help message and exit
+        -f FILE [FILE ...], --file FILE [FILE ...]
+                              file to be processed (default: stdin)
+        -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                              log level (default: NOTSET)
+        -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                              config file
+        -F {JSON,ETE}, --formatter {JSON,ETE}
+                              output formatter (default: JSON)  
 
-  optional arguments:
-    -h, --help            show this help message and exit
-    -f FILE [FILE ...], --file FILE [FILE ...]
-                          file to be processed (default: stdin)
-    -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
-                          log level (default: NOTSET)
-    -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
-                          pattern file to be loaded
+    Generate pattern info from URLs:
 
+    ::
+    
+      $ cat urls.txt | pattern-make -L debug > patterns.txt
+    
+    Generate pattern tree from URLs(ete3 installed):
+
+    ::
+      
+      $ cat urls.txt | pattern-make -L debug -F ete
+
+  * **pattern-match**
+
+    Load pattern info, dump URLs match result.
+
+    ::
+      
+      $ pattern-match -h
+      usage: pattern-match [-h] [-f FILE [FILE ...]]
+                        [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
+                        [PATTERN_FILE ...]
+
+      optional arguments:
+        -h, --help            show this help message and exit
+        -f FILE [FILE ...], --file FILE [FILE ...]
+                              file to be processed (default: stdin)
+        -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                              log level (default: NOTSET)
+        -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
+                              pattern file to be loaded
+
+
+    Match URLs:
+
+    ::
+    
+      $ cat urls.txt | pattern-match -L debug -p patterns.txt
 
 Unit Tests
 ***********
