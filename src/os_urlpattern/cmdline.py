@@ -175,8 +175,8 @@ class MatchPatternCommand(Command):
                 continue
             stats['ALL'] += 1
             try:
-                info = json.loads(line)
-                pattern_matcher.load(info['ptn'], info)
+                data = json.loads(line)
+                pattern_matcher.load(data['ptn'], data)
                 stats['VALID'] += 1
             except Exception as e:
                 self._logger.warn("%s, %s", str(e), line)
@@ -195,7 +195,7 @@ class MatchPatternCommand(Command):
             if not args.all_matched:
                 sorted(result, reverse=True)
                 result = result[:1]
-            result = "\t".join([r.info['ptn']
+            result = "\t".join([r.data['ptn']
                                 for r in result]).encode(DEFAULT_ENCODING)
         except (InvalidPatternException,
                 IrregularURLException,

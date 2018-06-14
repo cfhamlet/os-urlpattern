@@ -87,7 +87,7 @@ class ViewMatcher(_ViewMatcher):
             return []
         parsed_pieces = [EMPTY_PARSED_PIECE, ]
         parsed_pieces.extend(view.parsed_pieces)
-        return [n.info for n in self._nodes[view.view].match(parsed_pieces, match_all=True)]
+        return [n.data for n in self._nodes[view.view].match(parsed_pieces, match_all=True)]
 
 
 class PiecePatternViewMatcher(_ViewMatcher):
@@ -167,9 +167,9 @@ VIEW_ORDER = dict([(item[0], idx) for idx, item in enumerate(VIEW_MATCHERS)])
 @total_ordering
 class PatternMatchNode(object):
 
-    def __init__(self, pattern, info=None):
+    def __init__(self, pattern, data=None):
         self._pattern = pattern
-        self._info = info
+        self._data = data
         self._children = {}
         self._parrent = None
         self._view_matchers = OrderedDict([(view_cls, matcher_cls(view_cls))
@@ -221,12 +221,12 @@ class PatternMatchNode(object):
         return self._pattern
 
     @property
-    def info(self):
-        return self._info
+    def data(self):
+        return self._data
 
-    @info.setter
-    def info(self, info):
-        self._info = info
+    @data.setter
+    def data(self, data):
+        self._data = data
 
     @property
     def parrent(self):
@@ -236,9 +236,9 @@ class PatternMatchNode(object):
     def parrent(self, parrent):
         self._parrent = parrent
 
-    def add_child(self, pattern, info=None):
+    def add_child(self, pattern, data=None):
         if pattern not in self._children:
-            child = PatternMatchNode(pattern, info)
+            child = PatternMatchNode(pattern, data)
             child.parrent = self
             self._children[pattern] = child
             self._view_matchers[child.view_cls].add_match_node(child)
@@ -261,11 +261,11 @@ class PatternMathchTree(object):
     def __init__(self):
         self._root = PatternMatchNode(EMPTY_MATCH_PATTERN)
 
-    def load_from_patterns(self, patterns, info):
+    def load_from_patterns(self, patterns, data):
         node = self._root
         for pattern in patterns:
             node = node.add_child(pattern)
-        node.info = info
+        node.data = data
 
     @property
     def root(self):
@@ -286,7 +286,7 @@ class PatternMatcher(object):
         self._parser = PieceParser()
         self._pattern_match_trees = {}
 
-    def load(self, pattern_path_string, info=None):
+    def load(self, pattern_path_string, data=None):
         meta, pattern_strings = parse_pattern_path_string(pattern_path_string)
         patterns = [MatchPattern(p, i + 1 == meta.path_depth)
                     for i, p in enumerate(pattern_strings)]
@@ -294,7 +294,7 @@ class PatternMatcher(object):
         if sid not in self._pattern_match_trees:
             self._pattern_match_trees[sid] = PatternMathchTree()
         self._pattern_match_trees[sid].load_from_patterns(
-            patterns, pattern_path_string if info is None else info)
+            patterns, pattern_path_string if data is None else data)
 
     def preprocess(self):
         for tree in itervalues(self._pattern_match_trees):

@@ -165,7 +165,7 @@ Usage
 
   * **pattern-make**
     
-    Load urls, cluster and dump pattern info.
+    Load urls, cluster and dump pattern records.
 
     ::
       
@@ -185,7 +185,7 @@ Usage
         -F {JSON,ETE}, --formatter {JSON,ETE}
                               output formatter (default: JSON)  
 
-    Generate pattern info from URLs:
+    Generate pattern records from URLs:
 
     ::
     
@@ -199,7 +199,7 @@ Usage
 
   * **pattern-match**
 
-    Load pattern info, dump URLs match result.
+    Load pattern records, dump URLs match results.
 
     ::
       
@@ -241,7 +241,7 @@ Usage
     for url in urls:
         pattern_maker.load(url)
 
-    # dump pattern info
+    # dump pattern data
     formatter = JsonFormatter()
     for cluster in pattern_maker.process():
         for record in formatter.format(cluster):
@@ -258,14 +258,14 @@ Usage
 
     # load pattern(unicode)
     for pattern in patterns:
-        pattern_matcher.load(pattern, info=pattern) # info will bind to match result
+        pattern_matcher.load(pattern, data=pattern) # data will bind to match result
 
     # match URLs(unicode)
     for url in urls:
         matched_results = patterm_matcher.match(url)
         # the most matched result:
         # sorted(matched_results, reverse=True)[0]
-        patterns = [n.info for n in matched_results]
+        patterns = [n.data for n in matched_results]
 
 
 Unit Tests
