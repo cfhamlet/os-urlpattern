@@ -1,37 +1,36 @@
 import json
 
+from .compat import StringIO
 from .definition import BasePatternRule, Symbols
 from .pattern_tree import PatternPath, PatternTree
 from .utils import get_ete_tree
 
 
 class Formatter(object):
-    def __init__(self, config):
-        self._config = config
-        self._dump_isolate_pattern = self._config.getboolean(
-            'make', 'dump_isolate_pattern')
 
-    def format(self, pattern_tree):
+    def format(self, pattern_tree, **kwargs):
         pass
 
 
 class PatternPathEncoder(json.JSONEncoder):
     def default(self, o):
         if isinstance(o, PatternPath):
-            return {'cnt': o.count, 'ptn': o.pattern_path_string, 'pid': o.pattern_id}
+            return {'cnt': o.count, 'ptn': o.pattern_path_string}
         return json.JSONEncoder.default(o)
 
 
 class JsonFormatter(Formatter):
-    def format(self, pattern_tree):
+    def format(self, pattern_tree, **kwargs):
+        dump_isolate_pattern = kwargs.get("dump_isolate_pattern", True)
         for pattern_path in pattern_tree.dumps():
-            if pattern_path.count <= 1 and not self._dump_isolate_pattern:
+            if pattern_path.count <= 1 and not dump_isolate_pattern:
                 continue
-            print(json.dumps(pattern_path, cls=PatternPathEncoder))
+            yield json.dumps(pattern_path, cls=PatternPathEncoder)
 
 
 class ETEFormatter(Formatter):
-    def format(self, pattern_tree):
+    def format(self, pattern_tree, **kwargs):
+        dump_isolate_pattern = kwargs.get("dump_isolate_pattern", True)
         url_meta = pattern_tree.url_meta
 
         def f(pattern_node):
@@ -50,9 +49,10 @@ class ETEFormatter(Formatter):
                 pattern_string=pattern_node,
                 query_key=query_key,
                 sep=sep)
+
         root_node = pattern_tree.root
         o_pattern_tree = PatternTree(url_meta)
-        if not self._dump_isolate_pattern:
+        if not dump_isolate_pattern:
             for pattern_path in root_node.dump_paths():
                 if pattern_path[-1].count <= 1:
                     continue
@@ -62,7 +62,7 @@ class ETEFormatter(Formatter):
             return
 
         ete_tree = get_ete_tree(root_node, format=f)
-        print(ete_tree.get_ascii(show_internal=True))
+        yield ete_tree.get_ascii(show_internal=True)
 
 
 FORMATTERS = {'JSON': JsonFormatter}

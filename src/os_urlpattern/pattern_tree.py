@@ -5,7 +5,7 @@ from .parse_utils import pack
 
 
 class PatternPath(object):
-    def __init__(self, pattern_nodes, url_meta):
+    def __init__(self, url_meta, pattern_nodes):
         self._pattern_nodes = pattern_nodes
         self._url_meta = url_meta
         self._pattern_path_string = None
@@ -13,10 +13,6 @@ class PatternPath(object):
     @property
     def count(self):
         return self._pattern_nodes[-1].count
-
-    @property
-    def pattern_id(self):
-        return hashlib.md5(self.pattern_path_string.encode(DEFAULT_ENCODING)).hexdigest()
 
     @property
     def pattern_path_string(self):
@@ -109,5 +105,5 @@ class PatternTree(object):
             node = node.add_child(piece_pattern_node.pattern, count)
 
     def dumps(self):
-        for patten_nodes in self._root.dump_paths():
-            yield PatternPath(patten_nodes, self._url_meta)
+        for pattern_nodes in self._root.dump_paths():
+            yield PatternPath(self._url_meta, pattern_nodes)

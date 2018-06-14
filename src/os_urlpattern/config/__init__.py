@@ -10,7 +10,7 @@ class Config(RawConfigParser):
     def __init__(self, defaults=None, dict_type=_default_dict,
                  allow_no_value=False):
         RawConfigParser.__init__(self, defaults=defaults,
-                              dict_type=dict_type, allow_no_value=allow_no_value)
+                                 dict_type=dict_type, allow_no_value=allow_no_value)
         self._frozen = False
 
     def getlist(self, section, option, sep=',', conv=None):
@@ -29,3 +29,16 @@ class Config(RawConfigParser):
     def set(self, section, option, value=None):
         self._assert_mutability()
         RawConfigParser.set(self, section, option, value)
+
+
+def get_default_config():
+    """Get default configure instance.
+
+    Returns:
+        Config -- default confiure instance
+    """
+    import os
+    path = os.path.dirname(__file__)
+    cfg = Config()
+    cfg.read(os.path.join(path, 'default_config.cfg'))
+    return cfg

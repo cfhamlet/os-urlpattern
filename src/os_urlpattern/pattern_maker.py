@@ -23,11 +23,6 @@ class PatternMaker(object):
         for maker in itervalues(self._makers):
             yield maker.make()
 
-    def process_and_dump(self):
-        for pattern_tree in self.process():
-            for pattern_path in pattern_tree.dumps():
-                yield pattern_path
-
 
 class Maker(object):
     def __init__(self, config, url_meta):
@@ -45,10 +40,13 @@ class Maker(object):
             if path:
                 dest.load_path(path[index:])
 
+    def cluster(self):
+        for clusterd_tree in self._cluster(self._config, self._url_meta,
+                                           self._piece_pattern_tree):
+            yield clusterd_tree
+
     def make(self):
         pattern_tree = PatternTree(self._url_meta)
-
-        for pp_tree in self._cluster(self._config, self._url_meta,
-                                     self._piece_pattern_tree):
-            self._path_dump_and_load(pp_tree, pattern_tree, 1)
+        for clustered_tree in self.cluster():
+            self._path_dump_and_load(clustered_tree, pattern_tree, 1)
         return pattern_tree

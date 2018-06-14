@@ -288,8 +288,8 @@ class PatternMatcher(object):
 
     def load(self, pattern_path_string, info=None):
         meta, pattern_strings = parse_pattern_path_string(pattern_path_string)
-        patterns = [MatchPattern(p, idx + 1 == meta.path_depth)
-                    for idx, p in enumerate(pattern_strings)]
+        patterns = [MatchPattern(p, i + 1 == meta.path_depth)
+                    for i, p in enumerate(pattern_strings)]
         sid = digest(meta, [p.fuzzy_rule for p in patterns])
         if sid not in self._pattern_match_trees:
             self._pattern_match_trees[sid] = PatternMathchTree()

@@ -3,13 +3,13 @@ from __future__ import print_function
 import argparse
 import json
 import logging
-import os
 import sys
 import time
 from collections import Counter
 from logging.config import dictConfig
 
 from .compat import binary_stdin, binary_stdout
+from .config import get_default_config
 from .definition import DEFAULT_ENCODING
 from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
@@ -119,13 +119,16 @@ class MakePatternCommand(Command):
         self._logger.debug('[LOADED] %s', pretty_counter(stats))
 
     def _dump(self, pattern_maker, args):
-        formatter = FORMATTERS[args.formatter](self._config)
+        formatter = FORMATTERS[args.formatter]()
         s = time.time()
         for pattern_tree in pattern_maker.process():
             e = time.time()
             self._logger.debug('[CLUSTER] %d %.2fs',
                                pattern_tree.root.count, e - s)
-            formatter.format(pattern_tree)
+            dip = self._config.getboolean('make', 'dump_isolate_pattern')
+            for record in formatter.format(pattern_tree, dump_isolate_pattern=dip):
+                print(record)
+
             s = time.time()
 
     def _freeze_config(self):
@@ -241,16 +244,8 @@ def _execute(command, argv=None):
     command.run(args)
 
 
-def _default_config():
-    from . import config
-    path = os.path.dirname(config.__file__)
-    cfg = config.Config()
-    cfg.read(os.path.join(path, 'default_config.cfg'))
-    return cfg
-
-
 def make(argv=None):
-    _execute(MakePatternCommand(_default_config()), argv)
+    _execute(MakePatternCommand(get_default_config()), argv)
 
 
 def match(argv=None):
