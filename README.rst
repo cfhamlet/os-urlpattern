@@ -19,11 +19,19 @@ os-urlpattern
 
 Automatically generate URL pattern.
 
+Aknowledgement
+***************
+
 * Cluster similar URLs:
 
   * **Similar URLs**
   
-    URLs with the same **URL structure** and in the same character space.
+    - URLs with the same **URL structure**.
+
+    - Components of the parsed URLs at the same position are in the same **character space**.
+
+    - Corresponding components of the different URLs have the same **character space order**.
+
 
   * **URL structure** 
 
@@ -33,32 +41,79 @@ Automatically generate URL pattern.
 
     We choose path, query, fragment to define URL structure.
 
-    If the URLs have the same path levels, same query keys and with the same fragment existence, their URL structure should be the same.
+    If the URLs have the same path levels, same query keys(also keys order) and with the same 
+    fragment existence, their URL structure should be the same. 
 
     ::
       
-      http://example.com/p1/p2?k1=v1&k2=v2#top
+      http://example.com/p1/p2?k1=v1&k2=v2#pos
 
-      URL Structure:
+      URL structure:
       path levels: 2
       query keys: k1, k2
       have fragment: True
 
   * **Character space**
 
-    Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_, URL with the following characters would be legal:
+    - Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_,
+      URL with the following characters would be legal:
 
-    ``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
+      ``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
+
+    - There are three major character space: lower-case letters, upper-case letters, number letters.
+      Other symbols are in their own character space.
+      
+    ::
+
+      HeLlOwoRd233!
+
+      character space: a-z A-Z 0-9 !
+      
+  * **Character space order**
+
+    - Split a string by character, consecutive character space can be joined. 
+
+    ::
+
+      HELLOword233!
+
+      split into: HELLO word 233 !
+
+      character space order: A-Z a-z 0-9 !
+
+    - Complex consecutive major character space can be joined.
+
+    ::
+
+      HellWorld233!
+
+      split into: H ell W orld 233 !
+
+      major join: HellWorld233 !
+
+      character space order: A-Za-z0-9 !
+
+    - Because of URL quote, '%' can be joined with major character space.
+
+    ::
+
+      %E4%BD%A0%E5%A5%BD!
+
+      split into: % E 4 % BD % A 0 % E 5 % A 5 % BD !
+
+      major join: %E4%BD%A0%E5%A5%BD !
+
+      character space order: A-Z0-9% !
+
 
 * Pattern definition:
 
   * **Regular expression compatible**
 
 
-
-
 Install
--------
+*******
+
 * Install with pip
 
   ``$ pip install os-urlpattern``
@@ -79,7 +134,7 @@ Install
         - Enable ete3 pattern tree formatter
 
 Usage
-------
+*****
 
 * Command line:
 
@@ -119,11 +174,11 @@ Usage
 
 
 Unit Tests
-----------
+***********
 
 ``$ tox``
 
 License
---------
+********
 
 MIT licensed.
