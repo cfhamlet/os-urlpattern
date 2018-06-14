@@ -258,10 +258,10 @@ Usage
 
     # match URLs(unicode)
     for url in urls:
-        matched_patterns = patterm_matcher.match(url)
+        matched_results = patterm_matcher.match(url)
         # the most matched result:
-        # sorted(matched_patterns, reverse=True)[0]
-        result = [n.info for n in matched_patterns]
+        # sorted(matched_results, reverse=True)[0]
+        patterns = [n.info for n in matched_results]
 
 
 Unit Tests
