@@ -17,7 +17,13 @@ os-urlpattern
    :target: https://pypi.python.org/pypi/os-urlpattern
 
 
-Automatically generate URL pattern.
+This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern
+from cluster for matching purpose. It is a pure python package tested under python2 python3.
+pypy also can be used for performance(4x-8x). Command line tools can be used for clustering and 
+matching, APIs are also convenient. Extra package can be installed for additional features.
+Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min and 200M memory, built-in 
+matching strategy is efficient enough at most use case(3k/s, depend on pattern complexity).
+
 
 Aknowledgement
 ***************
@@ -39,7 +45,7 @@ Aknowledgement
 
     ``<scheme>://<netloc>/<path>;<params>?<query>#<fragment>``
 
-    We choose path, query, fragment to define URL structure.
+    I choose path, query, fragment to define URL structure.
 
     If the URLs have the same path levels, same query keys(also keys order) and with the same 
     fragment existence, their URL structure should be the same. 
@@ -60,8 +66,8 @@ Aknowledgement
 
       ``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
 
-    - There are three major character space: lower-case letters, upper-case letters, number letters.
-      Other symbols are in their own character space.
+    - There are three major character space: lower-case letters(a-z), upper-case letters(A-Z), 
+      number letters(0-9). Other symbols are in their own character space.
       
     ::
 
@@ -106,9 +112,26 @@ Aknowledgement
       character space order: A-Z0-9% !
 
 
-* Pattern definition:
+* Cluster definition:
 
-  * **Regular expression compatible**
+  * URL pattern is used to express each cluster. URL pattern is normal regex string. Each URL in 
+    the same cluster can be matched with the pattern.
+
+    ::
+
+      /news/[0-9]{8}/[a-z]+[\\.]html
+      /newsShow[\\.]asp[\\?]dataID=[0-9]+
+      /thread[\\-][0-9]+[\\-][0-9][\\-]1[\\.]html
+
+  * The built-in matching strategy is strict, it can't tolerate incomplet matching.
+    
+    ::
+
+      letter: helloword
+
+      pattern01: [a-z0-9]+  # not match, because no number in the letter
+      pattern02: [a-z]+ # match
+
 
 
 Install
