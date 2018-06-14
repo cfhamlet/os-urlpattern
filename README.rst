@@ -222,6 +222,48 @@ Usage
     
       $ cat urls.txt | pattern-match -L debug -p patterns.txt
 
+* APIs:
+
+  Cluster and generate URL pattern
+
+  .. code:: python 
+    
+    from os_urlpattern.pattern_maker import PatternMaker
+    from os_urlpattern.formatter import JsonFormatter
+
+    pattern_maker = PatternMaker(conf)
+    formatter = JsonFormatter(conf)
+
+    # load URLs(unicode)
+    for url in urls:
+        pattern_maker.load(url)
+
+    # dump pattern info
+    for pattern_tree in pattern_maker.process():
+        formatter.format(pattern_tree)
+
+
+
+  Match URLs:
+
+  .. code:: python 
+    
+    from os_urlpattern.pattern_matcher import PatternMatcher
+
+    pattern_matcher = PatternMatcher()
+
+    # load pattern(unicode)
+    for pattern in patterns:
+        pattern_matcher.load(pattern, info=pattern) # info will bind to match result
+
+    # match URLs(unicode)
+    for url in urls:
+        matched_patterns = patterm_matcher.match(url)
+        # the most matched result:
+        # sorted(matched_patterns, reverse=True)[0]
+        result = [n.info for n in matched_patterns]
+
+
 Unit Tests
 ***********
 
