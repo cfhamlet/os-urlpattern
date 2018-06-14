@@ -224,7 +224,7 @@ Usage
 
 * APIs:
 
-  Cluster and generate URL pattern
+  Cluster and generate URL pattern:
 
   .. code:: python 
     
