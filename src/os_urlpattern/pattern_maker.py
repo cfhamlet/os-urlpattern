@@ -11,13 +11,13 @@ class PatternMaker(object):
         self._parser = PieceParser()
         self._makers = {}
 
-    def load(self, url, info=None):
+    def load(self, url):
         url_meta, pieces = parse_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
         if sid not in self._makers:
             self._makers[sid] = Maker(self._config, url_meta)
-        return self._makers[sid].load(parsed_pieces, info)
+        return self._makers[sid].load(parsed_pieces)
 
     def process(self):
         for maker in itervalues(self._makers):
