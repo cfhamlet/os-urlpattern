@@ -16,7 +16,7 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
 from .pattern_matcher import PatternMatcher
-from .utils import LogSpeedAdapter, load_obj, pretty_counter
+from .utils import LogSpeedAdapter, pretty_counter
 
 
 def _config_logging(log_level):
@@ -82,13 +82,12 @@ class MakePatternCommand(Command):
                             dest='config')
 
         parser.add_argument('-F', '--formatter',
-                            help='output formatter (default: JSON)',
-                            default='JSON',
+                            help='output formatter (default: CLUSTER)',
+                            default='CLUSTER',
                             action='store',
                             dest='formatter',
                             choices=FORMATTERS.keys(),
-                            type=lambda s: s.upper(),
-                            )
+                            type=lambda s: s.upper())
 
     def _load(self, pattern_maker, args):
         stats = Counter()
@@ -118,31 +117,27 @@ class MakePatternCommand(Command):
                 continue
         self._logger.debug('[LOADED] %s', pretty_counter(stats))
 
-    def _dump(self, pattern_maker, args):
+    def _process(self, pattern_maker, args):
         formatter = FORMATTERS[args.formatter]()
         s = time.time()
-        for pattern_tree in pattern_maker.process():
+        for url_meta, pattern_tree in pattern_maker.make(combine=args.formatter == 'ETE'):
             e = time.time()
             self._logger.debug('[CLUSTER] %d %.2fs',
                                pattern_tree.root.count, e - s)
-            dip = self._config.getboolean('make', 'dump_isolate_pattern')
-            for record in formatter.format(pattern_tree, dump_isolate_pattern=dip):
+            for record in formatter.format(url_meta, pattern_tree):
                 print(record)
-
             s = time.time()
 
-    def _freeze_config(self):
-        cluster_algorithm_method = load_obj(
-            self._config.get('make', 'cluster_algorithm'))
-        self._config.set('make', 'cluster_algorithm', cluster_algorithm_method)
+    def _confirm_config(self, args):
+        if args.formatter != 'CLUSTER':
+            self._config.set('make', 'drop_url', 'true')
         self._config.freeze()
 
     def run(self, args):
-        self._freeze_config()
-
+        self._confirm_config(args)
         pattern_maker = PatternMaker(self._config)
         self._load(pattern_maker, args)
-        self._dump(pattern_maker, args)
+        self._process(pattern_maker, args)
 
 
 class MatchPatternCommand(Command):
@@ -170,13 +165,14 @@ class MatchPatternCommand(Command):
         io_input = args.pattern_file[0]
         self._logger.debug('[LOAD] Start %s', io_input.name)
         for line in io_input:
-            line = line.strip()
-            if not line:
-                continue
             stats['ALL'] += 1
+            pattern = line.rstrip()
+            if not pattern.startswith(b'/'):
+                stats['UNKNOW'] += 1
+                continue
             try:
-                data = json.loads(line)
-                pattern_matcher.load(data['ptn'], data)
+                pattern = pattern.decode(DEFAULT_ENCODING)
+                pattern_matcher.load(pattern, pattern)
                 stats['VALID'] += 1
             except Exception as e:
                 self._logger.warn("%s, %s", str(e), line)
@@ -195,8 +191,8 @@ class MatchPatternCommand(Command):
             if not args.all_matched:
                 sorted(result, reverse=True)
                 result = result[:1]
-            result = "\t".join([r.data['ptn']
-                                for r in result]).encode(DEFAULT_ENCODING)
+            result = "\t".join([r.data for r in result]
+                               ).encode(DEFAULT_ENCODING)
         except (InvalidPatternException,
                 IrregularURLException,
                 InvalidCharException,

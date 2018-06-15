@@ -182,14 +182,20 @@ Usage
                               log level (default: NOTSET)
         -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                               config file
-        -F {JSON,ETE}, --formatter {JSON,ETE}
-                              output formatter (default: JSON)  
-
-    Generate pattern records from URLs:
+        -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {PATTERN,CLUSTER,JSON,ETE}
+                              output formatter (default: CLUSTER)
+    
+    Dump clustered URLs with patterns:
 
     ::
     
-      $ cat urls.txt | pattern-make -L debug > patterns.txt
+      $ cat urls.txt | pattern-make -L debug > clustered.txt
+
+    Only generate URL patterns:
+
+    ::
+    
+      $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
     
     Generate pattern tree from URLs(ete3 installed):
 

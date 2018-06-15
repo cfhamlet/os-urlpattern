@@ -2,36 +2,43 @@ import json
 
 from .compat import StringIO
 from .definition import BasePatternRule, Symbols
-from .pattern_tree import PatternPath, PatternTree
+from .parse_utils import pack
 from .utils import get_ete_tree
 
 
 class Formatter(object):
 
-    def format(self, pattern_tree, **kwargs):
+    def format(self, url_meta, tree, **kwargs):
         pass
 
 
-class PatternPathEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, PatternPath):
-            return {'cnt': o.count, 'ptn': o.pattern_path_string}
-        return json.JSONEncoder.default(o)
+class PatternFormatter(Formatter):
+    def format(self, url_meta, clusterd_tree, **kwargs):
+        for node_path in clusterd_tree.dump_paths():
+            yield pack(url_meta, [p.pattern for p in node_path[1:]])
+            break
+
+
+class ClusterFormatter(PatternFormatter):
+    def format(self, url_meta, clusterd_tree, **kwargs):
+        for r in super(ClusterFormatter, self).format(url_meta, clusterd_tree, **kwargs):
+            yield r
+
+        for node_path in clusterd_tree.dump_paths():
+            for url in node_path[-1].extra_data:
+                yield u'\t'.join((u'', url))
 
 
 class JsonFormatter(Formatter):
-    def format(self, pattern_tree, **kwargs):
-        dump_isolate_pattern = kwargs.get("dump_isolate_pattern", True)
-        for pattern_path in pattern_tree.dumps():
-            if pattern_path.count <= 1 and not dump_isolate_pattern:
-                continue
-            yield json.dumps(pattern_path, cls=PatternPathEncoder)
+    def format(self, url_meta, clusterd_tree, **kwargs):
+        for node_path in clusterd_tree.dump_paths():
+            p = pack(url_meta, [p.pattern for p in node_path[1:]])
+            yield json.dumps({'ptn': p, 'cnt': clusterd_tree.count})
+            break
 
 
 class ETEFormatter(Formatter):
-    def format(self, pattern_tree, **kwargs):
-        dump_isolate_pattern = kwargs.get("dump_isolate_pattern", True)
-        url_meta = pattern_tree.url_meta
+    def format(self, url_meta, pattern_tree, **kwargs):
 
         def f(pattern_node):
             sep = Symbols.EMPTY
@@ -50,22 +57,18 @@ class ETEFormatter(Formatter):
                 query_key=query_key,
                 sep=sep)
 
-        root_node = pattern_tree.root
-        o_pattern_tree = PatternTree(url_meta)
-        if not dump_isolate_pattern:
-            for pattern_path in root_node.dump_paths():
-                if pattern_path[-1].count <= 1:
-                    continue
-                o_pattern_tree.load_path(pattern_path[1:])
-            root_node = o_pattern_tree.root
-        if root_node.count <= 0:
+        if pattern_tree.root.count <= 0:
             return
 
-        ete_tree = get_ete_tree(root_node, format=f)
+        ete_tree = get_ete_tree(pattern_tree.root, format=f)
         yield ete_tree.get_ascii(show_internal=True)
 
 
-FORMATTERS = {'JSON': JsonFormatter}
+FORMATTERS = {
+    'PATTERN': PatternFormatter,
+    'CLUSTER': ClusterFormatter,
+    'JSON': JsonFormatter,
+}
 try:
     import ete3
     FORMATTERS['ETE'] = ETEFormatter

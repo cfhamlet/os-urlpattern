@@ -4,24 +4,6 @@ from .definition import DEFAULT_ENCODING, BasePattern
 from .parse_utils import pack
 
 
-class PatternPath(object):
-    def __init__(self, url_meta, pattern_nodes):
-        self._pattern_nodes = pattern_nodes
-        self._url_meta = url_meta
-        self._pattern_path_string = None
-
-    @property
-    def count(self):
-        return self._pattern_nodes[-1].count
-
-    @property
-    def pattern_path_string(self):
-        if self._pattern_path_string is None:
-            self._pattern_path_string = pack(
-                self._url_meta, [p.pattern for p in self._pattern_nodes[1:]])
-        return self._pattern_path_string
-
-
 class PatternNode(object):
     __slots__ = ('_pattern', '_children',
                  '_parrent', '_count', '_current_level')

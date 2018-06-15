@@ -5,7 +5,7 @@ from .compat import itervalues
 
 class PiecePatternNode(object):
     __slots__ = ('_parrent', '_children', '_count',
-                 '_pattern', '_parsed_piece')
+                 '_pattern', '_parsed_piece', '_extra_data')
 
     def __init__(self, parsed_piece, pattern=None):
         self._parrent = None
@@ -13,9 +13,7 @@ class PiecePatternNode(object):
         self._count = 0
         self._parsed_piece = parsed_piece
         self._pattern = Pattern(self.piece) if pattern is None else pattern
-
-    def piece_eq_pattern(self):
-        return self.piece == self._pattern.pattern_string
+        self._extra_data = None
 
     def set_pattern(self, pattern):
         change = not (self._pattern == pattern)
@@ -101,6 +99,24 @@ class PiecePatternNode(object):
     def parrent(self):
         return self._parrent
 
+    def add_extra_data(self, data):
+        if data is None:
+            return
+        if self._extra_data is None:
+            self._extra_data = set()
+        self._extra_data.add(data)
+
+    def update_extra_data(self, extra_data):
+        if not extra_data:
+            return
+        if self._extra_data is None:
+            self._extra_data = set()
+        self._extra_data.update(extra_data)
+
+    @property
+    def extra_data(self):
+        return self._extra_data
+
 
 class PiecePatternTree(object):
     def __init__(self):
@@ -122,9 +138,10 @@ class PiecePatternTree(object):
         for p_node in piece_pattern_node_path:
             node, is_new = node.add_child_node_from_parsed_piece(
                 p_node.parsed_piece, count, p_node.pattern)
+        node.update_extra_data(piece_pattern_node_path[-1].extra_data)
         return is_new
 
-    def add_from_parsed_pieces(self, parsed_pieces, count=1, uniq=True):
+    def add_from_parsed_pieces(self, parsed_pieces, count=1, uniq=True, data=None):
         node = self._root
         node.incr_count(count)
         is_new = None
@@ -133,6 +150,7 @@ class PiecePatternTree(object):
                 parsed_piece, count)
         if uniq and not is_new:
             node.incr_count(0 - count, True)
+        node.add_extra_data(data)
         return is_new
 
     def dump_paths(self):
