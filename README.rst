@@ -24,6 +24,18 @@ matching, APIs are also convenient. Extra packages can be installed for addition
 Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min and 200M memory, built-in 
 matching strategy is efficient enough at most use case(3k/s, depend on patterns complexity).
 
+.. code:: console
+
+  $ wget -qO- 'https://github.com/cfhamlet/os-urlpattern/tree/master/tests/urls.txt' | pattern-make
+  /[0-9]{2}[\.]html
+        http://example.com/01.html
+        http://example.com/02.html
+        http://example.com/03.html
+  /[0-9]{3}/test[0-9]{2}[\.]html
+        http://example.com/123/test01.html
+        http://example.com/456/test02.html
+        http://example.com/789/test03.html
+
 
 Aknowledgement
 ***************
@@ -45,7 +57,7 @@ Aknowledgement
 
     ``<scheme>://<netloc>/<path>;<params>?<query>#<fragment>``
 
-    Because different site may have similar URLs structure and <params> is rare, so <schema> 
+    Because different sites may have similar URLs structure and <params> is rare, so <schema> 
     <netloc> and <params> are ignored, <path> <query> <fragment> are used to define URL structure.
 
     If the URLs have the same path levels, same query keys(also keys order) and with the same 
