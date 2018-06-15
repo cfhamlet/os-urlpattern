@@ -19,13 +19,15 @@ os-urlpattern
 
 This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern
 from cluster for matching purpose. It is a pure python package tested under python2.7 python3.6,
-pypy also can be used for performance(4x-8x). Command line tools can be used for clustering and 
-matching, APIs are also convenient. Extra packages can be installed for additional features.
-Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min and 200M memory, built-in 
-matching strategy is efficient enough at most use case(3k/s, depend on patterns complexity).
+pypy also can be used for performance(4x-8x). Command line tools can provided for standalone 
+clustering and matching, APIs are also convenient. Several extra packages can be installed for 
+additional features. Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min and 
+200M memory, built-in matching strategy is efficient enough at most use case(3k/s, depend on
+patterns complexity).
 
 .. code:: console
 
+  $ pip install -U os-urlpattern
   $ wget -qO- 'https://git.io/vhXGq' | pattern-make
   /[0-9]{2}[\.]html
         http://example.com/01.html
