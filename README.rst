@@ -45,7 +45,8 @@ Aknowledgement
 
     ``<scheme>://<netloc>/<path>;<params>?<query>#<fragment>``
 
-    I choose path, query, fragment to define URL structure.
+    Because different site may have similar URLs structure and <params> is rare, so <schema> 
+    <netloc> and <params> are ignored, <path> <query> <fragment> are used to define URL structure.
 
     If the URLs have the same path levels, same query keys(also keys order) and with the same 
     fragment existence, their URL structure should be the same. 
@@ -264,7 +265,7 @@ Usage
 
     # load pattern(unicode)
     for pattern in patterns:
-        pattern_matcher.load(pattern, data=pattern) # data will bind to match result
+        pattern_matcher.load(pattern, data=pattern) # data will bind to matched result
 
     # match URLs(unicode)
     for url in urls:
