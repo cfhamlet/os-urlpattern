@@ -26,7 +26,7 @@ matching strategy is efficient enough at most use case(3k/s, depend on patterns 
 
 .. code:: console
 
-  $ wget -qO- 'https://github.com/cfhamlet/os-urlpattern/tree/master/tests/urls.txt' | pattern-make
+  $ wget -qO- 'https://git.io/vhXGq' | pattern-make
   /[0-9]{2}[\.]html
         http://example.com/01.html
         http://example.com/02.html
@@ -180,7 +180,7 @@ Usage
     
     Load urls, cluster and dump pattern records.
 
-    ::
+    .. code:: console
       
       $ pattern-make -h
       usage: pattern-make [-h] [-f FILE [FILE ...]]
@@ -200,19 +200,19 @@ Usage
     
     Dump clustered URLs with patterns:
 
-    ::
+    .. code:: console
     
       $ cat urls.txt | pattern-make -L debug > clustered.txt
 
     Only generate URL patterns:
 
-    ::
+    .. code:: console
     
       $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
     
     Generate pattern tree from URLs(ete3 installed):
 
-    ::
+    .. code:: console
       
       $ cat urls.txt | pattern-make -L debug -F ete
 
@@ -220,7 +220,7 @@ Usage
 
     Load pattern records, dump URLs match results.
 
-    ::
+    .. code:: console
       
       $ pattern-match -h
       usage: pattern-match [-h] [-f FILE [FILE ...]]
@@ -239,7 +239,7 @@ Usage
 
     Match URLs:
 
-    ::
+    .. code:: console
     
       $ cat urls.txt | pattern-match -L debug -p patterns.txt
 
