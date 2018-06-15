@@ -120,11 +120,11 @@ class MakePatternCommand(Command):
     def _process(self, pattern_maker, args):
         formatter = FORMATTERS[args.formatter]()
         s = time.time()
-        for url_meta, pattern_tree in pattern_maker.make(combine=args.formatter == 'ETE'):
+        for pattern_tree in pattern_maker.make(combine=args.formatter == 'ETE'):
             e = time.time()
             self._logger.debug('[CLUSTER] %d %.2fs',
                                pattern_tree.root.count, e - s)
-            for record in formatter.format(url_meta, pattern_tree):
+            for record in formatter.format(pattern_tree):
                 print(record)
             s = time.time()
 

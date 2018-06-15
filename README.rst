@@ -249,8 +249,8 @@ Usage
 
     # dump pattern data
     formatter = PatternFormatter()
-    for url_meta, cluster in pattern_maker.make():
-        for pattern in formatter.format(url_meta, cluster):
+    for cluster in pattern_maker.make():
+        for pattern in formatter.format(cluster):
             print(pattern)
 
 

@@ -32,7 +32,7 @@ class Maker(object):
     def __init__(self, config, url_meta):
         self._config = config
         self._url_meta = url_meta
-        self._piece_pattern_tree = PiecePatternTree()
+        self._piece_pattern_tree = PiecePatternTree(url_meta)
 
     def load(self, parsed_pieces, count=1, uniq=True, data=None):
         return self._piece_pattern_tree.add_from_parsed_pieces(
@@ -44,8 +44,7 @@ class Maker(object):
                 dest.load_path(path[index:])
 
     def cluster(self):
-        for clusterd_tree in cluster(self._config, self._url_meta,
-                                     self._piece_pattern_tree):
+        for clusterd_tree in cluster(self._config, self._piece_pattern_tree):
             yield clusterd_tree
 
     def make(self, combine):
@@ -53,7 +52,7 @@ class Maker(object):
             pattern_tree = PatternTree(self._url_meta)
             for clustered_tree in self.cluster():
                 self._path_dump_and_load(clustered_tree, pattern_tree, 1)
-            yield self._url_meta, pattern_tree
+            yield pattern_tree
         else:
             for clustered_tree in self.cluster():
-                yield self._url_meta, clustered_tree
+                yield clustered_tree

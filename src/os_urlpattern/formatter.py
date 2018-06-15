@@ -8,20 +8,21 @@ from .utils import get_ete_tree
 
 class Formatter(object):
 
-    def format(self, url_meta, tree, **kwargs):
+    def format(self, tree, **kwargs):
         pass
 
 
 class PatternFormatter(Formatter):
-    def format(self, url_meta, clusterd_tree, **kwargs):
+    def format(self, clusterd_tree, **kwargs):
+        url_meta = clusterd_tree.url_meta
         for node_path in clusterd_tree.dump_paths():
             yield pack(url_meta, [p.pattern for p in node_path[1:]])
             break
 
 
 class ClusterFormatter(PatternFormatter):
-    def format(self, url_meta, clusterd_tree, **kwargs):
-        for r in super(ClusterFormatter, self).format(url_meta, clusterd_tree, **kwargs):
+    def format(self, clusterd_tree, **kwargs):
+        for r in super(ClusterFormatter, self).format(clusterd_tree, **kwargs):
             yield r
 
         for node_path in clusterd_tree.dump_paths():
@@ -30,7 +31,8 @@ class ClusterFormatter(PatternFormatter):
 
 
 class JsonFormatter(Formatter):
-    def format(self, url_meta, clusterd_tree, **kwargs):
+    def format(self, clusterd_tree, **kwargs):
+        url_meta = clusterd_tree.url_meta
         for node_path in clusterd_tree.dump_paths():
             p = pack(url_meta, [p.pattern for p in node_path[1:]])
             yield json.dumps({'ptn': p, 'cnt': clusterd_tree.count})
@@ -38,7 +40,8 @@ class JsonFormatter(Formatter):
 
 
 class ETEFormatter(Formatter):
-    def format(self, url_meta, pattern_tree, **kwargs):
+    def format(self, pattern_tree, **kwargs):
+        url_meta = pattern_tree.url_meta
 
         def f(pattern_node):
             sep = Symbols.EMPTY

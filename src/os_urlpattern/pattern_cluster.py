@@ -110,9 +110,9 @@ class ViewPieceBag(namedtuple('ViewPieceBag', ['view', 'piece_bag'])):
 
 
 class ViewPieceBagBucket(PieceBagBucket):
-    def __init__(self):
+    def __init__(self, url_meta):
         super(ViewPieceBagBucket, self).__init__()
-        self._tree = PiecePatternTree()
+        self._tree = PiecePatternTree(url_meta)
 
     def add(self, view_piece_bag, build_tree=True):
         piece_bag = view_piece_bag.piece_bag
@@ -122,21 +122,20 @@ class ViewPieceBagBucket(PieceBagBucket):
         if not build_tree:
             return
         view = view_piece_bag.view
+
         self._tree.add_from_parsed_pieces(
             view.parsed_pieces,
             count=piece_bag.count,
             uniq=False)
 
     def cluster(self, config, **kwargs):
-        p_num = len(self.pick().view.parsed_pieces)
-        url_meta = URLMeta(p_num, [], False)
-        for single_tree in cluster(config, url_meta, self._tree, **kwargs):
-            yield self._transfer(single_tree)
+        for clustered_tree in cluster(config, self._tree, **kwargs):
+            yield self._transfer(clustered_tree)
 
-    def _transfer(self, single_tree):
+    def _transfer(self, clusterted_tree):
         pattern = None
-        bucket = ViewPieceBagBucket()
-        for path in single_tree.dump_paths():
+        bucket = ViewPieceBagBucket(self._tree.url_meta)
+        for path in clusterted_tree.dump_paths():
             piece = u''.join([p.piece for p in path[1:]])
             view_piece_bag = self[piece]
             bucket.add(view_piece_bag, False)
@@ -252,7 +251,7 @@ class PiecePatternCluster(PatternCluster):
 
         if vl == 3 and self._processor.meta_info.is_last_path():
             ldsf_view = LastDotSplitFuzzyView(parsed_piece)
-            if view.view == ldsf_view.view:
+            if view == ldsf_view:
                 view = ldsf_view
                 p_cls = LastDotSplitFuzzyPatternCluster
         elif vl > 3:
@@ -265,7 +264,7 @@ class PiecePatternCluster(PatternCluster):
             elif vl - mvl >= self._min_cluster_num:
                 if mvl == 3 and self._processor.meta_info.is_last_path():
                     ldsf_view = LastDotSplitFuzzyView(parsed_piece)
-                    if mixed_view.view == ldsf_view.view:
+                    if mixed_view == ldsf_view:
                         view = ldsf_view
                         p_cls = LastDotSplitFuzzyPatternCluster
                     else:
@@ -376,9 +375,9 @@ class MultiPatternCluster(PatternCluster):
 
     def add(self, view_piece_bag):
         view = view_piece_bag.view
-        view = view.view
         if view not in self._buckets:
-            self._buckets[view] = ViewPieceBagBucket()
+            url_meta = URLMeta(len(view.parsed_pieces), [], False)
+            self._buckets[view] = ViewPieceBagBucket(url_meta)
         self._buckets[view].add(view_piece_bag)
 
 
@@ -394,7 +393,7 @@ class BasePatternCluster(MultiPatternCluster):
 
         p_cls = MixedPatternCluster
 
-        if view.view == mixed_view.view:
+        if view == mixed_view:
             if self._processor.meta_info.is_last_path():
                 ldsf_view = LastDotSplitFuzzyView(parsed_piece)
                 if len(ldsf_view.parsed_pieces) == 1:
@@ -416,7 +415,7 @@ class BasePatternCluster(MultiPatternCluster):
                 return
             elif mvl == 3 and self._processor.meta_info.is_last_path():
                 ldsf_view = LastDotSplitFuzzyView(parsed_piece)
-                if mixed_view.view == ldsf_view.view:
+                if mixed_view == ldsf_view:
                     view = ldsf_view
                     p_cls = LastDotSplitFuzzyPatternCluster
 
@@ -635,12 +634,13 @@ class ClusterProcessor(object):
             processor.add(node, add_children=True)
 
 
-def split_by_pattern(url_meta, piece_pattern_tree):
+def split_by_pattern(piece_pattern_tree):
+    url_meta = piece_pattern_tree.url_meta
     trees = {}
     for path in piece_pattern_tree.dump_paths():
         pid = digest(url_meta, [p.pattern for p in path[1:]])
         if pid not in trees:
-            trees[pid] = PiecePatternTree()
+            trees[pid] = PiecePatternTree(url_meta)
         tree = trees[pid]
         tree.add_from_piece_pattern_node_path(path[1:])
 
@@ -662,7 +662,8 @@ def _can_be_splited(processor):
     return False
 
 
-def process(config, url_meta, piece_pattern_tree, **kwargs):
+def process(config, piece_pattern_tree, **kwargs):
+    url_meta = piece_pattern_tree.url_meta
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info, None, **kwargs)
     processor.add(piece_pattern_tree.root)
@@ -670,10 +671,10 @@ def process(config, url_meta, piece_pattern_tree, **kwargs):
     return _can_be_splited(processor)
 
 
-def cluster(config, url_meta, piece_pattern_tree, **kwargs):
-    if not process(config, url_meta, piece_pattern_tree, **kwargs):
+def cluster(config, piece_pattern_tree, **kwargs):
+    if not process(config, piece_pattern_tree, **kwargs):
         yield piece_pattern_tree
         return
-    for sub_piece_pattern_tree in split_by_pattern(url_meta, piece_pattern_tree):
-        for tree in cluster(config, url_meta, sub_piece_pattern_tree, **kwargs):
+    for sub_piece_pattern_tree in split_by_pattern(piece_pattern_tree):
+        for tree in cluster(config, sub_piece_pattern_tree, **kwargs):
             yield tree

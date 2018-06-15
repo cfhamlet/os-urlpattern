@@ -119,8 +119,13 @@ class PiecePatternNode(object):
 
 
 class PiecePatternTree(object):
-    def __init__(self):
+    def __init__(self, url_meta):
         self._root = PiecePatternNode(EMPTY_PARSED_PIECE)
+        self._url_meta = url_meta
+
+    @property
+    def url_meta(self):
+        return self._url_meta
 
     @property
     def root(self):
