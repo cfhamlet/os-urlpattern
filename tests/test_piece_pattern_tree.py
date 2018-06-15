@@ -6,7 +6,7 @@ def test_count():
     num = 100
     urls = ['http://test.com/abc/%d' % i for i in range(num)]
     parser = PieceParser()
-    tree = PiecePatternTree()
+    tree = PiecePatternTree(parse_url(urls[0])[0])
     for url in urls:
         _, pieces = parse_url(url)
         parsed_pieces = [parser.parse(piece) for piece in pieces]
