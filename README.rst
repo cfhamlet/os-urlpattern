@@ -237,7 +237,7 @@ Usage
   .. code:: python 
     
     from os_urlpattern.config import get_default_config
-    from os_urlpattern.formatter import JsonFormatter
+    from os_urlpattern.formatter import PatternFormatter
     from os_urlpattern.pattern_maker import PatternMaker
 
     conf = get_default_config()
@@ -248,10 +248,10 @@ Usage
         pattern_maker.load(url)
 
     # dump pattern data
-    formatter = JsonFormatter()
-    for cluster in pattern_maker.process():
-        for record in formatter.format(cluster):
-            print(record)
+    formatter = PatternFormatter()
+    for url_meta, cluster in pattern_maker.make():
+        for pattern in formatter.format(url_meta, cluster):
+            print(pattern)
 
 
   Match URLs:
