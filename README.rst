@@ -206,7 +206,7 @@ Usage
     
       $ cat urls.txt | pattern-make -L debug > clustered.txt
 
-    Only generate URL patterns:
+    Only generate URL Pattern:
 
     .. code:: console
     
@@ -247,7 +247,7 @@ Usage
 
 * APIs:
 
-  Cluster and generate URL pattern:
+  Cluster and generate URL Pattern:
 
   .. code:: python 
     
