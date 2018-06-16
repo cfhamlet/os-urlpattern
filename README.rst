@@ -171,7 +171,7 @@ Install
         - Show memory useage
       * - ete-tree
         - ``pip install os-urlpattern[ete_tree]``
-        - Enable ete3 pattern tree formatter
+        - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
 
 Usage
 *****
