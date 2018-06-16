@@ -127,9 +127,9 @@ Aknowledgement
       character space order: A-Z0-9% !
 
 
-* Cluster definition:
+* Pattern:
 
-  * URL pattern is used to express each cluster. URL pattern is normal regex string. Each URL in 
+  * URL pattern is used to express each cluster. It is normal regex string. Each URL in 
     the same cluster can be matched with the pattern.
 
     ::
