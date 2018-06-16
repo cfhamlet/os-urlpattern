@@ -17,7 +17,7 @@ os-urlpattern
    :target: https://pypi.python.org/pypi/os-urlpattern
 
 
-This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern
+This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern(RegEx)
 from cluster for matching purpose. It is a pure python package tested under python2.7 python3.6,
 pypy also can be used for performance(4x-8x). Command line tools are provided for standalone 
 clustering and matching, APIs are also convenient. Several extra packages can be installed for 
