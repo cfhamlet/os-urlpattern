@@ -39,262 +39,270 @@ patterns complexity).
         http://example.com/789/test03.html
 
 
+==============
 Aknowledgement
-***************
+==============
 
-* Cluster similar URLs:
-
-  * **Similar URLs**
+Similar URLs
+=============
   
-    - URLs with the same **URL structure**.
+* URLs with the same **URL structure**.
 
-    - Components of the parsed URLs at the same position are in the same **character space**.
+* Components of the parsed URLs at the same position are in the same **character space**.
 
-    - Corresponding components of the different URLs have the same **character space order**.
-
-
-  * **URL structure** 
-
-    Typically, URL can be parsed into 6 components:
-
-    ``<scheme>://<netloc>/<path>;<params>?<query>#<fragment>``
-
-    Because different sites may have similar URLs structure and <params> is rare, so <schema> 
-    <netloc> and <params> are ignored, <path> <query> <fragment> are used to define URL structure.
-
-    If the URLs have the same path levels, same query keys(also keys order) and with the same 
-    fragment existence, their URL structure should be the same. 
-
-    ::
-      
-      http://example.com/p1/p2?k1=v1&k2=v2#pos
-
-      URL structure:
-      path levels: 2
-      query keys: k1, k2
-      have fragment: True
-
-  * **Character space**
-
-    - Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_,
-      URL with the following characters would be legal:
-
-      ``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
-
-    - There are three major character space: lower-case letters(a-z), upper-case letters(A-Z), 
-      number letters(0-9). Other symbols are in their own character space.
-      
-    ::
-
-      HeLlOwoRd233!
-
-      character space: a-z A-Z 0-9 !
-      
-  * **Character space order**
-
-    - Split a string by character, consecutive character space can be joined. 
-
-    ::
-
-      HELLOword233!
-
-      split into: HELLO word 233 !
-
-      character space order: A-Z a-z 0-9 !
-
-    - Complex consecutive major character space can be joined.
-
-    ::
-
-      HellWorld233!
-
-      split into: H ell W orld 233 !
-
-      major join: HellWorld233 !
-
-      character space order: A-Za-z0-9 !
-
-    - Because of URL quote, '%' can be joined with major character space.
-
-    ::
-
-      %E4%BD%A0%E5%A5%BD!
-
-      split into: % E 4 % BD % A 0 % E 5 % A 5 % BD !
-
-      major join: %E4%BD%A0%E5%A5%BD !
-
-      character space order: A-Z0-9% !
+* Corresponding components of the different URLs have the same **character space order**.
 
 
-* URL Pattern:
+URL structure
+==============
 
-  * URL Pattern is used to express each cluster. It is normal regex string. Each URL in 
-    the same cluster can be matched with the pattern.
+Typically, URL can be parsed into 6 components:
 
-    ::
+``<scheme>://<netloc>/<path>;<params>?<query>#<fragment>``
 
-      pattern examples:
+Because different sites may have similar URLs structure and <params> is rare, so <schema> 
+<netloc> and <params> are ignored, <path> <query> <fragment> are used to define URL structure.
 
-      /news/[0-9]{8}/[a-z]+[\\.]html
-      /newsShow[\\.]asp[\\?]dataID=[0-9]+
-      /thread[\\-][0-9]+[\\-][0-9][\\-]1[\\.]html
+If the URLs have the same path levels, same query keys(also keys order) and with the same 
+fragment existence, their URL structure should be the same. 
 
-  * The built-in matching strategy is strict, it can't tolerate incomplet matching.
+::
     
-    ::
+  http://example.com/p1/p2?k1=v1&k2=v2#pos
 
-      letter: helloword
+  URL structure:
+  path levels: 2
+  query keys: k1, k2
+  have fragment: True
 
-      pattern01: [a-z0-9]+  # not match, because no number in the letter
-      pattern02: [a-z]+ # match
+Character space
+===============
+
+Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_,
+URL with the following characters would be legal:
+
+``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
+
+There are three major character space: lower-case letters(a-z), upper-case letters(A-Z), 
+number letters(0-9). Other symbols are in their own character space.
+  
+::
+
+  HeLlOwoRd233!
+
+  character space: a-z A-Z 0-9 !
+      
+Character space order
+=====================
+
+Split a string by character, consecutive character space can be joined. 
+
+::
+
+  HELLOword233!
+
+  split into: HELLO word 233 !
+
+  character space order: A-Z a-z 0-9 !
+
+Complex consecutive major character space can be joined.
+
+::
+
+  HellWorld233!
+
+  split into: H ell W orld 233 !
+
+  major join: HellWorld233 !
+
+  character space order: A-Za-z0-9 !
+
+Because of URL quote, '%' can be joined with major character space.
+
+::
+
+  %E4%BD%A0%E5%A5%BD!
+
+  split into: % E 4 % BD % A 0 % E 5 % A 5 % BD !
+
+  major join: %E4%BD%A0%E5%A5%BD !
+
+  character space order: A-Z0-9% !
 
 
+URL Pattern
+============
 
+URL Pattern is used to express each cluster. It is normal regex string. Each URL in 
+the same cluster can be matched with the pattern.
+
+::
+
+  pattern examples:
+
+  /news/[0-9]{8}/[a-z]+[\\.]html
+  /newsShow[\\.]asp[\\?]dataID=[0-9]+
+  /thread[\\-][0-9]+[\\-][0-9][\\-]1[\\.]html
+
+The built-in matching strategy is strict, it can't tolerate incomplet matching.
+  
+::
+
+  letter: helloword
+
+  pattern01: [a-z0-9]+  # not match, because no number in the letter
+  pattern02: [a-z]+ # match
+
+
+========
 Install
-*******
+========
 
-* Install with pip
+Install with pip
 
-  ``$ pip install os-urlpattern``
+``$ pip install os-urlpattern``
 
-* Install extra packages
+Install extra packages
 
-  .. list-table::
-      :header-rows: 1
-        
-      * - subpackage 
-        - install command
-        - enables
-      * - memory
-        - ``pip install os-urlpattern[memroy]``
-        - Show memory useage
-      * - ete-tree
-        - ``pip install os-urlpattern[ete_tree]``
-        - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
+.. list-table::
+  :header-rows: 1
+    
+  * - subpackage 
+    - install command
+    - enables
+  * - memory
+    - ``pip install os-urlpattern[memroy]``
+    - Show memory useage
+  * - ete-tree
+    - ``pip install os-urlpattern[ete_tree]``
+    - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
 
+========
 Usage
-*****
+========
 
-* Command line:
+Command line
+=============
 
-  * **pattern-make**
+* **pattern-make**
     
-    Load urls, cluster and dump pattern records.
+  Load urls, cluster and dump pattern records.
 
-    .. code:: console
-      
-      $ pattern-make -h
-      usage: pattern-make [-h] [-f FILE [FILE ...]]
-                          [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
-                          [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
-
-      optional arguments:
-        -h, --help            show this help message and exit
-        -f FILE [FILE ...], --file FILE [FILE ...]
-                              file to be processed (default: stdin)
-        -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
-                              log level (default: NOTSET)
-        -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
-                              config file
-        -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {PATTERN,CLUSTER,JSON,ETE}
-                              output formatter (default: CLUSTER)
+  .. code:: console
     
-    Dump clustered URLs with patterns:
+    $ pattern-make -h
+    usage: pattern-make [-h] [-f FILE [FILE ...]]
+                        [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
+                        [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
 
-    .. code:: console
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f FILE [FILE ...], --file FILE [FILE ...]
+                            file to be processed (default: stdin)
+      -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                            log level (default: NOTSET)
+      -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                            config file
+      -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {PATTERN,CLUSTER,JSON,ETE}
+                            output formatter (default: CLUSTER)
+  
+  Dump clustered URLs with patterns:
+
+  .. code:: console
+  
+    $ cat urls.txt | pattern-make -L debug > clustered.txt
+
+  Only generate URL Pattern:
+
+  .. code:: console
+  
+    $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
+  
+  Generate pattern tree from URLs(ete3 installed):
+
+  .. code:: console
     
-      $ cat urls.txt | pattern-make -L debug > clustered.txt
+    $ cat urls.txt | pattern-make -L debug -F ete
 
-    Only generate URL Pattern:
+* **pattern-match**
 
-    .. code:: console
+  Load pattern records, dump URLs match results.
+
+  .. code:: console
     
-      $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
-    
-    Generate pattern tree from URLs(ete3 installed):
+    $ pattern-match -h
+    usage: pattern-match [-h] [-f FILE [FILE ...]]
+                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
+                      [PATTERN_FILE ...]
 
-    .. code:: console
-      
-      $ cat urls.txt | pattern-make -L debug -F ete
-
-  * **pattern-match**
-
-    Load pattern records, dump URLs match results.
-
-    .. code:: console
-      
-      $ pattern-match -h
-      usage: pattern-match [-h] [-f FILE [FILE ...]]
-                        [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
-                        [PATTERN_FILE ...]
-
-      optional arguments:
-        -h, --help            show this help message and exit
-        -f FILE [FILE ...], --file FILE [FILE ...]
-                              file to be processed (default: stdin)
-        -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
-                              log level (default: NOTSET)
-        -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
-                              pattern file to be loaded
-
-
-    Match URLs:
-
-    .. code:: console
-    
-      $ cat urls.txt | pattern-match -L debug -p patterns.txt
-
-* APIs:
-
-  Cluster and generate URL Pattern:
-
-  .. code:: python 
-    
-    from os_urlpattern.config import get_default_config
-    from os_urlpattern.formatter import PatternFormatter
-    from os_urlpattern.pattern_maker import PatternMaker
-
-    conf = get_default_config()
-    pattern_maker = PatternMaker(conf)
-
-    # load URLs(unicode)
-    for url in urls:
-        pattern_maker.load(url)
-
-    # dump pattern data
-    formatter = PatternFormatter()
-    for cluster in pattern_maker.make():
-        for pattern in formatter.format(cluster):
-            print(pattern)
+    optional arguments:
+      -h, --help            show this help message and exit
+      -f FILE [FILE ...], --file FILE [FILE ...]
+                            file to be processed (default: stdin)
+      -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                            log level (default: NOTSET)
+      -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
+                            pattern file to be loaded
 
 
   Match URLs:
 
-  .. code:: python 
-    
-    from os_urlpattern.pattern_matcher import PatternMatcher
+  .. code:: console
+  
+    $ cat urls.txt | pattern-match -L debug -p patterns.txt
 
-    pattern_matcher = PatternMatcher()
+APIs
+=====
 
-    # load pattern(unicode)
-    for pattern in patterns:
-        pattern_matcher.load(pattern, data=pattern) # data will bind to matched result
+Cluster and generate URL Pattern:
 
-    # match URLs(unicode)
-    for url in urls:
-        matched_results = patterm_matcher.match(url)
-        # the most matched result:
-        # sorted(matched_results, reverse=True)[0]
-        patterns = [n.data for n in matched_results]
+.. code:: python 
+  
+  from os_urlpattern.config import get_default_config
+  from os_urlpattern.formatter import PatternFormatter
+  from os_urlpattern.pattern_maker import PatternMaker
+
+  conf = get_default_config()
+  pattern_maker = PatternMaker(conf)
+
+  # load URLs(unicode)
+  for url in urls:
+      pattern_maker.load(url)
+
+  # dump pattern data
+  formatter = PatternFormatter()
+  for cluster in pattern_maker.make():
+      for pattern in formatter.format(cluster):
+          print(pattern)
 
 
+Match URLs:
+
+.. code:: python 
+  
+  from os_urlpattern.pattern_matcher import PatternMatcher
+
+  pattern_matcher = PatternMatcher()
+
+  # load pattern(unicode)
+  for pattern in patterns:
+      pattern_matcher.load(pattern, data=pattern) # data will bind to matched result
+
+  # match URLs(unicode)
+  for url in urls:
+      matched_results = patterm_matcher.match(url)
+      # the most matched result:
+      # sorted(matched_results, reverse=True)[0]
+      patterns = [n.data for n in matched_results]
+
+============
 Unit Tests
-***********
+============
 
 ``$ tox``
 
+============
 License
-********
+============
 
 MIT licensed.
