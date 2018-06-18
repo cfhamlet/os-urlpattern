@@ -186,7 +186,7 @@ Command line
 
 * **pattern-make**
     
-  Load urls, cluster and dump pattern records.
+  Load urls, cluster and dump patterns.
 
   .. code:: console
     
@@ -218,7 +218,7 @@ Command line
   
     $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
   
-  Generate pattern tree from URLs(ete3 installed):
+  Generate pattern tree from URLs(`ete <https://github.com/etetoolkit/ete>`_ installed):
 
   .. code:: console
     
@@ -226,7 +226,7 @@ Command line
 
 * **pattern-match**
 
-  Load pattern records, dump URLs match results.
+  Load patterns, dump URLs match results.
 
   .. code:: console
     
