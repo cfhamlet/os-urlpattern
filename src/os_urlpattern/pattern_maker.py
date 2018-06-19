@@ -26,6 +26,11 @@ class PatternMaker(object):
         return self._makers[sid].load(parsed_pieces,
                                       meta=url if not self._drop_url else None)
 
+    def make(self, combine=False):
+        for maker in self.makers:
+            for url_meta, clustered in maker.make(combine):
+                yield url_meta, clustered
+
 
 class Maker(object):
     def __init__(self, config, url_meta):

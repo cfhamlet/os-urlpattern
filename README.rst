@@ -17,12 +17,12 @@ os-urlpattern
    :target: https://pypi.python.org/pypi/os-urlpattern
 
 
-This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern(RegEx)
-from cluster for matching purpose. It is a pure python package tested under python2.7 python3.6,
-pypy can also be used for performance(4x-8x). Command line tools are provided for standalone 
-clustering and matching, APIs are also convenient. Several extra packages can be installed for 
-additional features. Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min and 
-200M memory. Built-in matching strategy is efficient enough at most use case(3k/s, depend on
+This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern(RegEx) 
+from cluster for matching purpose. It is a pure python package tested under python2.7 python3.6, 
+`pypy <http://pypy.org/>`_ can also be used for performance(4x-8x). Command line tools are provided 
+for standalone clustering and matching, APIs are also convenient. Several extra packages can be 
+installed for additional features. Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min 
+and 200M memory. Built-in matching strategy is efficient enough at most use case(3k/s, depend on 
 patterns complexity).
 
 .. code:: console
@@ -269,12 +269,11 @@ Cluster and generate URL Pattern:
    for url in urls:
        pattern_maker.load(url)
 
-   # dump patterns
+   # cluster and dump patterns
    formatter = PatternFormatter()
-   for maker in pattern_maker.makers:
-       for url_meta, clusterd in maker.make():
-           for pattern in formatter.format(url_meta, clusterd)
-               print(pattern)
+   for url_meta, clustered in pattern_maker.make():
+       for pattern in formatter.format(url_meta, clusterd)
+           print(pattern)
 
 
 Match URLs:
