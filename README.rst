@@ -269,11 +269,12 @@ Cluster and generate URL Pattern:
    for url in urls:
        pattern_maker.load(url)
 
-   # dump pattern data
+   # dump patterns
    formatter = PatternFormatter()
-   for cluster in pattern_maker.make():
-       for pattern in formatter.format(cluster):
-           print(pattern)
+   for maker in pattern_maker.makers:
+       for url_meta, clusterd in maker.make():
+           for pattern in formatter.format(url_meta, clusterd)
+               print(pattern)
 
 
 Match URLs:

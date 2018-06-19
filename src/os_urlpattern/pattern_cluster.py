@@ -1,12 +1,13 @@
 from collections import Counter, OrderedDict, namedtuple
 
-from .compat import iteritems, itervalues
-from .parse_utils import URLMeta, digest, number_rule, wildcard_rule
-from .parsed_piece_view import (BaseView, LastDotSplitFuzzyView,
-                                MixedView)
+from .compat import itervalues
+from .parse_utils import (EMPTY_PARSED_PIECE, URLMeta, number_rule,
+                          wildcard_rule)
+from .parsed_piece_view import BaseView, LastDotSplitFuzzyView, MixedView
 from .pattern import Pattern
-from .piece_pattern_tree import PiecePatternNode, PiecePatternTree
-from .utils import Bag
+from .piece_pattern_node import (PiecePatternNode, build_from_parsed_pieces,
+                                 build_from_piece_pattern_nodes)
+from .utils import Bag, dump_tree
 
 
 class TBag(Bag):
@@ -112,7 +113,8 @@ class ViewPieceBag(namedtuple('ViewPieceBag', ['view', 'piece_bag'])):
 class ViewPieceBagBucket(PieceBagBucket):
     def __init__(self, url_meta):
         super(ViewPieceBagBucket, self).__init__()
-        self._tree = PiecePatternTree(url_meta)
+        self._url_meta = url_meta
+        self._root = PiecePatternNode(EMPTY_PARSED_PIECE)
 
     def add(self, view_piece_bag, build_tree=True):
         piece_bag = view_piece_bag.piece_bag
@@ -123,24 +125,23 @@ class ViewPieceBagBucket(PieceBagBucket):
             return
         view = view_piece_bag.view
 
-        self._tree.add_from_parsed_pieces(
-            view.parsed_pieces,
-            count=piece_bag.count,
-            uniq=False)
+        build_from_parsed_pieces(
+            self._root, view.parsed_pieces, count=piece_bag.count, uniq=False)
 
     def cluster(self, config, **kwargs):
-        for clustered_tree in cluster(config, self._tree, **kwargs):
-            yield self._transfer(clustered_tree)
+        for clustered in cluster(config, self._url_meta, self._root, **kwargs):
+            yield self._transfer(clustered)
 
-    def _transfer(self, clusterted_tree):
+    def _transfer(self, root):
         pattern = None
-        bucket = ViewPieceBagBucket(self._tree.url_meta)
-        for path in clusterted_tree.dump_paths():
-            piece = u''.join([p.piece for p in path[1:]])
+        bucket = ViewPieceBagBucket(self._url_meta)
+        for nodes in dump_tree(root):
+            piece = u''.join([p.piece for p in nodes[1:]])
             view_piece_bag = self[piece]
             bucket.add(view_piece_bag, False)
             if pattern is None:
-                pattern = Pattern(u''.join([str(p.pattern) for p in path[1:]]))
+                pattern = Pattern(
+                    u''.join([str(p.pattern) for p in nodes[1:]]))
         return bucket, pattern
 
 
@@ -599,7 +600,7 @@ class ClusterProcessor(object):
     def add(self, node, add_children=False):
         c = self.get_cluster(PiecePatternCluster)
         if add_children:
-            for child in node.iter_children():
+            for child in node.children:
                 c.add(child)
         else:
             c.add(node)
@@ -634,17 +635,16 @@ class ClusterProcessor(object):
             processor.add(node, add_children=True)
 
 
-def split_by_pattern(piece_pattern_tree):
-    url_meta = piece_pattern_tree.url_meta
-    trees = {}
-    for path in piece_pattern_tree.dump_paths():
-        pid = digest(url_meta, [p.pattern for p in path[1:]])
-        if pid not in trees:
-            trees[pid] = PiecePatternTree(url_meta)
-        tree = trees[pid]
-        tree.add_from_piece_pattern_node_path(path[1:])
+def split_by_pattern(root):
+    tree_roots = {}
+    for nodes in dump_tree(root):
+        pid = hash(u"/".join([str(p.pattern) for p in nodes]))
+        if pid not in tree_roots:
+            tree_roots[pid] = PiecePatternNode(EMPTY_PARSED_PIECE)
+        sub_root = tree_roots[pid]
+        build_from_piece_pattern_nodes(sub_root, nodes[1:])
 
-    return itervalues(trees)
+    return itervalues(tree_roots)
 
 
 def _can_be_splited(processor):
@@ -662,19 +662,18 @@ def _can_be_splited(processor):
     return False
 
 
-def process(config, piece_pattern_tree, **kwargs):
-    url_meta = piece_pattern_tree.url_meta
+def process(config, url_meta, root, **kwargs):
     meta_info = MetaInfo(url_meta, 0)
     processor = ClusterProcessor(config, meta_info, None, **kwargs)
-    processor.add(piece_pattern_tree.root)
+    processor.add(root)
     processor.process()
     return _can_be_splited(processor)
 
 
-def cluster(config, piece_pattern_tree, **kwargs):
-    if not process(config, piece_pattern_tree, **kwargs):
-        yield piece_pattern_tree
+def cluster(config, url_meta, root, **kwargs):
+    if not process(config, url_meta, root, **kwargs):
+        yield root
         return
-    for sub_piece_pattern_tree in split_by_pattern(piece_pattern_tree):
-        for tree in cluster(config, sub_piece_pattern_tree, **kwargs):
-            yield tree
+    for sub_root in split_by_pattern(root):
+        for clustered in cluster(config, url_meta, sub_root, **kwargs):
+            yield clustered

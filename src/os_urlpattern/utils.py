@@ -1,7 +1,8 @@
 import logging
 import os
 import time
-from importlib import import_module
+
+from .compat import itervalues
 
 
 def pretty_counter(counter):
@@ -57,6 +58,100 @@ class Stack(object):
         return len(self._objs)
 
 
+class TreeNode(object):
+    def __init__(self, value):
+        self._parrent = None
+        self._children = None
+        self._count = 0
+        self._value = value
+        self._meta = None
+
+    def leaf(self):
+        return not self._children
+
+    def level(self):
+        l = 0
+        n = self.parrent
+        while n is not None:
+            l += 1
+            n = n.parrent
+
+        return l
+
+    @property
+    def value(self):
+        return self._value
+
+    @property
+    def meta(self):
+        return self._meta
+
+    @meta.setter
+    def meta(self, meta):
+        self._meta = meta
+
+    @property
+    def parrent(self):
+        return self._parrent
+
+    @parrent.setter
+    def parrent(self, parrent):
+        self._parrent = parrent
+
+    @property
+    def children(self):
+        return itervalues(self._children if self._children is not None else {})
+
+    @property
+    def count(self):
+        return self._count
+
+    @count.setter
+    def count(self, count):
+        self._count = count
+
+    def add_child(self, kv):
+        if self._children is None:
+            self._children = {}
+        k, v = kv
+        is_new = False
+        if k not in self._children:
+            self._children[k] = self.__class__(v)
+            self._children[k].parrent = self
+            is_new = True
+        child = self._children[k]
+        return child, is_new
+
+
+def build_tree(root, kv_list, count=1, meta=None):
+    node = root
+    node.count += count
+    for kv in kv_list:
+        node, is_new = node.add_child(kv)
+        node.count += count
+    if meta is not None:
+        node.meta = meta
+
+    return node, is_new
+
+
+def dump_tree(root):
+    olist = []
+
+    def _dump(node, _nodes):
+        _nodes.append(node)
+        if node.leaf():
+            yield _nodes
+            return
+        for child in node.children:
+            for nodes in _dump(child, _nodes):
+                yield nodes
+            _nodes.pop(-1)
+
+    for nodes in _dump(root, olist):
+        yield nodes
+
+
 class LogSpeedAdapter(logging.LoggerAdapter):
     def __init__(self, logger, interval):
         super(LogSpeedAdapter, self).__init__(logger, {})
@@ -99,22 +194,3 @@ def used_memory():
             return '%.1f%s' % (memory, i)
         memory = memory / 1024.0
     return '%.1fG' % memory
-
-
-def get_ete_tree(root_node, format=str):
-    from ete3 import Tree
-
-    def add_children(node, ete_node):
-        for child in node.children:
-            ete_child = ete_node.add_child(name=format(child))
-            add_children(child, ete_child)
-
-    ete_root_node = Tree(name=format(root_node))
-    add_children(root_node, ete_root_node)
-    return ete_root_node
-
-
-def load_obj(obj_path):
-    module_path, obj_name = obj_path.rsplit('.', 1)
-    _mod = import_module(module_path)
-    return getattr(_mod, obj_name)

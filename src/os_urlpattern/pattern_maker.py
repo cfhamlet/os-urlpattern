@@ -1,9 +1,9 @@
 from .compat import itervalues
-from .parse_utils import PieceParser, digest, parse_url
+from .definition import BasePattern
+from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, digest, parse_url
 from .pattern_cluster import cluster
-from .pattern_tree import PatternTree
-from .piece_pattern_tree import PiecePatternTree
-from .utils import load_obj
+from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
+from .utils import TreeNode, build_tree, dump_tree
 
 
 class PatternMaker(object):
@@ -13,6 +13,10 @@ class PatternMaker(object):
         self._makers = {}
         self._drop_url = self._config.getboolean('make', 'drop_url')
 
+    @property
+    def makers(self):
+        return itervalues(self._makers)
+
     def load(self, url):
         url_meta, pieces = parse_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
@@ -20,39 +24,35 @@ class PatternMaker(object):
         if sid not in self._makers:
             self._makers[sid] = Maker(self._config, url_meta)
         return self._makers[sid].load(parsed_pieces,
-                                      data=url if not self._drop_url else None)
-
-    def make(self, combine=False):
-        for maker in itervalues(self._makers):
-            for tree in maker.make(combine):
-                yield tree
+                                      meta=url if not self._drop_url else None)
 
 
 class Maker(object):
     def __init__(self, config, url_meta):
         self._config = config
         self._url_meta = url_meta
-        self._piece_pattern_tree = PiecePatternTree(url_meta)
+        self._root = PiecePatternNode(EMPTY_PARSED_PIECE)
 
-    def load(self, parsed_pieces, count=1, uniq=True, data=None):
-        return self._piece_pattern_tree.add_from_parsed_pieces(
-            parsed_pieces, count=count, uniq=uniq, data=data)
+    def load(self, parsed_pieces, count=1, meta=None, uniq=True):
+        return build_from_parsed_pieces(self._root,
+                                        parsed_pieces,
+                                        count=count,
+                                        meta=meta,
+                                        uniq=uniq)
 
-    def _path_dump_and_load(self, src, dest, index=0):
-        for path in src.dump_paths():
-            if path:
-                dest.load_path(path[index:])
+    def _cluster(self):
+        for clustered in cluster(self._config, self._url_meta, self._root):
+            yield clustered
 
-    def cluster(self):
-        for clusterd_tree in cluster(self._config, self._piece_pattern_tree):
-            yield clusterd_tree
-
-    def make(self, combine):
+    def make(self, combine=False):
         if combine:
-            pattern_tree = PatternTree(self._url_meta)
-            for clustered_tree in self.cluster():
-                self._path_dump_and_load(clustered_tree, pattern_tree, 1)
-            yield pattern_tree
+            root = TreeNode(BasePattern.EMPTY)
+            for clustered in self._cluster():
+                for nodes in dump_tree(clustered):
+                    build_tree(root, [(n.pattern, n.pattern)
+                                      for n in nodes[1:]], nodes[-1].count)
+
+            yield self._url_meta, root
         else:
-            for clustered_tree in self.cluster():
-                yield clustered_tree
+            for clustered in self._cluster():
+                yield self._url_meta, clustered

@@ -100,7 +100,8 @@ class MakePatternCommand(Command):
             speed_logger.debug('[LOADING]')
             try:
                 url = url.decode(DEFAULT_ENCODING)
-                if pattern_maker.load(url):
+                _, is_new = pattern_maker.load(url)
+                if is_new:
                     stats['UNIQ'] += 1
                 stats['VALID'] += 1
             except (InvalidPatternException,
@@ -120,13 +121,14 @@ class MakePatternCommand(Command):
     def _process(self, pattern_maker, args):
         formatter = FORMATTERS[args.formatter]()
         s = time.time()
-        for pattern_tree in pattern_maker.make(combine=args.formatter == 'ETE'):
-            e = time.time()
-            self._logger.debug('[CLUSTER] %d %.2fs',
-                               pattern_tree.root.count, e - s)
-            for record in formatter.format(pattern_tree):
-                print(record)
-            s = time.time()
+        combine = args.formatter == 'ETE'
+        for maker in pattern_maker.makers:
+            for url_meta, root in maker.make(combine):
+                e = time.time()
+                self._logger.debug('[CLUSTER] %d %.2fs', root.count, e - s)
+                for record in formatter.format(url_meta, root):
+                    print(record)
+                s = time.time()
 
     def _confirm_config(self, args):
         if args.formatter != 'CLUSTER':
@@ -172,7 +174,7 @@ class MatchPatternCommand(Command):
                 continue
             try:
                 pattern = pattern.decode(DEFAULT_ENCODING)
-                pattern_matcher.load(pattern, pattern)
+                pattern_matcher.load(pattern, meta=pattern)
                 stats['VALID'] += 1
             except Exception as e:
                 self._logger.warn("%s, %s", str(e), line)
@@ -191,7 +193,7 @@ class MatchPatternCommand(Command):
             if not args.all_matched:
                 sorted(result, reverse=True)
                 result = result[:1]
-            result = "\t".join([r.data for r in result]
+            result = "\t".join([r.meta for r in result]
                                ).encode(DEFAULT_ENCODING)
         except (InvalidPatternException,
                 IrregularURLException,
