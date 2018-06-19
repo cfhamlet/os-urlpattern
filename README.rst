@@ -27,16 +27,16 @@ patterns complexity).
 
 .. code:: console
 
-  $ pip install -U os-urlpattern
-  $ wget -qO- 'https://git.io/vhXGq' | pattern-make
-  /[0-9]{2}[\.]html
-        http://example.com/01.html
-        http://example.com/02.html
-        http://example.com/03.html
-  /[0-9]{3}/test[0-9]{2}[\.]html
-        http://example.com/123/test01.html
-        http://example.com/456/test02.html
-        http://example.com/789/test03.html
+   $ pip install -U os-urlpattern
+   $ wget -qO- 'https://git.io/vhXGq' | pattern-make
+   /[0-9]{2}[\.]html
+         http://example.com/01.html
+         http://example.com/02.html
+         http://example.com/03.html
+   /[0-9]{3}/test[0-9]{2}[\.]html
+         http://example.com/123/test01.html
+         http://example.com/456/test02.html
+         http://example.com/789/test03.html
 
 
 ==============
@@ -165,17 +165,17 @@ Install with pip
 Install extra packages
 
 .. list-table::
-  :header-rows: 1
+   :header-rows: 1
     
-  * - subpackage 
-    - install command
-    - enables
-  * - memory
-    - ``pip install os-urlpattern[memroy]``
-    - Show memory useage
-  * - ete-tree
-    - ``pip install os-urlpattern[ete_tree]``
-    - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
+   * - subpackage 
+     - install command
+     - enables
+   * - memory
+     - ``pip install os-urlpattern[memroy]``
+     - Show memory useage
+   * - ete-tree
+     - ``pip install os-urlpattern[ete_tree]``
+     - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
 
 ========
 Usage
@@ -190,39 +190,39 @@ Command line
 
   .. code:: console
     
-    $ pattern-make -h
-    usage: pattern-make [-h] [-f FILE [FILE ...]]
-                        [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
-                        [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
+     $ pattern-make -h
+     usage: pattern-make [-h] [-f FILE [FILE ...]]
+                         [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
+                         [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -f FILE [FILE ...], --file FILE [FILE ...]
-                            file to be processed (default: stdin)
-      -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
-                            log level (default: NOTSET)
-      -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
-                            config file
-      -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {PATTERN,CLUSTER,JSON,ETE}
-                            output formatter (default: CLUSTER)
+     optional arguments:
+       -h, --help            show this help message and exit
+       -f FILE [FILE ...], --file FILE [FILE ...]
+                             file to be processed (default: stdin)
+       -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                             log level (default: NOTSET)
+       -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
+                             config file
+       -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {PATTERN,CLUSTER,JSON,ETE}
+                             output formatter (default: CLUSTER)
   
   Dump clustered URLs with patterns:
 
   .. code:: console
   
-    $ cat urls.txt | pattern-make -L debug > clustered.txt
+     $ cat urls.txt | pattern-make -L debug > clustered.txt
 
   Only generate URL Pattern:
 
   .. code:: console
   
-    $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
+     $ cat urls.txt | pattern-make -L debug -F pattern > patterns.txt
   
   Generate pattern tree from URLs(`ete <https://github.com/etetoolkit/ete>`_ installed):
 
   .. code:: console
     
-    $ cat urls.txt | pattern-make -L debug -F ete
+     $ cat urls.txt | pattern-make -L debug -F ete
 
 * **pattern-match**
 
@@ -230,26 +230,26 @@ Command line
 
   .. code:: console
     
-    $ pattern-match -h
-    usage: pattern-match [-h] [-f FILE [FILE ...]]
-                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
-                      [PATTERN_FILE ...]
+     $ pattern-match -h
+     usage: pattern-match [-h] [-f FILE [FILE ...]]
+                       [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
+                       [PATTERN_FILE ...]
 
-    optional arguments:
-      -h, --help            show this help message and exit
-      -f FILE [FILE ...], --file FILE [FILE ...]
-                            file to be processed (default: stdin)
-      -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
-                            log level (default: NOTSET)
-      -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
-                            pattern file to be loaded
+     optional arguments:
+       -h, --help            show this help message and exit
+       -f FILE [FILE ...], --file FILE [FILE ...]
+                             file to be processed (default: stdin)
+       -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+                             log level (default: NOTSET)
+       -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
+                             pattern file to be loaded
 
 
   Match URLs:
 
   .. code:: console
   
-    $ cat urls.txt | pattern-match -L debug -p patterns.txt
+     $ cat urls.txt | pattern-match -L debug -p patterns.txt
 
 APIs
 =====
@@ -258,42 +258,42 @@ Cluster and generate URL Pattern:
 
 .. code:: python 
   
-  from os_urlpattern.config import get_default_config
-  from os_urlpattern.formatter import PatternFormatter
-  from os_urlpattern.pattern_maker import PatternMaker
+   from os_urlpattern.config import get_default_config
+   from os_urlpattern.formatter import PatternFormatter
+   from os_urlpattern.pattern_maker import PatternMaker
 
-  conf = get_default_config()
-  pattern_maker = PatternMaker(conf)
+   conf = get_default_config()
+   pattern_maker = PatternMaker(conf)
 
-  # load URLs(unicode)
-  for url in urls:
-      pattern_maker.load(url)
+   # load URLs(unicode)
+   for url in urls:
+       pattern_maker.load(url)
 
-  # dump pattern data
-  formatter = PatternFormatter()
-  for cluster in pattern_maker.make():
-      for pattern in formatter.format(cluster):
-          print(pattern)
+   # dump pattern data
+   formatter = PatternFormatter()
+   for cluster in pattern_maker.make():
+       for pattern in formatter.format(cluster):
+           print(pattern)
 
 
 Match URLs:
 
 .. code:: python 
   
-  from os_urlpattern.pattern_matcher import PatternMatcher
+   from os_urlpattern.pattern_matcher import PatternMatcher
 
-  pattern_matcher = PatternMatcher()
+   pattern_matcher = PatternMatcher()
 
-  # load pattern(unicode)
-  for pattern in patterns:
-      pattern_matcher.load(pattern, data=pattern) # data will bind to matched result
+   # load pattern(unicode)
+   for pattern in patterns:
+       pattern_matcher.load(pattern, data=pattern) # data will bind to matched result
 
-  # match URLs(unicode)
-  for url in urls:
-      matched_results = patterm_matcher.match(url)
-      # the most matched result:
-      # sorted(matched_results, reverse=True)[0]
-      patterns = [n.data for n in matched_results]
+   # match URLs(unicode)
+   for url in urls:
+       matched_results = patterm_matcher.match(url)
+       # the most matched result:
+       # sorted(matched_results, reverse=True)[0]
+       patterns = [n.data for n in matched_results]
 
 ============
 Unit Tests
