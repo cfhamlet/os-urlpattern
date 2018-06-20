@@ -291,7 +291,7 @@ Match URLs:
    # match URLs(unicode)
    for url in urls:
        matched_results = patterm_matcher.match(url)
-       # the most matched result:
+       # the best matched result:
        # sorted(matched_results, reverse=True)[0]
        patterns = [n.meta for n in matched_results]
 
