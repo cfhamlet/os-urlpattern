@@ -172,13 +172,13 @@ class MatchPatternCommand(Command):
             if not pattern.startswith(b'/'):
                 stats['UNKNOW'] += 1
                 continue
-            try:
-                pattern = pattern.decode(DEFAULT_ENCODING)
-                pattern_matcher.load(pattern, meta=pattern)
-                stats['VALID'] += 1
-            except Exception as e:
-                self._logger.warn("%s, %s", str(e), line)
-                stats['INVALID'] += 1
+            # try:
+            pattern = pattern.decode(DEFAULT_ENCODING)
+            pattern_matcher.load(pattern, meta=pattern)
+            stats['VALID'] += 1
+            # except Exception as e:
+            #     self._logger.warn("%s, %s", str(e), line)
+            #     stats['INVALID'] += 1
         self._logger.debug('[LOAD] Finished %s', pretty_counter(stats))
 
         self._logger.debug('[PREPROCESS] Start')
@@ -193,7 +193,7 @@ class MatchPatternCommand(Command):
             if not args.all_matched:
                 sorted(result, reverse=True)
                 result = result[:1]
-            result = "\t".join([r.meta for r in result]
+            result = u'\t'.join([r.meta for r in result]
                                ).encode(DEFAULT_ENCODING)
         except (InvalidPatternException,
                 IrregularURLException,

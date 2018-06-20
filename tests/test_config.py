@@ -1,6 +1,6 @@
 import pytest
 
-from os_urlpattern.config import Config
+from os_urlpattern.config import Config, get_default_config
 
 
 @pytest.fixture(scope='function')
@@ -44,3 +44,8 @@ def test_config_freeze(config):
     config.freeze()
     with pytest.raises(TypeError):
         config.set('test', 'tesst')
+
+
+def test_get_default_config():
+    config = get_default_config()
+    assert config.getint('make', 'min_cluster_num') == 3

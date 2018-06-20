@@ -88,7 +88,7 @@ class ViewMatcher(_ViewMatcher):
         parsed_pieces = view.parsed_pieces
         matched_result = []
         self._matchers[view.view].match(
-            parsed_pieces, 0, matched_result, match_all=True)
+            parsed_pieces, 0, matched_result)
         return [n.meta for n in matched_result]
 
 
@@ -194,21 +194,19 @@ class PatternMatchNode(TreeNode):
         for child in self.children:
             child.preprocess()
 
-    def match(self, parsed_pieces, idx, matched_nodes, match_all=False):
+    def match(self, parsed_pieces, idx, matched_nodes):
         parsed_piece = parsed_pieces[idx]
         for matcher in itervalues(self._view_matchers):
             nodes = matcher.match(parsed_piece)
             self._deep_match(nodes, parsed_pieces, idx,
-                             matched_nodes, match_all)
+                             matched_nodes)
 
-    def _deep_match(self, nodes, parsed_pieces, idx, matched_nodes, match_all):
+    def _deep_match(self, nodes, parsed_pieces, idx, matched_nodes):
         for node in nodes:
             if node.leaf():
                 matched_nodes.append(node)
-                if not match_all:
-                    return
             else:
-                node.match(parsed_pieces, idx + 1, matched_nodes, match_all)
+                node.match(parsed_pieces, idx + 1, matched_nodes)
 
     @property
     def pattern(self):

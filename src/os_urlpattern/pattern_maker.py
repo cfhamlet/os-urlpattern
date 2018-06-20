@@ -46,18 +46,26 @@ class Maker(object):
                                         uniq=uniq)
 
     def _cluster(self):
-        for clustered in cluster(self._config, self._url_meta, self._root):
+        for clustered in cluster(self._config,
+                                 self._url_meta,
+                                 self._root):
             yield clustered
 
-    def make(self, combine=False):
-        if combine:
-            root = TreeNode(BasePattern.EMPTY)
-            for clustered in self._cluster():
-                for nodes in dump_tree(clustered):
-                    build_tree(root, [(n.pattern, n.pattern)
-                                      for n in nodes[1:]], nodes[-1].count)
+    def _combine_clusters(self):
+        root = TreeNode(BasePattern.EMPTY)
+        for clustered in self._cluster():
+            for nodes in dump_tree(clustered):
+                build_tree(root, [(n.pattern, n.pattern)
+                                  for n in nodes[1:]], nodes[-1].count)
+        return root
 
-            yield self._url_meta, root
+    def _make(self, combine=False):
+        if combine:
+            yield self._combine_clusters()
         else:
             for clustered in self._cluster():
-                yield self._url_meta, clustered
+                yield clustered
+
+    def make(self, combine=False):
+        for clustered in self._make(combine):
+            yield self._url_meta, clustered

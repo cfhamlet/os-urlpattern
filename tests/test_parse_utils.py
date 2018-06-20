@@ -1,12 +1,16 @@
 import pytest
 
-from os_urlpattern.parse_utils import (IrregularURLException, PieceParser,
-                                       URLMeta, analyze_url,
-                                       filter_useless_part, normalize_str,
-                                       pack, parse_pattern_string,
+from os_urlpattern.exceptions import (InvalidCharException,
+                                      InvalidPatternException,
+                                      IrregularURLException)
+from os_urlpattern.parse_utils import (PieceParser, URLMeta, analyze_url,
+                                       digest, filter_useless_part,
+                                       normalize_str, pack,
+                                       parse_pattern_path_string,
+                                       parse_pattern_string,
                                        parse_pattern_unit_string,
-                                       parse_query_string, parse_url,
-                                       parse_pattern_path_string)
+                                       parse_query_string, parse_url)
+from os_urlpattern.pattern import Pattern
 
 
 def test_normalize_str():
@@ -115,6 +119,8 @@ def test_piece_parser():
         assert parsed.rules == expected_rules
         assert parsed.pieces == expected_pieces
         assert parsed.piece_length == len(piece)
+    with pytest.raises(InvalidCharException):
+        parser.parse(' a')
 
 
 def test_unpack_pack():
@@ -173,6 +179,17 @@ def test_parse_pattern():
         assert ''.join([str(u) for u in ps]) == p_str
         assert len(ps) == num
 
+    invalid_data = [
+        '[a-z',
+        'a-z]',
+        '[a-z]{-}',
+        '[a-z]{-2}',
+    ]
+
+    for data in invalid_data:
+        with pytest.raises(InvalidPatternException):
+            parse_pattern_string(data)
+
 
 def test_parse_pattern_unit():
     data = [
@@ -185,3 +202,40 @@ def test_parse_pattern_unit():
         rules, num = parse_pattern_unit_string(p_str)
         assert num == e_num
         assert rules == e_rules
+
+
+def test_parse_pattern_path_string():
+    patterns = [
+        ('/AaBb/123456.shtml', '/[A-Za-z]+/[0-9]{6}[\\.]shtml'),
+        ('/abc/123/index.html', '/abc/123/index[\\.]html'),
+        ('/12345678/index.asp?id=123',
+         '/[0-9]{8}/[a-z]+[\\.]asp[\\?]id=[0-9]+'),
+        ('/newsShow.asp?dataID=1', '/newsShow[\\.]asp[\\?]dataID=[0-9]+'),
+    ]
+
+    for url, pattern in patterns:
+        url = 'http://example.com' + url
+        um1, pieces = parse_url(url)
+        um2, pattern_strings = parse_pattern_path_string(pattern)
+        assert um1 == um2
+        for p, s in zip(pattern_strings, pieces):
+            assert Pattern(p).match(s)
+
+
+def test_digest():
+    parser = PieceParser()
+    data = [
+        ('/abc/', '/abcdef/'),
+        ('/abc/index.html?k1=v1&k2=v2', '/abc/html.htm?k1=c01&k2=2m'),
+        ('/abc/index.html?k1=v1#abc', '/abc/html.htm?k1=c01#def'),
+    ]
+
+    for urls in data:
+        urls = ['http://example.com' + u for u in urls]
+        digests = set()
+        for url in urls:
+            url_meta, pieces = parse_url(url)
+            parsed_pieces = [parser.parse(piece) for piece in pieces]
+            sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
+            digests.add(sid)
+        assert len(digests) == 1

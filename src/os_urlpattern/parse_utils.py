@@ -452,21 +452,31 @@ def parse_pattern_string(pattern_string):
             while True:
                 idx = pattern_string.find(Symbols.BRACKETS_R, idx + 1)
                 if idx < 0:
-                    raise InvalidPatternException
+                    raise InvalidPatternException(
+                        'Missing \'%s\'' % Symbols.BRACKETS_R)
                 elif pattern_string[idx - 1] == Symbols.BACKSLASH:
                     continue
                 break
             if idx + 1 < l:
                 if pattern_string[idx + 1] == Symbols.BRACES_L:
+                    old_idx = idx + 2
                     idx = pattern_string.find(Symbols.BRACES_R, idx + 1)
                     if idx < 0:
-                        raise InvalidPatternException
+                        raise InvalidPatternException(
+                            'Missing \'%s\'' % Symbols.BRACES_R)
+                    num_str = pattern_string[old_idx:idx]
+                    if not num_str.isdigit():
+                        raise InvalidPatternException('Not digit %s' % num_str)
+
                 elif pattern_string[idx + 1] == Symbols.PLUS:
                     idx += 1
             idx += 1
             pattern_units.append(pattern_string[idx_s:idx])
         else:
             rule = CHAR_RULE_DICT[c]
+            if rule not in DIGIT_AND_ASCII_RULE_SET:
+                raise InvalidPatternException(
+                    'Invalid pattern %s' % pattern_string)
             if last_rule is None:
                 s.write(c)
             else:
