@@ -230,9 +230,6 @@ class PatternMatchNode(TreeNode):
             return False
         if self.pattern == other.pattern:
             return self.parrent < other.parrent
-        if self.view_cls == other.view_cls \
-                and self.pattern.cmp_key == other.pattern.cmp_key:
-            return self.parrent < other.parrent
         return self.pattern < other.pattern
 
 

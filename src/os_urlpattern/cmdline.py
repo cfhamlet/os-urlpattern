@@ -191,7 +191,7 @@ class MatchPatternCommand(Command):
             url = raw_url.decode(DEFAULT_ENCODING)
             result = pattern_matcher.match(url)
             if not args.all_matched:
-                sorted(result, reverse=True)
+                result = sorted(result, reverse=True)
                 result = result[:1]
             result = u'\t'.join([r.meta for r in result]
                                 ).encode(DEFAULT_ENCODING)
