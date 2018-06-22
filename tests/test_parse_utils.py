@@ -37,12 +37,12 @@ def test_parse_url():
          ('query_depth', 1), ('has_fragment', True), ('depths', (2, 1, 1))]),
     ]
     for url, p, m in data:
-        url_meta, parts = parse_url(url)
+        url_meta, parts = analyze_url(url)
         assert parts == p
         for k, v in m:
             assert getattr(url_meta, k) == v
     with pytest.raises(IrregularURLException):
-        parse_url('http://www.g.com')
+        analyze_url('http://www.g.com')
 
 
 def test_parse_query_string():
@@ -84,7 +84,7 @@ def test_analyze_url():
     ]
     for check in data:
         url = check[0]
-        r = analyze_url(url)
+        r = parse_url(url)
         for attr, expect in check[1:]:
             assert getattr(r, attr) == expect
 
@@ -134,7 +134,7 @@ def test_unpack_pack():
         ('http://www.g.com/abc?a=1&b=2#', '/abc[\\?]a=1&b=2#'),
     ]
     for url, expected in data:
-        assert pack(*parse_url(url)) == expected
+        assert pack(*analyze_url(url)) == expected
 
 
 def test_url_meta():
@@ -158,7 +158,7 @@ def test_parse_url_pattern():
         'http://www.g.com/abc?a=1&b=2#',
     ]
     for url in data:
-        meta1, parts1 = parse_url(url)
+        meta1, parts1 = analyze_url(url)
         pattern_string = pack(meta1, parts1)
         meta2, parts2 = parse_pattern_path_string(pattern_string)
         assert meta1 == meta2
@@ -215,7 +215,7 @@ def test_parse_pattern_path_string():
 
     for url, pattern in patterns:
         url = 'http://example.com' + url
-        um1, pieces = parse_url(url)
+        um1, pieces = analyze_url(url)
         um2, pattern_strings = parse_pattern_path_string(pattern)
         assert um1 == um2
         for p, s in zip(pattern_strings, pieces):
@@ -234,7 +234,7 @@ def test_digest():
         urls = ['http://example.com' + u for u in urls]
         digests = set()
         for url in urls:
-            url_meta, pieces = parse_url(url)
+            url_meta, pieces = analyze_url(url)
             parsed_pieces = [parser.parse(piece) for piece in pieces]
             sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
             digests.add(sid)

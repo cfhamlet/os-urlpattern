@@ -4,7 +4,7 @@ from functools import total_ordering
 from .compat import itervalues
 from .definition import BasePatternRule
 from .parse_utils import (MIXED_RULE_SET, PieceParser, digest,
-                          parse_pattern_path_string, parse_url)
+                          parse_pattern_path_string, analyze_url)
 from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
                                 LengthView, MixedView, PieceView, fuzzy_view,
                                 view_cls_from_pattern)
@@ -256,7 +256,7 @@ class PatternMatcher(object):
             root.preprocess()
 
     def match(self, url):
-        url_meta, pieces = parse_url(url)
+        url_meta, pieces = analyze_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
         matched_nodes = []

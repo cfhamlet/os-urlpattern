@@ -130,7 +130,19 @@ def normalize_str(raw_string, reserved_chars=None):
     return normal_str.read()
 
 
-def analyze_url(url):
+def parse_url(url):
+    """Parse a URL into 6 components.
+
+    <scheme>://<netloc>/<path>;<params>?<query>#<fragment>
+
+    Like the built-in urlparse method, but handle some unusual situation.
+    
+    Arguments:
+        url {[type]} -- [description]
+    
+    Returns:
+        ParseResult -- A 6-tuple, (scheme, netloc, path, params, query, fragment).
+    """
     scheme, netloc, path, params, query, fragment = urlparse(url)
     if not fragment:
         if url[-1] != Symbols.NUMBER:
@@ -278,8 +290,16 @@ def pack(url_meta, paths):
     return s.read()
 
 
-def parse_url(url):
-    result = analyze_url(url)
+def analyze_url(url):
+    """Parse a URL to URLMeta object and a list of raw pieces.
+    
+    Arguments:
+        url {unicode} -- url to be parsed.
+    
+    Returns:
+        tuple -- URLMeta object, list of raw pieces.
+    """
+    result = parse_url(url)
     return unpack(result, True)
 
 

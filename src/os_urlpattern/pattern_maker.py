@@ -1,6 +1,6 @@
 from .compat import itervalues
 from .definition import BasePattern
-from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, digest, parse_url
+from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, digest, analyze_url
 from .pattern_cluster import cluster
 from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
 from .utils import TreeNode, build_tree, dump_tree
@@ -18,7 +18,7 @@ class PatternMaker(object):
         return itervalues(self._makers)
 
     def load(self, url):
-        url_meta, pieces = parse_url(url)
+        url_meta, pieces = analyze_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
         if sid not in self._makers:
