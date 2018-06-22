@@ -1,4 +1,4 @@
-from os_urlpattern.parse_utils import number_rule, wildcard_rule
+from os_urlpattern.parse_utils import specify_rule, wildcard_rule
 from os_urlpattern.pattern import Pattern, PatternUnit
 
 
@@ -25,7 +25,7 @@ def test_fuzzy_rule():
         assert p.fuzzy_rule == r
         pw = Pattern(wildcard_rule(p.fuzzy_rule))
         assert pw.fuzzy_rule == r
-        pn = Pattern(number_rule(p.fuzzy_rule, 3))
+        pn = Pattern(specify_rule(p.fuzzy_rule, 3))
         assert pn.fuzzy_rule == r
 
 

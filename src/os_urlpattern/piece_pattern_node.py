@@ -1,11 +1,11 @@
+from .compat import itervalues
 from .parse_utils import EMPTY_PARSED_PIECE
 from .pattern import Pattern
-from .compat import itervalues
 from .utils import TreeNode
 
 
 class PiecePatternNode(TreeNode):
-    __slots__ = ()
+    __slots__ = ('_pattern')
 
     def __init__(self, parsed_piece, pattern=None):
         super(PiecePatternNode, self).__init__(parsed_piece)

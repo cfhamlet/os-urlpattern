@@ -41,24 +41,9 @@ class Bag(object):
                 yield obj
 
 
-class Stack(object):
-    def __init__(self):
-        self._objs = []
-
-    def push(self, obj):
-        self._objs.append(obj)
-
-    def pop(self):
-        return self._objs.pop()
-
-    def top(self):
-        return self._objs[-1]
-
-    def __len__(self):
-        return len(self._objs)
-
-
 class TreeNode(object):
+    __slots__ = ('_parrent', '_children', '_count', '_value', '_meta')
+
     def __init__(self, value):
         self._parrent = None
         self._children = None

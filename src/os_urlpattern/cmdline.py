@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import argparse
-import json
 import logging
 import sys
 import time
@@ -93,10 +92,11 @@ class MakePatternCommand(Command):
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in args.file[0]:
+            stats['ALL'] += 1
             url = url.strip()
             if not url:
+                stats['EMPTY'] += 1
                 continue
-            stats['ALL'] += 1
             speed_logger.debug('[LOADING]')
             try:
                 url = url.decode(DEFAULT_ENCODING)
@@ -166,7 +166,9 @@ class MatchPatternCommand(Command):
         stats = Counter()
         io_input = args.pattern_file[0]
         self._logger.debug('[LOAD] Start %s', io_input.name)
+        speed_logger = LogSpeedAdapter(self._logger, 1000)
         for line in io_input:
+            speed_logger.debug('[LOADING]')
             stats['ALL'] += 1
             pattern = line.rstrip()
             if not pattern.startswith(b'/'):

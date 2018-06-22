@@ -3,8 +3,8 @@ from functools import total_ordering
 
 from .compat import itervalues
 from .definition import BasePatternRule
-from .parse_utils import (MIXED_RULE_SET, PieceParser, digest,
-                          parse_pattern_path_string, analyze_url)
+from .parse_utils import (MIXED_RULE_SET, PieceParser, analyze_url, digest,
+                          parse_pattern_path_string)
 from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
                                 LengthView, MixedView, PieceView, fuzzy_view,
                                 view_cls_from_pattern)
@@ -14,6 +14,8 @@ from .utils import TreeNode, build_tree
 
 @total_ordering
 class MatchPattern(Pattern):
+    __slots__ = ('_view_cls', '_cmp_key')
+
     def __init__(self, pattern_string, is_last_path=False):
         super(MatchPattern, self).__init__(pattern_string)
         self._view_cls = view_cls_from_pattern(self, is_last_path)
@@ -44,6 +46,8 @@ EMPTY_MATCH_PATTERN = MatchPattern(BasePatternRule.EMPTY)
 
 
 class _ViewMatcher(object):
+    __slots__ = ('_view_cls', '_matchers')
+
     def __init__(self, view_cls):
         self._view_cls = view_cls
         self._matchers = {}
@@ -169,6 +173,7 @@ VIEW_ORDER = dict([(item[0], idx) for idx, item in enumerate(VIEW_MATCHERS)])
 
 @total_ordering
 class PatternMatchNode(TreeNode):
+    __slots__ = ('_view_matchers')
 
     def __init__(self, value):
         super(PatternMatchNode, self).__init__(value)

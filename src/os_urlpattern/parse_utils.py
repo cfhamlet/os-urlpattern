@@ -1,5 +1,6 @@
 import copy
 import hashlib
+from collections import namedtuple
 
 from .compat import ParseResult, StringIO, urlparse
 from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
@@ -14,17 +15,30 @@ MIXED_RULE_SET = copy.copy(DIGIT_AND_ASCII_RULE_SET)
 MIXED_RULE_SET.add(Symbols.PERCENT)
 
 
-class URLMeta(object):
-    __slots__ = ('_path_depth', '_query_keys', '_has_fragment', '_hashcode')
+class URLMeta(namedtuple('URLMeta', 'path_depth query_keys has_fragment')):
+    """The URL structure meta.
 
-    def __init__(self, path_depth, query_keys, has_fragment):
-        self._path_depth = path_depth
-        self._query_keys = query_keys
-        self._has_fragment = has_fragment
-        self._hashcode = None
+    Attributes:
+        path_depth (int): The num of URL path levels.
+        querys_keys (:obj:`list` of :obj:`str`): A list contains all of the query keys.
+        has_fragment (bool): Whether the URL have fragmemt component.
+
+    """
+    __slots__ = ()
 
     def __hash__(self):
-        return hash(self.hashcode)
+        return hash(str(self))
+
+    def __str__(self):
+        s = StringIO()
+        s.write(str(self.path_depth))
+        if self.query_keys:
+            s.write(Symbols.QUESTION)
+            s.write(Symbols.AMPERSAND.join(self.query_keys))
+        if self.has_fragment:
+            s.write(Symbols.NUMBER)
+        s.seek(0)
+        return s.read()
 
     def __eq__(self, o):
         if not isinstance(o, URLMeta):
@@ -32,56 +46,63 @@ class URLMeta(object):
         return hash(o) == hash(self)
 
     @property
-    def hashcode(self):
-        if self._hashcode is None:
-            s = StringIO()
-            s.write(str(self._path_depth))
-            if self._query_keys:
-                s.write(Symbols.QUESTION)
-                s.write(Symbols.AMPERSAND.join(self._query_keys))
-            if self._has_fragment:
-                s.write(Symbols.NUMBER)
-            s.seek(0)
-            self._hashcode = hashlib.md5(s.read().encode()).hexdigest()
-        return self._hashcode
-
-    @property
     def depths(self):
         return (self.path_depth, self.query_depth, self.fragment_depth)
 
     @property
-    def query_keys(self):
-        return self._query_keys
-
-    @property
     def query_depth(self):
-        return len(self._query_keys)
+        return len(self.query_keys)
 
     @property
     def fragment_depth(self):
-        return 1 if self._has_fragment else 0
-
-    @property
-    def path_depth(self):
-        return self._path_depth
-
-    @property
-    def has_fragment(self):
-        return self._has_fragment
+        return 1 if self.has_fragment else 0
 
     @property
     def depth(self):
         return sum((self.path_depth, self.query_depth, self.fragment_depth))
 
 
-def number_rule(rule, num):
+def specify_rule(rule, num):
+    """Specify the format of the rule.
+
+    num == 1 will return [rule], single
+    num > 1  will return [rule]{num}, with number
+    num < 0  will return [rule]+, wildcard
+    num == 0 will raise ValueError
+
+    Args:
+        rule (str): The raw rule string to be secified.
+        num (int): The num of the rule. Can't be 0. 
+
+    Raises:
+        ValueError: If the num == 0.
+
+    Returns:
+        str: The specified format of the rule.
+    """
+
     if num == 1:
         return u'[%s]' % rule
-    return u'[%s]{%d}' % (rule, num)
+    elif num < 0:
+        return u'[%s]+' % rule
+    elif num > 1:
+        return u'[%s]{%d}' % (rule, num)
+    else:
+        raise ValueError('Invalid num %s' % str(num))
 
 
 def wildcard_rule(rule):
-    return u'[%s]+' % rule if rule else u''
+    """Specify the wildcard format of the rule.
+
+    Shotcut of specify_rule(rule, -1).
+
+    Args:
+        rule (str): The raw rule string to be secified.
+
+    Returns:
+        str: The wildcard format of the rule.
+    """
+    return specify_rule(rule, -1)
 
 
 def normalize_str_list(str_list, reserved_chars):
@@ -89,7 +110,27 @@ def normalize_str_list(str_list, reserved_chars):
 
 
 def normalize_str(raw_string, reserved_chars=None):
-    normal_str = StringIO()
+    """Normalize a string.
+
+    Transfor the continuous same signs in the string to the format of
+    [sign_rule]{num}, if the sign is not in zhe reserved_chars.
+
+    Args:
+        raw_string (str): The string to be normalized.
+        reserved_chars ([type], optional): Defaults to None. Reserved chars
+            which are not to be normalized.
+
+    Returns:
+        str: The normalized string.
+
+    Examples:
+
+        >>> from os_urlpattern.parse_utils import normalize_str
+        >>> normalize_str('abc==123---')
+        u'abc[=]{2}123[\\-]{3}'
+
+    """
+    normalized_str = StringIO()
     frag = StringIO()
     last_c = None
     for c in raw_string:
@@ -101,8 +142,8 @@ def normalize_str(raw_string, reserved_chars=None):
                 if l > 0:
                     if not reserved_chars or w[0] not in reserved_chars:
                         r = CHAR_RULE_DICT.get(w[0])
-                        w = number_rule(r, l)
-                    normal_str.write(w)
+                        w = specify_rule(r, l)
+                    normalized_str.write(w)
                     frag = StringIO()
         else:
             if last_c != c:
@@ -112,8 +153,8 @@ def normalize_str(raw_string, reserved_chars=None):
                 if l > 0 and w[0] not in ASCII_DIGIT_SET and \
                         (not reserved_chars or w[0] not in reserved_chars):
                     r = CHAR_RULE_DICT.get(w[0])
-                    w = number_rule(r, l)
-                normal_str.write(w)
+                    w = specify_rule(r, l)
+                normalized_str.write(w)
                 frag = StringIO()
         frag.write(c)
         last_c = c
@@ -124,10 +165,10 @@ def normalize_str(raw_string, reserved_chars=None):
     if last_c and last_c not in ASCII_DIGIT_SET and \
             (not reserved_chars or w[0] not in reserved_chars):
         r = CHAR_RULE_DICT.get(w[0])
-        w = number_rule(r, l)
-    normal_str.write(w)
-    normal_str.seek(0)
-    return normal_str.read()
+        w = specify_rule(r, l)
+    normalized_str.write(w)
+    normalized_str.seek(0)
+    return normalized_str.read()
 
 
 def parse_url(url):
@@ -136,12 +177,12 @@ def parse_url(url):
     <scheme>://<netloc>/<path>;<params>?<query>#<fragment>
 
     Like the built-in urlparse method, but handle some unusual situation.
-    
-    Arguments:
-        url {unicode} -- The URL to be parsed.
-    
+
+    Args:
+        url (unicode): The URL to be parsed.
+
     Returns:
-        ParseResult -- A 6-tuple, (scheme, netloc, path, params, query, fragment).
+        ParseResult: A 6-tuple, (scheme, netloc, path, params, query, fragment).
     """
     scheme, netloc, path, params, query, fragment = urlparse(url)
     if not fragment:
@@ -157,8 +198,25 @@ def parse_url(url):
     return ParseResult(scheme, netloc, path, params, query, fragment)
 
 
-def filter_useless_part(parts):
-    keep = {'c': 0, 'l': len(parts)}
+def filter_useless(objs):
+    """Filter the useless objects in the list.
+
+    If bool(object) == False, the object is useless except the last one.
+
+    Args:
+        objs (list): The object list will be filtered.
+
+    Returns:
+        list: The filterd list
+
+    Examples:
+
+        >>> from os_urlpattern.parse_utils import filter_useless
+        >>> filter_useless([0,1,0,0])
+        [1, 0]
+
+    """
+    keep = {'c': 0, 'l': len(objs)}
 
     def _filterd(x):
         keep['c'] += 1
@@ -169,7 +227,7 @@ def filter_useless_part(parts):
         else:
             return True
 
-    return list(filter(_filterd, parts))
+    return list(filter(_filterd, objs))
 
 
 def parse_query_string(query_string):
@@ -220,6 +278,18 @@ def parse_query_string(query_string):
 
 
 def mix(pieces, rules):
+    """Combine the sub-pieces and sub-rules.
+
+    If the sub pieces have continuous letter num and percent sign fragments
+    will be combine into one piece as well as the rules.
+
+    Args:
+        pieces (list): List of the raw pieces.
+        rules (list): List of the rules.
+
+    Returns:
+        tuple: Mixed pieces and mixed rules.
+    """
     mixed_pieces = []
     mixed_rules = []
 
@@ -253,7 +323,7 @@ def mix(pieces, rules):
 
 
 def unpack(result, norm_query_key=True):
-    pieces = filter_useless_part(result.path.split(Symbols.SLASH)[1:])
+    pieces = filter_useless(result.path.split(Symbols.SLASH)[1:])
     path_depth = len(pieces)
     if path_depth <= 0:
         raise IrregularURLException('Invalid url depth')
@@ -292,26 +362,40 @@ def pack(url_meta, paths):
 
 def analyze_url(url):
     """Parse a URL to URLMeta object and a list of raw pieces.
-    
-    Arguments:
-        url {unicode} -- The URL to be parsed.
-    
+
+    Args:
+        url (unicode): The URL to be parsed.
+
     Returns:
-        tuple -- URLMeta object, list of raw pieces.
+        tuple: URLMeta object, list of raw pieces.
     """
+
     result = parse_url(url)
     return unpack(result, True)
 
 
 class ParsedPiece(object):
-    __slots__ = ['_pieces', '_rules', '_piece', '_piece_length', '_fuzzy_rule']
+    """The parsed piece object.
+
+    It contains the sub-pieces of a piece and the corresponding sub-rules.
+    With it, you can get fuzzy rule and the length of the entire piece.
+    It is hashable
+
+    """
+    __slots__ = ('_pieces', '_rules', '_piece', '_piece_length', '_fuzzy_rule')
 
     def __init__(self, pieces, rules):
+        """Init the ParsedPiece object.
+
+        Args:
+            pieces (list): The list of parsed pieces.
+            rules (list): The list of the rules of each parsed pieces.
+        """
         self._pieces = pieces
         self._rules = rules
-        self._piece = None
         self._piece_length = -1
-        self._fuzzy_rule = None
+        self._piece = pieces[0] if len(pieces) == 1 else None
+        self._fuzzy_rule = rules[0] if len(rules) == 1 else None
 
     @property
     def fuzzy_rule(self):
@@ -375,6 +459,11 @@ EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_LIST, EMPTY_LIST)
 
 
 class PieceParser(object):
+    """Parser to parse the piece of the URL.
+
+    Used it to generate ParsedPiece object from the piece of URL.
+    """
+
     def __init__(self):
         self._reset()
 
@@ -410,7 +499,7 @@ class PieceParser(object):
 
     def _normalize(self, letter, rule):
         if rule in SIGN_RULE_SET:
-            return number_rule(rule, len(letter))
+            return specify_rule(rule, len(letter))
         return letter
 
     def _create_parsed_piece(self):

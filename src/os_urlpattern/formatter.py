@@ -1,6 +1,5 @@
 import json
 
-from .compat import StringIO
 from .definition import BasePatternRule, Symbols
 from .parse_utils import pack
 from .utils import dump_tree

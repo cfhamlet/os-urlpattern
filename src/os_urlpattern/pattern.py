@@ -15,7 +15,7 @@ class PatternUnit(object):
             r = True
         elif len(self._rules) == 1:
             if self._num > 0:
-                rule = list(self._rules)[0]
+                rule = next(iter(self._rules))
                 if rule not in DIGIT_AND_ASCII_RULE_SET:
                     r = True
         return r

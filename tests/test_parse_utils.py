@@ -4,7 +4,7 @@ from os_urlpattern.exceptions import (InvalidCharException,
                                       InvalidPatternException,
                                       IrregularURLException)
 from os_urlpattern.parse_utils import (PieceParser, URLMeta, analyze_url,
-                                       digest, filter_useless_part,
+                                       digest, filter_useless,
                                        normalize_str, pack,
                                        parse_pattern_path_string,
                                        parse_pattern_string,
@@ -101,7 +101,7 @@ def test_filter_useless_part():
         ('a/b///c', ['a', 'b', 'c']),
     ]
     for s, expect in data:
-        assert filter_useless_part(s.split('/')) == expect
+        assert filter_useless(s.split('/')) == expect
 
 
 def test_piece_parser():

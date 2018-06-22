@@ -1,6 +1,6 @@
 from .compat import itervalues
 from .definition import BasePattern
-from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, digest, analyze_url
+from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, analyze_url, digest
 from .pattern_cluster import cluster
 from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
 from .utils import TreeNode, build_tree, dump_tree

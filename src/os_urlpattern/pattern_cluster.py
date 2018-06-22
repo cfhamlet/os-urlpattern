@@ -1,7 +1,7 @@
 from collections import Counter, OrderedDict, namedtuple
 
 from .compat import itervalues
-from .parse_utils import (EMPTY_PARSED_PIECE, URLMeta, number_rule,
+from .parse_utils import (EMPTY_PARSED_PIECE, URLMeta, specify_rule,
                           wildcard_rule)
 from .parsed_piece_view import BaseView, LastDotSplitFuzzyView, MixedView
 from .pattern import Pattern
@@ -333,7 +333,7 @@ class LengthPatternCluster(PatternCluster):
     def _set_pattern(self, length_bucket, update_patterns=False):
         parsed_piece = length_bucket.pick().parsed_piece
         length = parsed_piece.piece_length
-        pattern = Pattern(number_rule(parsed_piece.fuzzy_rule, length))
+        pattern = Pattern(specify_rule(parsed_piece.fuzzy_rule, length))
         if update_patterns:
             length_bucket.set_pattern(pattern)
 
