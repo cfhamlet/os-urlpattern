@@ -138,7 +138,7 @@ def parse_url(url):
     Like the built-in urlparse method, but handle some unusual situation.
     
     Arguments:
-        url {[type]} -- [description]
+        url {unicode} -- The URL to be parsed.
     
     Returns:
         ParseResult -- A 6-tuple, (scheme, netloc, path, params, query, fragment).
@@ -294,7 +294,7 @@ def analyze_url(url):
     """Parse a URL to URLMeta object and a list of raw pieces.
     
     Arguments:
-        url {unicode} -- url to be parsed.
+        url {unicode} -- The URL to be parsed.
     
     Returns:
         tuple -- URLMeta object, list of raw pieces.
