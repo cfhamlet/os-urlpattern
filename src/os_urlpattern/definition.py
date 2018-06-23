@@ -50,7 +50,9 @@ class BasePatternRule(object):
 ZERO_DIGEST = hashlib.md5(b'0').hexdigest().upper()
 QUERY_PART_RESERVED_CHARS = set([Symbols.EQUALS])
 EMPTY_LIST = []
+EMPTY_TUPLE = ()
 BLANK_LIST = [BasePatternRule.EMPTY]
+BLANK_TUPLE = (BasePatternRule.EMPTY,)
 LITERAL_RULES_PRIFIX = set([u'a', u'A', u'0'])
 
 # 26 letters rules

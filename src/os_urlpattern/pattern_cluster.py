@@ -114,7 +114,7 @@ class ViewPieceBagBucket(PieceBagBucket):
     def __init__(self, url_meta):
         super(ViewPieceBagBucket, self).__init__()
         self._url_meta = url_meta
-        self._root = PiecePatternNode(EMPTY_PARSED_PIECE)
+        self._root = PiecePatternNode((EMPTY_PARSED_PIECE, None))
 
     def add(self, view_piece_bag, build_tree=True):
         piece_bag = view_piece_bag.piece_bag
@@ -632,7 +632,7 @@ def split_by_pattern(root):
     for nodes in dump_tree(root):
         pid = hash(u"/".join([str(p.pattern) for p in nodes]))
         if pid not in tree_roots:
-            tree_roots[pid] = PiecePatternNode(EMPTY_PARSED_PIECE)
+            tree_roots[pid] = PiecePatternNode((EMPTY_PARSED_PIECE, None))
         sub_root = tree_roots[pid]
         build_from_piece_pattern_nodes(sub_root, nodes[1:])
 

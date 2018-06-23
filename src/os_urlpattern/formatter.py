@@ -43,7 +43,7 @@ class ETEFormatter(Formatter):
             sep = Symbols.EMPTY
             query_key = Symbols.EMPTY
             path_depth = url_meta.path_depth
-            query_depth = url_meta.query_depth
+            query_depth = len(url_meta.query_keys)
             current_level = pattern_node.level
             if path_depth < current_level \
                     and current_level <= (path_depth + query_depth):

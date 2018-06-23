@@ -8,7 +8,7 @@ def test_count():
     num = 100
     urls = ['http://test.com/abc/%d' % i for i in range(num)]
     parser = PieceParser()
-    root = PiecePatternNode(EMPTY_PARSED_PIECE)
+    root = PiecePatternNode((EMPTY_PARSED_PIECE, None))
     for url in urls:
         _, pieces = analyze_url(url)
         parsed_pieces = [parser.parse(piece) for piece in pieces]

@@ -4,9 +4,8 @@ from os_urlpattern.exceptions import (InvalidCharException,
                                       InvalidPatternException,
                                       IrregularURLException)
 from os_urlpattern.parse_utils import (PieceParser, URLMeta, analyze_url,
-                                       digest, filter_useless,
-                                       normalize_str, pack,
-                                       parse_pattern_path_string,
+                                       digest, filter_useless, normalize_str,
+                                       pack, parse_pattern_path_string,
                                        parse_pattern_string,
                                        parse_pattern_unit_string,
                                        parse_query_string, parse_url)
@@ -31,10 +30,10 @@ def test_normalize_str():
 
 def test_parse_url():
     data = [
-        ('http://www.test.com/', [''], [('query_depth', 0)]),
-        ('http://www.test.com/?', ['', ''], [('query_depth', 1)]),
-        ('http://www.test.com/abc/def?k=v#xxx', ['abc', 'def', 'v', 'xxx'], [
-         ('query_depth', 1), ('has_fragment', True), ('depths', (2, 1, 1))]),
+        ('http://www.test.com/', [''], [('depth', 1)]),
+        ('http://www.test.com/?', ['', ''], [('depth', 2)]),
+        ('http://www.test.com/abc/def?k=v#xxx', ['abc', 'def', 'v', 'xxx'],
+         [('depth', 4), ('has_fragment', True)]),
     ]
     for url, p, m in data:
         url_meta, parts = analyze_url(url)
@@ -107,12 +106,12 @@ def test_filter_useless_part():
 def test_piece_parser():
     parser = PieceParser()
     data = [
-        ('abc', ['abc', ], ['a-z', ]),
-        ('abc.exe', ['abc', '[\\.]', 'exe'], ['a-z', '\\.', 'a-z']),
-        ('%' * 10, ['[%]{10}', ], ['%', ]),
-        ('abc1D..exe',  ['abc', '1', 'D',
-                         '[\\.]{2}', 'exe'], ['a-z', '0-9', 'A-Z', '\\.', 'a-z']),
-        ('@<>..', ['[@]', '[<]', '[>]', '[\\.]{2}'], ['@', '<', '>', '\\.']),
+        ('abc', ('abc', ), ('a-z', )),
+        ('abc.exe', ('abc', '[\\.]', 'exe'), ('a-z', '\\.', 'a-z')),
+        ('%' * 10, ('[%]{10}', ), ('%', )),
+        ('abc1D..exe',  ('abc', '1', 'D',
+                         '[\\.]{2}', 'exe'), ('a-z', '0-9', 'A-Z', '\\.', 'a-z')),
+        ('@<>..', ('[@]', '[<]', '[>]', '[\\.]{2}'), ('@', '<', '>', '\\.')),
     ]
     for piece, expected_pieces, expected_rules in data:
         parsed = parser.parse(piece)

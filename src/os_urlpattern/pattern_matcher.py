@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from functools import total_ordering
 
 from .compat import itervalues
@@ -177,31 +176,23 @@ class PatternMatchNode(TreeNode):
 
     def __init__(self, value):
         super(PatternMatchNode, self).__init__(value)
-        self._view_matchers = OrderedDict([(view_cls, matcher_cls(view_cls))
-                                           for view_cls, matcher_cls in VIEW_MATCHERS])
+        self._view_matchers = [matcher_cls(view_cls)
+                               for view_cls, matcher_cls in VIEW_MATCHERS]
 
     @property
     def view_cls(self):
         return self.pattern.view_cls
 
     def preprocess(self):
-        if not self._children:
-            self._view_matchers = {}
-            return
-
-        for view_cls, _ in VIEW_MATCHERS:
-            matcher = self._view_matchers[view_cls]
-            if matcher.empty():
-                self._view_matchers.pop(view_cls)
-            else:
-                matcher.preprocess()
+        self._view_matchers = [m for m in self._view_matchers if not m.empty()]
+        [m.preprocess() for m in self._view_matchers]
 
         for child in self.children:
             child.preprocess()
 
     def match(self, parsed_pieces, idx, matched_nodes):
         parsed_piece = parsed_pieces[idx]
-        for matcher in itervalues(self._view_matchers):
+        for matcher in self._view_matchers:
             nodes = matcher.match(parsed_piece)
             self._deep_match(nodes, parsed_pieces, idx,
                              matched_nodes)
@@ -218,17 +209,12 @@ class PatternMatchNode(TreeNode):
         return self._value
 
     def add_child(self, pattern):
-        if self._children is None:
-            self._children = {}
-        is_new = False
-        if pattern not in self._children:
-            is_new = True
-            child = PatternMatchNode(pattern)
-            child.parrent = self
-            self._children[pattern] = child
-            self._view_matchers[child.view_cls].add_match_node(child)
-
-        return self._children[pattern], is_new
+        child, is_new = super(PatternMatchNode, self).add_child(
+            (pattern, pattern))
+        if is_new:
+            self._view_matchers[VIEW_ORDER[child.view_cls]
+                                ].add_match_node(child)
+        return child, is_new
 
     def __lt__(self, other):
         if id(self) == id(other) or self.parrent is None:

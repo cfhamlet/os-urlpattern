@@ -5,7 +5,7 @@ from collections import namedtuple
 from .compat import ParseResult, StringIO, urlparse
 from .definition import (ASCII_DIGIT_SET, BLANK_LIST, CHAR_RULE_DICT,
                          DEFAULT_ENCODING, DIGIT_AND_ASCII_RULE_SET,
-                         EMPTY_LIST, LITERAL_RULES_PRIFIX,
+                         EMPTY_LIST, EMPTY_TUPLE, LITERAL_RULES_PRIFIX,
                          QUERY_PART_RESERVED_CHARS, SIGN_RULE_SET,
                          BasePatternRule, Symbols)
 from .exceptions import (InvalidCharException, InvalidPatternException,
@@ -40,26 +40,14 @@ class URLMeta(namedtuple('URLMeta', 'path_depth query_keys has_fragment')):
         s.seek(0)
         return s.read()
 
+    @property
+    def depth(self):
+        return self.path_depth + len(self.query_keys) + (1 if self.has_fragment else 0)
+
     def __eq__(self, o):
         if not isinstance(o, URLMeta):
             return False
         return hash(o) == hash(self)
-
-    @property
-    def depths(self):
-        return (self.path_depth, self.query_depth, self.fragment_depth)
-
-    @property
-    def query_depth(self):
-        return len(self.query_keys)
-
-    @property
-    def fragment_depth(self):
-        return 1 if self.has_fragment else 0
-
-    @property
-    def depth(self):
-        return sum((self.path_depth, self.query_depth, self.fragment_depth))
 
 
 def specify_rule(rule, num):
@@ -79,6 +67,17 @@ def specify_rule(rule, num):
 
     Returns:
         str: The specified format of the rule.
+
+    Examples:
+
+        >>> from os_urlpattern.parse_utils import specify_rule
+        >>> specify_rule('a-z', 1)
+        [a-z]
+        >>> specify_rule('a-z', 2)
+        [a-z]{2}
+        >>> specify_rule('a-z', -1)
+        [a-z]+
+
     """
 
     if num == 1:
@@ -328,13 +327,13 @@ def unpack(result, norm_query_key=True):
     if path_depth <= 0:
         raise IrregularURLException('Invalid url depth')
 
-    key_list, value_list = parse_query_string(result.query)
+    keys, values = parse_query_string(result.query)
     if norm_query_key:
-        key_list = normalize_str_list(key_list, QUERY_PART_RESERVED_CHARS)
+        keys = normalize_str_list(keys, QUERY_PART_RESERVED_CHARS)
     has_fragment = False if result.fragment is None else True
 
-    url_meta = URLMeta(path_depth, key_list, has_fragment)
-    pieces.extend(value_list)
+    url_meta = URLMeta(path_depth, keys, has_fragment)
+    pieces.extend(values)
     if has_fragment:
         pieces.append(result.fragment)
     return url_meta, pieces
@@ -343,10 +342,11 @@ def unpack(result, norm_query_key=True):
 def pack(url_meta, paths):
     s = StringIO()
     s.write(Symbols.SLASH)
-    idx = url_meta.path_depth + url_meta.query_depth
+    query_depth = len(url_meta.query_keys)
+    idx = url_meta.path_depth + query_depth
     p = Symbols.SLASH.join([str(p) for p in paths[0:url_meta.path_depth]])
     s.write(p)
-    if url_meta.query_depth > 0:
+    if query_depth > 0:
         s.write(BasePatternRule.SINGLE_QUESTION)
         kv = zip(url_meta.query_keys,
                  [str(p) for p in paths[url_meta.path_depth:idx]])
@@ -414,21 +414,21 @@ class ParsedPiece(object):
     @property
     def piece_length(self):
         if self._piece_length < 0:
-            length_base = length = len(self.piece)
+            piece = self.piece
+            length_base = length = len(piece)
             idx = 0
             while idx < length_base:
-                c = self.piece[idx]
+                c = piece[idx]
                 if c == Symbols.BRACKETS_L or c == Symbols.BRACKETS_R:
-                    if idx == 0 or self.piece[idx - 1] != Symbols.BACKSLASH:
+                    if idx == 0 or piece[idx - 1] != Symbols.BACKSLASH:
                         length += -1
                 elif c == Symbols.BACKSLASH:
-                    if self.piece[idx + 1] != Symbols.BACKSLASH:
+                    if piece[idx + 1] != Symbols.BACKSLASH:
                         length += -1
                 elif c == Symbols.BRACES_L:
-                    if self.piece[idx - 1] == Symbols.BRACKETS_R:
-                        e = self.piece.index(Symbols.BRACES_R, idx)
-                        length += int(self.piece[idx + 1:e]
-                                      ) - 1 - (e - idx + 1)
+                    if piece[idx - 1] == Symbols.BRACKETS_R:
+                        e = piece.index(Symbols.BRACES_R, idx)
+                        length += int(piece[idx + 1:e]) - 1 - (e - idx + 1)
                         idx = e
                 idx += 1
 
@@ -455,7 +455,7 @@ class ParsedPiece(object):
     __repr__ = __str__
 
 
-EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_LIST, EMPTY_LIST)
+EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_TUPLE, EMPTY_TUPLE)
 
 
 class PieceParser(object):
@@ -503,10 +503,19 @@ class PieceParser(object):
         return letter
 
     def _create_parsed_piece(self):
-        return ParsedPiece(self._piece_list, self._rule_list)
+        return ParsedPiece(tuple(self._piece_list), tuple(self._rule_list))
 
 
 def digest(url_meta, parts):
+    """Get hex digest string from the given URLMeta and strings.
+
+    Args:
+        url_meta (URLMeta): The URLMeta object.
+        parts (list): A list of strings.
+
+    Returns:
+        str: Digest value as a string of hexadecimal digits.
+    """
     return hashlib.md5(pack(url_meta, parts).encode(DEFAULT_ENCODING)).hexdigest()
 
 

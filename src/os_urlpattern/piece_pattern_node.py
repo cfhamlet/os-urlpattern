@@ -1,24 +1,23 @@
 from .compat import itervalues
 from .parse_utils import EMPTY_PARSED_PIECE
 from .pattern import Pattern
-from .utils import TreeNode
+from .utils import TreeNode, build_tree
 
 
 class PiecePatternNode(TreeNode):
     __slots__ = ('_pattern')
 
-    def __init__(self, parsed_piece, pattern=None):
+    def __init__(self, parsed_piece_and_pattern):
+        parsed_piece, self._pattern = parsed_piece_and_pattern
         super(PiecePatternNode, self).__init__(parsed_piece)
-        self._pattern = Pattern(self.piece) if pattern is None else pattern
 
     def set_pattern(self, pattern):
-        change = not (self._pattern == pattern)
-        if change:
-            self._pattern = pattern
-        return change
+        self._pattern = pattern
 
     @property
     def pattern(self):
+        if self._pattern is None:
+            self._pattern = Pattern(self.piece)
         return self._pattern
 
     @property
@@ -40,20 +39,6 @@ class PiecePatternNode(TreeNode):
             node.incr_count(count)
             node = node.parrent
 
-    def add_child(self, parsed_piece, pattern, count):
-        if self._children is None:
-            self._children = {}
-        piece = parsed_piece.piece
-        is_new = False
-        if piece not in self._children:
-            child = PiecePatternNode(parsed_piece, pattern)
-            child.parrent = self
-            self._children[piece] = child
-            is_new = True
-        child = self._children[piece]
-        child.incr_count(count)
-        return child, is_new
-
     def __str__(self):
         return u' '.join((self.piece, str(self.pattern)))
 
@@ -73,11 +58,8 @@ class PiecePatternNode(TreeNode):
 
 
 def build_from_parsed_pieces(root, parsed_pieces, count=1, meta=None, uniq=True):
-    node = root
-    node.incr_count(count)
-    is_new = None
-    for parsed_piece in parsed_pieces:
-        node, is_new = node.add_child(parsed_piece, None, count)
+    node, is_new = build_tree(root, [(parsed_piece.piece, (parsed_piece, None))
+                                     for parsed_piece in parsed_pieces], count)
     if uniq and not is_new:
         node.incr_count(0 - count, True)
     node.add_meta(meta)
@@ -85,13 +67,8 @@ def build_from_parsed_pieces(root, parsed_pieces, count=1, meta=None, uniq=True)
 
 
 def build_from_piece_pattern_nodes(root, piece_pattern_nodes):
-    leaf = piece_pattern_nodes[-1]
-    count = leaf.count
-    node = root
-    node.incr_count(count)
-    is_new = None
-    for p_node in piece_pattern_nodes:
-        node, is_new = node.add_child(
-            p_node.parsed_piece, p_node.pattern, count)
-    node.update_meta(leaf.meta)
+    last = piece_pattern_nodes[-1]
+    node, is_new = build_tree(root, [(p.piece, (p.parsed_piece, p.pattern))
+                                     for p in piece_pattern_nodes], last.count)
+    node.update_meta(last.meta)
     return node, is_new

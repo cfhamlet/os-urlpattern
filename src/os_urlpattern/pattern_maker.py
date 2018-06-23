@@ -36,7 +36,7 @@ class Maker(object):
     def __init__(self, config, url_meta):
         self._config = config
         self._url_meta = url_meta
-        self._root = PiecePatternNode(EMPTY_PARSED_PIECE)
+        self._root = PiecePatternNode((EMPTY_PARSED_PIECE, None))
 
     def load(self, parsed_pieces, count=1, meta=None, uniq=True):
         return build_from_parsed_pieces(self._root,

@@ -9,6 +9,11 @@ def pretty_counter(counter):
     return ", ".join(['{0}:{1}'.format(k, v) for k, v in counter.items()])
 
 
+def pick(objs):
+    for obj in objs:
+        return obj
+
+
 class Bag(object):
     def __init__(self):
         self._objs = set()
@@ -26,8 +31,7 @@ class Bag(object):
         return obj
 
     def _pick(self):
-        for obj in self._objs:
-            return obj
+        return pick(self._objs)
 
     def __iter__(self):
         return iter(self._objs)

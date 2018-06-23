@@ -38,7 +38,7 @@ class ParsedPieceView(object):
         if self._parsed_pieces:
             return self._parsed_pieces
 
-        self._parsed_pieces = [ParsedPiece([piece], [rule]) for piece, rule in zip(
+        self._parsed_pieces = [ParsedPiece((piece,), (rule,)) for piece, rule in zip(
             self._parsed_piece.pieces, self._parsed_piece.rules)]
         return self._parsed_pieces
 
@@ -75,7 +75,7 @@ class MixedView(ParsedPieceView):
                 self._parsed_piece.pieces, self._parsed_piece.rules)
 
             self._parsed_pieces = [ParsedPiece(
-                [piece], [rule]) for piece, rule in zip(mixed_pieces, mixed_rules)]
+                (piece,), (rule,)) for piece, rule in zip(mixed_pieces, mixed_rules)]
         return self._parsed_pieces
 
 
@@ -94,8 +94,8 @@ class LastDotSplitFuzzyView(ParsedPieceView):
             if rule == BasePatternRule.DOT:
                 dot_idx = part_num - idx - 1
                 break
-        self._parsed_pieces = [ParsedPiece([self._parsed_piece.piece],
-                                           [self._parsed_piece.fuzzy_rule])]
+        self._parsed_pieces = [ParsedPiece((self._parsed_piece.piece,),
+                                           (self._parsed_piece.fuzzy_rule,))]
         if dot_idx is not None:
             skip = False
             for rule in self._parsed_piece.rules[dot_idx + 1:]:
@@ -116,7 +116,7 @@ class LastDotSplitFuzzyView(ParsedPieceView):
                 pieces.extend(mixed_pieces)
                 rules.extend(mixed_rules)
                 self._parsed_pieces = [ParsedPiece(
-                    [piece], [rule]) for piece, rule in zip(pieces, rules)]
+                    (piece,), (rule,)) for piece, rule in zip(pieces, rules)]
         return self._parsed_pieces
 
 
@@ -130,8 +130,8 @@ class FuzzyView(ParsedPieceView):
     def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
-        self._parsed_pieces = [ParsedPiece([self._parsed_piece.piece],
-                                           [self._parsed_piece.fuzzy_rule])]
+        self._parsed_pieces = [ParsedPiece((self._parsed_piece.piece,),
+                                           (self._parsed_piece.fuzzy_rule,))]
         return self._parsed_pieces
 
 
