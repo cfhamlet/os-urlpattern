@@ -286,7 +286,7 @@ Match URLs:
 
    # load pattern(unicode)
    for pattern in patterns:
-       pattern_matcher.load(pattern, data=pattern) # data will bind to matched result
+       pattern_matcher.load(pattern, meta=pattern) # meta will bind to matched result
 
    # match URLs(unicode)
    for url in urls:
