@@ -1,13 +1,16 @@
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
-from .parse_utils import ParsedPiece, mix
-
-
-def fuzzy_view(fuzzy_rules):
-    return u'/'.join(fuzzy_rules)
+from .parse_utils import ParsedPiece, fuzzy_join, mix
+from .utils import pick
 
 
 class ParsedPieceView(object):
-    __slot__ = ('_parsed_piece', '_view')
+    """The base class of parsed piece view.
+
+    View object is a wrapper of parsed piece, which have individual
+    view, parsed_piece and parsed_pieces based on the raw parsed piece. 
+
+    """
+    __slots__ = ('_parsed_piece', '_parsed_pieces', '_view')
 
     def __init__(self, parsed_piece):
         self._parsed_piece = parsed_piece
@@ -29,8 +32,7 @@ class ParsedPieceView(object):
     @property
     def view(self):
         if self._view is None:
-            self._view = fuzzy_view(
-                [p.fuzzy_rule for p in self.parsed_pieces])
+            self._view = fuzzy_join(self.parsed_pieces)
         return self._view
 
     @property
@@ -88,7 +90,7 @@ class LastDotSplitFuzzyView(ParsedPieceView):
         rules = self._parsed_piece.rules
         dot_idx = None
         part_num = len(rules)
-        for idx, rule in enumerate(rules[::-1]):
+        for idx, rule in enumerate(reversed(rules)):
             if idx > 2:
                 break
             if rule == BasePatternRule.DOT:
@@ -136,6 +138,18 @@ class FuzzyView(ParsedPieceView):
 
 
 def view_cls_from_pattern(pattern, is_last_path=False):
+    """Get ParsedPieceView class from pattern.
+
+    ParsedPieceView type can be deduced from the pattern.
+
+    Args:
+        pattern (Pattern): The Pattern object.
+        is_last_path (bool, optional): Defaults to False. Whether the pattern
+            is at the last path position.
+
+    Returns:
+        class: The class of ParsedPieceView.
+    """
     view_cls = PieceView
     pattern_units = pattern.pattern_units
     if len(pattern_units) == 1:
@@ -155,7 +169,8 @@ def view_cls_from_pattern(pattern, is_last_path=False):
         if is_last_path \
                 and len(pattern_units) == 3 \
                 and view_cls != PieceView \
-                and list(pattern_units[1].rules)[0] == BasePatternRule.DOT \
+                and len(pattern_units[1].rules) == 1 \
+                and pick(pattern_units[1].rules) == BasePatternRule.DOT \
                 and not (set(pattern_units[-1].rules) - DIGIT_AND_ASCII_RULE_SET):
             view_cls = LastDotSplitFuzzyView
 

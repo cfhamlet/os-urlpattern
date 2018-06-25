@@ -7,7 +7,7 @@ from .parsed_piece_view import BaseView, LastDotSplitFuzzyView, MixedView
 from .pattern import Pattern
 from .piece_pattern_node import (PiecePatternNode, build_from_parsed_pieces,
                                  build_from_piece_pattern_nodes)
-from .utils import Bag, dump_tree
+from .utils import Bag, cached_property, dump_tree, pick
 
 
 class TBag(Bag):
@@ -56,6 +56,10 @@ class TBucket(TBag):
 
 
 class PieceBag(TBag):
+    """A bag contain all of the nodes with same piece.
+
+    The nodes should on the same branch of a tree at the same level.
+    """
 
     def __init__(self):
         super(PieceBag, self).__init__()
@@ -162,6 +166,8 @@ class SeekResult(object):
 
 
 class PatternCluster(object):
+    """Base class of cluster."""
+
     def __init__(self, processor):
         self._processor = processor
         self._min_cluster_num = processor.config.getint(
@@ -187,6 +193,7 @@ class PatternCluster(object):
 
 
 class PiecePatternCluster(PatternCluster):
+
     def __init__(self, processor):
         super(PiecePatternCluster, self).__init__(processor)
         self._bucket = PieceBagBucket()
@@ -514,24 +521,20 @@ class ClusterProcessor(object):
     def __init__(self, config, url_meta, pre_level_processor, **kwargs):
         self._config = config
         self._url_meta = url_meta
-        self._level = None
         self._pattern_clusters = OrderedDict(
             [(c.__name__, c(self)) for c in CLUSTER_CLASSES])
         self._pre_level_processor = pre_level_processor
         self._next_level_processors = {}
         self._kwargs = kwargs
 
-    @property
+    @cached_property
     def level(self):
-        if self._level is None:
-            l = 0
-            n = self.pre_level_processor
-            while n is not None:
-                l += 1
-                n = n.pre_level_processor
-            self._level = l
-
-        return self._level
+        l = 0
+        n = self.pre_level_processor
+        while n is not None:
+            l += 1
+            n = n.pre_level_processor
+        return l
 
     def is_last_level(self):
         return self._url_meta.depth == self.level
@@ -628,6 +631,14 @@ class ClusterProcessor(object):
 
 
 def split_by_pattern(root):
+    """Split the piece pattern tree by pattern path.
+
+    Args:
+        root (PiecePatternNode): The root of piece pattern tree.
+
+    Returns:
+        iterator: Iterator of sub-trees.
+    """
     tree_roots = {}
     for nodes in dump_tree(root):
         pid = hash(u"/".join([str(p.pattern) for p in nodes]))
@@ -640,6 +651,14 @@ def split_by_pattern(root):
 
 
 def _can_be_splited(processor):
+    """Check whether the processor tree can be splited.
+
+    Args:
+        processor (ClusterProcessor): The root node of cluster processor.
+
+    Returns:
+        bool: Whether the processor tree can be splited.
+    """
     while True:
         pattern_num = processor.pattern_num
         if pattern_num > 1:
@@ -649,12 +668,23 @@ def _can_be_splited(processor):
             break
         elif l > 1:
             return True
-        processor = list(processor.next_level_processors)[0]
+        processor = pick(processor.next_level_processors)
 
     return False
 
 
 def process(config, url_meta, root, **kwargs):
+    """Start clustering.
+
+    Args:
+        config (Config): The configure object.
+        url_meta (URLMeta): The URLMeta object.
+        root (PiecePatternNode): The root of the piece pattern tree.
+        **kwargs: Keyword arguments.
+
+    Returns:
+        bool: Whether the clustered tree can be split.
+    """
     processor = ClusterProcessor(config, url_meta, None, **kwargs)
     processor.add(root)
     processor.process()
@@ -662,6 +692,18 @@ def process(config, url_meta, root, **kwargs):
 
 
 def cluster(config, url_meta, root, **kwargs):
+    """Entrance of the cluster workflow.
+
+    Args:
+        config (Config): The configure object.
+        url_meta (URLMeta): The URLMeta object.
+        root (PiecePatternNode): The root of the piece pattern tree.
+        **kwargs: Keyword arguments.
+
+    Yields:
+        PiecePatternNode: The clusterd sub piece pattern tree root.
+
+    """
     if not process(config, url_meta, root, **kwargs):
         yield root
         return

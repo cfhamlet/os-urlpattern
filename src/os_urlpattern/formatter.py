@@ -6,12 +6,29 @@ from .utils import dump_tree
 
 
 class Formatter(object):
+    """Base class for clustered data formatter.
 
-    def format(self, url_meta, tree, **kwargs):
-        pass
+    The subclass must define format method, which yield formatted string.
+    """
+
+    def format(self, url_meta, clusterd, **kwargs):
+        """Format the clusterd tree.
+
+        Args:
+            url_meta (URLMeta): The url_meta.
+            clusterd (TreeNode): The root node of the clustered tree.
+
+        Yields:
+            str: the formatted string.
+
+        """
+        yield
+        return
 
 
 class PatternFormatter(Formatter):
+    """Pattern only formatter."""
+
     def format(self, url_meta, root, **kwargs):
         for nodes in dump_tree(root):
             yield pack(url_meta, [p.pattern for p in nodes[1:]])
@@ -19,6 +36,8 @@ class PatternFormatter(Formatter):
 
 
 class ClusterFormatter(PatternFormatter):
+    """Pattern and meta formatter."""
+
     def format(self, url_meta, root, **kwargs):
         for r in super(ClusterFormatter, self).format(url_meta, root, **kwargs):
             yield r
@@ -29,6 +48,8 @@ class ClusterFormatter(PatternFormatter):
 
 
 class JsonFormatter(Formatter):
+    """Json record of pattern info formatter."""
+
     def format(self, url_meta, root, **kwargs):
         for nodes in dump_tree(root):
             p = pack(url_meta, [p.pattern for p in nodes[1:]])
@@ -37,6 +58,8 @@ class JsonFormatter(Formatter):
 
 
 class ETEFormatter(Formatter):
+    """Ete tree formatter."""
+
     def format(self, url_meta, root, **kwargs):
 
         def f(pattern_node):
@@ -67,6 +90,16 @@ class ETEFormatter(Formatter):
 
 
 def get_ete_tree(root_node, format=str):
+    """Transfor a tree-like object into ete tree.
+
+    Args:
+        root_node (TreeNode): The root of the tree.
+        format (callable, optional): Defaults to str.
+            A callable object to format the ete tree node.
+
+    Returns:
+        ete3.Tree: The ete tree.
+    """
     from ete3 import Tree
 
     def add_children(node, ete_node):

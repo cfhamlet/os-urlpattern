@@ -4,8 +4,8 @@ from os_urlpattern.exceptions import (InvalidCharException,
                                       InvalidPatternException,
                                       IrregularURLException)
 from os_urlpattern.parse_utils import (PieceParser, URLMeta, analyze_url,
-                                       digest, filter_useless, normalize_str,
-                                       pack, parse_pattern_path_string,
+                                       analyze_url_pattern_string, digest,
+                                       filter_useless, normalize, pack,
                                        parse_pattern_string,
                                        parse_pattern_unit_string,
                                        parse_query_string, parse_url)
@@ -25,14 +25,14 @@ def test_normalize_str():
         ('\\', '[\\\\]'),
     ]
     for i, j in data:
-        assert normalize_str(i) == j
+        assert normalize(i) == j
 
 
 def test_parse_url():
     data = [
-        ('http://www.test.com/', [''], [('depth', 1)]),
-        ('http://www.test.com/?', ['', ''], [('depth', 2)]),
-        ('http://www.test.com/abc/def?k=v#xxx', ['abc', 'def', 'v', 'xxx'],
+        ('http://www.test.com/', ('',), [('depth', 1)]),
+        ('http://www.test.com/?', ('', ''), [('depth', 2)]),
+        ('http://www.test.com/abc/def?k=v#xxx', ('abc', 'def', 'v', 'xxx'),
          [('depth', 4), ('has_fragment', True)]),
     ]
     for url, p, m in data:
@@ -46,11 +46,11 @@ def test_parse_url():
 
 def test_parse_query_string():
     data = [
-        ('a', [''], ['a']),
-        ('a=', ['a='], ['']),
-        ('a&b', ['a', 'b'], ['', '']),
-        ('a=1', ['a='], ['1']),
-        ('a=1&b=2', ['a=', 'b='], ['1', '2']),
+        ('a', ('',), ('a',)),
+        ('a=', ('a=',), ('',)),
+        ('a&b', ('a', 'b'), ('', '')),
+        ('a=1', ('a=',), ('1',)),
+        ('a=1&b=2', ('a=', 'b='), ('1', '2')),
     ]
     for q, k, v in data:
         assert parse_query_string(q) == (k, v)
@@ -159,12 +159,12 @@ def test_parse_url_pattern():
     for url in data:
         meta1, parts1 = analyze_url(url)
         pattern_string = pack(meta1, parts1)
-        meta2, parts2 = parse_pattern_path_string(pattern_string)
+        meta2, parts2 = analyze_url_pattern_string(pattern_string)
         assert meta1 == meta2
         assert len(parts1) == len(parts2)
 
 
-def test_parse_pattern():
+def test_parse_pattern_string():
     data = [
         ('abc', 1),
         ('[0-9]{2}abc', 2),
@@ -183,6 +183,8 @@ def test_parse_pattern():
         'a-z]',
         '[a-z]{-}',
         '[a-z]{-2}',
+        '?',
+        '[a-z]++',
     ]
 
     for data in invalid_data:
@@ -190,7 +192,7 @@ def test_parse_pattern():
             parse_pattern_string(data)
 
 
-def test_parse_pattern_unit():
+def test_parse_pattern_unit_string():
     data = [
         ('[a-z]', set(['a-z']), 1),
         ('[a-z]+', set(['a-z']), -1),
@@ -202,8 +204,17 @@ def test_parse_pattern_unit():
         assert num == e_num
         assert rules == e_rules
 
+    invalid_data = [
+        '[z-a]',
+        '[z-a]{abc}',
+        '[z-a]{-1}',
+    ]
+    for data in invalid_data:
+        with pytest.raises(InvalidPatternException):
+            parse_pattern_unit_string(data)
 
-def test_parse_pattern_path_string():
+
+def test_parse_url_pattern_string():
     patterns = [
         ('/AaBb/123456.shtml', '/[A-Za-z]+/[0-9]{6}[\\.]shtml'),
         ('/abc/123/index.html', '/abc/123/index[\\.]html'),
@@ -215,7 +226,7 @@ def test_parse_pattern_path_string():
     for url, pattern in patterns:
         url = 'http://example.com' + url
         um1, pieces = analyze_url(url)
-        um2, pattern_strings = parse_pattern_path_string(pattern)
+        um2, pattern_strings = analyze_url_pattern_string(pattern)
         assert um1 == um2
         for p, s in zip(pattern_strings, pieces):
             assert Pattern(p).match(s)

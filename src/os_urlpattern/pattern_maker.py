@@ -61,10 +61,8 @@ class Maker(object):
 
     def _make(self, combine=False):
         if combine:
-            yield self._combine_clusters()
-        else:
-            for clustered in self._cluster():
-                yield clustered
+            return iter([self._combine_clusters()])
+        return self._cluster()
 
     def make(self, combine=False):
         for clustered in self._make(combine):

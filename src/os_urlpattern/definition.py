@@ -48,12 +48,9 @@ class BasePatternRule(object):
 
 
 ZERO_DIGEST = hashlib.md5(b'0').hexdigest().upper()
-QUERY_PART_RESERVED_CHARS = set([Symbols.EQUALS])
-EMPTY_LIST = []
+QUERY_PART_RESERVED_CHARS = frozenset([Symbols.EQUALS])
 EMPTY_TUPLE = ()
-BLANK_LIST = [BasePatternRule.EMPTY]
 BLANK_TUPLE = (BasePatternRule.EMPTY,)
-LITERAL_RULES_PRIFIX = set([u'a', u'A', u'0'])
 
 # 26 letters rules
 CHAR_AND_RULE_LIST = []
@@ -70,30 +67,31 @@ DIGIT_AND_RULE_LIST = [(i, BasePatternRule.DIGIT)
 CHAR_AND_RULE_LIST.extend(DIGIT_AND_RULE_LIST)
 
 # digit and 26 letters set
-DIGIT_SET = set([i for i in digits_unicode])
-ASCII_LOWER_SET = set([i for i in ascii_lowercase_unicode])
-ASCII_UPPER_SET = set([i for i in ascii_uppercase_unicode])
-ASCII_DIGIT_SET = set([c for c, _ in CHAR_AND_RULE_LIST])
+DIGIT_SET = frozenset([i for i in digits_unicode])
+ASCII_LOWER_SET = frozenset([i for i in ascii_lowercase_unicode])
+ASCII_UPPER_SET = frozenset([i for i in ascii_uppercase_unicode])
+ASCII_DIGIT_SET = frozenset([c for c, _ in CHAR_AND_RULE_LIST])
 
 # do not escaped symbol rules
 SYMBOL = u'%&_@#;:,=<>~/'
-SYMBOL_SET = set([i for i in SYMBOL])
+SYMBOL_SET = frozenset([i for i in SYMBOL])
 SYMBOL_AND_RULE_LIST = [(i, i) for i in SYMBOL_SET]
 CHAR_AND_RULE_LIST.extend(SYMBOL_AND_RULE_LIST)
 
 # escaped symbol rules
 ESCAPE = u'.+\\"\'()[]{}*$^?|!-'
-ESCAPE_SET = set([i for i in ESCAPE])
+ESCAPE_SET = frozenset([i for i in ESCAPE])
 ESCAPE_AND_RULE_LIST = [(i, '\\%s' % i) for i in ESCAPE_SET]
 CHAR_AND_RULE_LIST.extend(ESCAPE_AND_RULE_LIST)
 
 # all char and rule mapping
 CHAR_RULE_DICT = dict(CHAR_AND_RULE_LIST)
+RULE_SET = frozenset([r for _, r in CHAR_AND_RULE_LIST])
 
 # ==
 RULE_SIGN_DICT = dict(
     [(v, k) for k, v in SYMBOL_AND_RULE_LIST + ESCAPE_AND_RULE_LIST])
-SIGN_RULE_SET = set(RULE_SIGN_DICT.keys())
+SIGN_RULE_SET = frozenset(RULE_SIGN_DICT.keys())
 
 # ==
 DIGIT_AND_ASCII_LOWER_RULE_LIST = [BasePatternRule.DIGIT,
@@ -105,21 +103,22 @@ DIGIT_AND_ASCII_RULE_LIST = [BasePatternRule.DIGIT,
                              BasePatternRule.BASE_ASCII_UPPER,
                              BasePatternRule.BASE_ASCII]
 
-DIGIT_AND_ASCII_UPPER_RULE_SET = set(DIGIT_AND_ASCII_UPPER_RULE_LIST)
-DIGIT_AND_ASCII_LOWER_RULE_SET = set(DIGIT_AND_ASCII_LOWER_RULE_LIST)
-DIGIT_AND_ASCII_RULE_SET = set(DIGIT_AND_ASCII_RULE_LIST)
+DIGIT_AND_ASCII_UPPER_RULE_SET = frozenset(DIGIT_AND_ASCII_UPPER_RULE_LIST)
+DIGIT_AND_ASCII_LOWER_RULE_SET = frozenset(DIGIT_AND_ASCII_LOWER_RULE_LIST)
+DIGIT_AND_ASCII_RULE_SET = frozenset(DIGIT_AND_ASCII_RULE_LIST)
 
 # ==
-BASE_ASCII_RULE_SET = set([BasePatternRule.BASE_ASCII,
-                           BasePatternRule.BASE_ASCII_LOWER,
-                           BasePatternRule.BASE_ASCII_UPPER])
+BASE_ASCII_RULE_SET = frozenset([BasePatternRule.BASE_ASCII,
+                                 BasePatternRule.BASE_ASCII_LOWER,
+                                 BasePatternRule.BASE_ASCII_UPPER])
 
-MULTI_ASCII_RULE_SET = set([BasePatternRule.MULTI_ASCII,
-                            BasePatternRule.MULTI_ASCII_LOWER,
-                            BasePatternRule.MULTI_ASCII_UPPER])
+MULTI_ASCII_RULE_SET = frozenset([BasePatternRule.MULTI_ASCII,
+                                  BasePatternRule.MULTI_ASCII_LOWER,
+                                  BasePatternRule.MULTI_ASCII_UPPER])
+
+MIXED_RULE_SET = DIGIT_AND_ASCII_RULE_SET.union([Symbols.PERCENT])
 
 
-# base pattern
 class BasePattern(object):
     SINGLE_DIGIT = Pattern(BasePatternRule.SINGLE_DIGIT)
     SINGLE_ASCII_LOWER = Pattern(BasePatternRule.SINGLE_ASCII_LOWER)

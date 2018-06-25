@@ -2,10 +2,10 @@ from functools import total_ordering
 
 from .compat import itervalues
 from .definition import BasePatternRule
-from .parse_utils import (MIXED_RULE_SET, PieceParser, analyze_url, digest,
-                          parse_pattern_path_string)
+from .parse_utils import (MIXED_RULE_SET, PieceParser, analyze_url,
+                          analyze_url_pattern_string, digest, fuzzy_join)
 from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
-                                LengthView, MixedView, PieceView, fuzzy_view,
+                                LengthView, MixedView, PieceView,
                                 view_cls_from_pattern)
 from .pattern import Pattern
 from .utils import TreeNode, build_tree
@@ -24,7 +24,7 @@ class MatchPattern(Pattern):
     def cmp_key(self):
         if self._cmp_key is None:
             l = [MatchPattern(u.pattern_unit_string)
-                 for u in self.pattern_units[::-1]]
+                 for u in reversed(self.pattern_units)]
             self._cmp_key = u''.join([str(VIEW_ORDER[p.view_cls]) for p in l])
         return self._cmp_key
 
@@ -76,7 +76,7 @@ class ViewMatcher(_ViewMatcher):
 
     def add_match_node(self, match_node):
         pattern = match_node.pattern
-        r = fuzzy_view([u.fuzzy_rule for u in pattern.pattern_units])
+        r = fuzzy_join(pattern.pattern_units)
         if r not in self._matchers:
             self._matchers[r] = PatternMatchNode(EMPTY_MATCH_PATTERN)
         patterns = [MatchPattern(p.pattern_unit_string)
@@ -138,7 +138,7 @@ class MixedPatternViewMatcher(ViewMatcher):
         if t:
             patterns.append(self._pattern(t))
 
-        r = fuzzy_view([u.fuzzy_rule for u in patterns])
+        r = fuzzy_join(patterns)
         if r not in self._matchers:
             self._matchers[r] = PatternMatchNode(EMPTY_MATCH_PATTERN)
         matcher = self._matchers[r]
@@ -231,10 +231,10 @@ class PatternMatcher(object):
         self._roots = {}
 
     def load(self, pattern_path_string, meta=None):
-        url_meta, pattern_strings = parse_pattern_path_string(
+        url_meta, pattern_strings = analyze_url_pattern_string(
             pattern_path_string)
-        patterns = [MatchPattern(p, i + 1 == url_meta.path_depth)
-                    for i, p in enumerate(pattern_strings)]
+        patterns = [MatchPattern(p, i == url_meta.path_depth)
+                    for i, p in enumerate(pattern_strings, 1)]
         sid = digest(url_meta, [p.fuzzy_rule for p in patterns])
         if sid not in self._roots:
             self._roots[sid] = PatternMatchNode(EMPTY_MATCH_PATTERN)

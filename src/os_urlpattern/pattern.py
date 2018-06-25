@@ -3,6 +3,7 @@ from .utils import pick
 
 
 class PatternUnit(object):
+
     __slots__ = ('_pattern_unit_string', '_rules', '_num', '_fuzzy_rule')
 
     def __init__(self, pattern_unit_string):
@@ -48,6 +49,7 @@ class PatternUnit(object):
 
 
 class Pattern(object):
+
     __slots__ = ('_pattern_string', '_pattern_regex',
                  '_pattern_units', '_fuzzy_rule')
 

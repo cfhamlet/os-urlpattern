@@ -9,8 +9,10 @@ def pretty_counter(counter):
     return ", ".join(['{0}:{1}'.format(k, v) for k, v in counter.items()])
 
 
-def pick(objs):
-    for obj in objs:
+def pick(iterable):
+    """Get an obj from iterable object. """
+
+    for obj in iterable:
         return obj
 
 
@@ -112,10 +114,10 @@ class TreeNode(object):
         return child, is_new
 
 
-def build_tree(root, kv_list, count=1, meta=None):
+def build_tree(root, kv_sequence, count=1, meta=None):
     node = root
     node.count += count
-    for kv in kv_list:
+    for kv in kv_sequence:
         node, is_new = node.add_child(kv)
         node.count += count
     if meta is not None:
@@ -183,3 +185,16 @@ def used_memory():
             return '%.1f%s' % (memory, i)
         memory = memory / 1024.0
     return '%.1fG' % memory
+
+
+class cached_property(object):
+    def __init__(self, func):
+        self.__doc__ = getattr(func, "__doc__")
+        self.func = func
+
+    def __get__(self, obj, cls):
+        if obj is None:
+            return self
+
+        value = obj.__dict__[self.func.__name__] = self.func(obj)
+        return value

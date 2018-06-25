@@ -56,7 +56,7 @@ def test_make():
     cluster_and_test(urls, '/[0-9a-z]{12}')
     urls = [u + '.html' for u in urls]
     cluster_and_test(urls, '/[0-9a-z]{12}[\\.]html')
-    urls = [u + '?id=%02d' % i for i, u in enumerate(urls)]
+    urls = [u + '?id=%02d' % i for i, u in enumerate(urls, 1)]
     cluster_and_test(urls, '/[0-9a-z]{12}[\\.]html[\\?]id=[0-9]{2}')
 
     urls = ['http://example.com' + u for u in ['/3h4hd9s9w9ddsadf9',
