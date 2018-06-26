@@ -1,6 +1,5 @@
 from functools import total_ordering
 
-from .compat import itervalues
 from .definition import BasePatternRule
 from .parse_utils import (MIXED_RULE_SET, PieceParser, analyze_url,
                           analyze_url_pattern_string, digest, fuzzy_join)
@@ -54,9 +53,6 @@ class _ViewMatcher(object):
     def empty(self):
         return len(self._matchers) == 0
 
-    def preprocess(self):
-        pass
-
     @property
     def view_cls(self):
         return self._view_cls
@@ -69,9 +65,6 @@ class _ViewMatcher(object):
 
 
 class ViewMatcher(_ViewMatcher):
-
-    def preprocess(self):
-        [matcher.preprocess() for matcher in itervalues(self._matchers)]
 
     def add_match_node(self, match_node):
         pattern = match_node.pattern
@@ -169,23 +162,22 @@ VIEW_MATCHERS = [
 VIEW_ORDER = dict([(item[0], idx) for idx, item in enumerate(VIEW_MATCHERS)])
 
 
+def get_view_matcher_cls(view_cls):
+    idx = VIEW_ORDER[view_cls]
+    return VIEW_MATCHERS[idx][1]
+
+
 @total_ordering
 class PatternMatchNode(TreeNode):
     __slots__ = ('_view_matchers')
 
     def __init__(self, value):
         super(PatternMatchNode, self).__init__(value)
-        self._view_matchers = [matcher_cls(view_cls)
-                               for view_cls, matcher_cls in VIEW_MATCHERS]
+        self._view_matchers = []
 
     @property
     def view_cls(self):
         return self.pattern.view_cls
-
-    def preprocess(self):
-        self._view_matchers = [m for m in self._view_matchers if not m.empty()]
-        [m.preprocess() for m in self._view_matchers]
-        [child.preprocess() for child in self.children]
 
     def match(self, parsed_pieces, idx, matched_nodes):
         parsed_piece = parsed_pieces[idx]
@@ -201,6 +193,25 @@ class PatternMatchNode(TreeNode):
             else:
                 node.match(parsed_pieces, idx + 1, matched_nodes)
 
+    def _get_matcher(self, view_cls):
+        s = 0
+        e = len(self._view_matchers)
+        while e > s:
+            t = (e - s) // 2 + s
+            matcher = self._view_matchers[t]
+            if matcher.view_cls == view_cls:
+                return matcher
+            tid = VIEW_ORDER[matcher.view_cls]
+            vid = VIEW_ORDER[view_cls]
+            if tid < vid:
+                s = t + 1
+            else:
+                e = t
+
+        matcher = get_view_matcher_cls(view_cls)(view_cls)
+        self._view_matchers.insert(e, matcher)
+        return matcher
+
     @property
     def pattern(self):
         return self._value
@@ -209,8 +220,8 @@ class PatternMatchNode(TreeNode):
         child, is_new = super(PatternMatchNode, self).add_child(
             (pattern, pattern))
         if is_new:
-            self._view_matchers[VIEW_ORDER[child.view_cls]
-                                ].add_match_node(child)
+            matcher = self._get_matcher(child.view_cls)
+            matcher.add_match_node(child)
         return child, is_new
 
     def __lt__(self, other):
@@ -222,14 +233,28 @@ class PatternMatchNode(TreeNode):
 
 
 class PatternMatcher(object):
+    """Offer match processing APIs.
+
+    Common work flow:
+    1. Init a PatternMatcher.
+    2. Load pattern string.
+    3. Match url.
+    """
 
     def __init__(self):
         self._parser = PieceParser()
         self._roots = {}
 
-    def load(self, pattern_path_string, meta=None):
+    def load(self, url_pattern_string, meta=None):
+        """Load URL pattern string.
+
+        Args:
+            url_pattern_string (str): URL pattern string.
+            meta (any, optional): Defaults to None. It will bind to 
+                matched result's meta property.
+        """
         url_meta, pattern_strings = analyze_url_pattern_string(
-            pattern_path_string)
+            url_pattern_string)
         patterns = [MatchPattern(p, i == url_meta.path_depth)
                     for i, p in enumerate(pattern_strings, 1)]
         sid = digest(url_meta, [p.fuzzy_rule for p in patterns])
@@ -237,12 +262,18 @@ class PatternMatcher(object):
             self._roots[sid] = PatternMatchNode(EMPTY_MATCH_PATTERN)
         root = self._roots[sid]
         build_tree(root, patterns,
-                   meta=pattern_path_string if meta is None else meta)
-
-    def preprocess(self):
-        [root.preprocess() for root in itervalues(self._roots)]
+                   meta=url_pattern_string if meta is None else meta)
 
     def match(self, url):
+        """Match url, get the matched results.
+
+        Args:
+            url (str): The URL to be matched.
+
+        Returns:
+            list: List of matched pattern node, if no match return [].
+              Bound meta data can be accessed with node.meta.
+        """
         url_meta, pieces = analyze_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])

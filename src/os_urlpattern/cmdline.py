@@ -183,10 +183,6 @@ class MatchPatternCommand(Command):
                 stats['INVALID'] += 1
         self._logger.debug('[LOAD] Finished %s', pretty_counter(stats))
 
-        self._logger.debug('[PREPROCESS] Start')
-        pattern_matcher.preprocess()
-        self._logger.debug('[PREPROCESS] Finished')
-
     def _match_result(self, pattern_matcher, raw_url, args):
         result = None
         try:

@@ -288,9 +288,6 @@ Match URLs:
    for pattern in patterns:
        pattern_matcher.load(pattern, meta=pattern) # meta will bind to matched result
 
-   # preprocess for speed
-   pattern_matcher.preprocess()
-
    # match URLs(unicode)
    for url in urls:
        matched_results = patterm_matcher.match(url)
