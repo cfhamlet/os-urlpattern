@@ -7,7 +7,7 @@ from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
                                 LengthView, MixedView, PieceView,
                                 view_cls_from_pattern)
 from .pattern import Pattern
-from .utils import TreeNode, build_tree
+from .utils import TreeNode, build_tree, pick
 
 
 @total_ordering
@@ -183,15 +183,18 @@ class PatternMatchNode(TreeNode):
         parsed_piece = parsed_pieces[idx]
         for matcher in self._view_matchers:
             nodes = matcher.match(parsed_piece)
+            if not nodes:
+                continue
+            if nodes[0].leaf():
+                matched_nodes.extend(nodes)
+                continue
             self._deep_match(nodes, parsed_pieces, idx,
                              matched_nodes)
 
     def _deep_match(self, nodes, parsed_pieces, idx, matched_nodes):
+        idx_next = idx + 1
         for node in nodes:
-            if node.leaf():
-                matched_nodes.append(node)
-            else:
-                node.match(parsed_pieces, idx + 1, matched_nodes)
+            node.match(parsed_pieces, idx_next, matched_nodes)
 
     def _get_matcher(self, view_cls):
         s = 0
@@ -235,7 +238,7 @@ class PatternMatchNode(TreeNode):
 class PatternMatcher(object):
     """Offer match processing APIs.
 
-    Common work flow:
+    Common procedure:
     1. Init a PatternMatcher.
     2. Load pattern string.
     3. Match url.
