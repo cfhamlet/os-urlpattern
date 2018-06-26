@@ -15,7 +15,7 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
 from .pattern_matcher import PatternMatcher
-from .utils import LogSpeedAdapter, pretty_counter
+from .utils import LogSpeedAdapter, pretty_counter, MemoryUsageFormatter
 
 
 def _config_logging(log_level):
@@ -24,8 +24,8 @@ def _config_logging(log_level):
         handler = logging.NullHandler()
     else:
         handler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        fmt='[%(asctime)s] [%(name)s] [%(levelname)s] %(message)s',
+    formatter = MemoryUsageFormatter(
+        fmt='[%(asctime)s] [%(name)s] [%(levelname)s] [%(memory)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
     )
     logging.root.setLevel(logging.NOTSET)

@@ -241,7 +241,7 @@ def parse_query_string(query_string):
     elif query_string == Symbols.EMPTY:
         return BLANK_TUPLE, BLANK_TUPLE
     elif query_string.endswith(Symbols.AMPERSAND):
-        raise IrregularURLException("Query part should not ends with '&'.")
+        raise IrregularURLException("Ends with '&' is invalid")
     kv_type = True  # qkey True, qvalue False
     last_c = None
     kv_buf = {True: StringIO(), False: StringIO()}
@@ -256,7 +256,7 @@ def parse_query_string(query_string):
             kv_type = not kv_type
         elif i == Symbols.AMPERSAND:
             if last_c is None or last_c == Symbols.AMPERSAND:
-                raise IrregularURLException("Series '&' is not valid.")
+                raise IrregularURLException("Series '&' is invalid")
             s = kv_buf[kv_type]
             s.seek(0)
             kv_list[kv_type].append(s.read())
@@ -544,7 +544,7 @@ class PieceParser(object):
         try:
             rule = CHAR_RULE_DICT[char]
         except KeyError:
-            raise InvalidCharException("Invalid char '%s'" % char)
+            raise InvalidCharException("Contain invalid char")
 
         if last_rule != rule:
             self._piece_list.append(StringIO())

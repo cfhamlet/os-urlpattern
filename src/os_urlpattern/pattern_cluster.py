@@ -11,6 +11,8 @@ from .utils import Bag, cached_property, dump_tree, pick
 
 
 class TBag(Bag):
+    __slots__ = ('_stats')
+
     def __init__(self):
         super(TBag, self).__init__()
         self._stats = Counter()
@@ -61,6 +63,8 @@ class PieceBag(TBag):
     The nodes should on the same branch of a tree at the same level.
     """
 
+    __slots__ = ('_p_nodes')
+
     def __init__(self):
         super(PieceBag, self).__init__()
         self._p_nodes = set()
@@ -78,6 +82,7 @@ class PieceBag(TBag):
 
 
 class PieceBagBucket(TBucket):
+    __slots__ = ('_p_nodes')
 
     def __init__(self):
         super(PieceBagBucket, self).__init__()
@@ -115,6 +120,8 @@ class ViewPieceBag(namedtuple('ViewPieceBag', ['view', 'piece_bag'])):
 
 
 class ViewPieceBagBucket(PieceBagBucket):
+    __slots__ = ('_url_meta', '_root')
+
     def __init__(self, url_meta):
         super(ViewPieceBagBucket, self).__init__()
         self._url_meta = url_meta

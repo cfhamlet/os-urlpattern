@@ -17,6 +17,8 @@ def pick(iterable):
 
 
 class Bag(object):
+    __slots__ = ('_objs')
+
     def __init__(self):
         self._objs = set()
 
@@ -155,9 +157,8 @@ class LogSpeedAdapter(logging.LoggerAdapter):
 
         if self._count % self._interval == 0:
             speed = self._speed()
-            mem = used_memory()
-            extra_msg = '[{mem}] {count} {speed:.1f}/s'.format(
-                count=self._count, speed=speed, mem=mem)
+            extra_msg = '{count} {speed:.1f}/s'.format(
+                count=self._count, speed=speed)
             msg = ' '.join((msg, extra_msg))
             return msg, kwargs
 
@@ -180,11 +181,24 @@ def used_memory():
         return '-'
     p = psutil.Process(os.getpid())
     memory = p.memory_info().rss / 1024.0
-    for i in ['K', 'M', 'G']:
+    for i in ('K', 'M', 'G'):
         if memory < 1024.0:
             return '%.1f%s' % (memory, i)
         memory = memory / 1024.0
     return '%.1fG' % memory
+
+
+class MemoryUsageFormatter(logging.Formatter):
+    def __init__(self, fmt=None, datefmt=None):
+        super(MemoryUsageFormatter, self).__init__(fmt, datefmt)
+        self._log_memory = True
+        if fmt and '%(memory)s' not in fmt:
+            self._log_memory = False
+
+    def format(self, record):
+        if self._log_memory and 'memory' not in record.__dict__:
+            record.__dict__['memory'] = used_memory()
+        return super(MemoryUsageFormatter, self).format(record)
 
 
 class cached_property(object):
