@@ -76,6 +76,31 @@ def test_make_noise(tmpdir):
     assert b'/abc009' in stdout
 
 
+def test_make_fuzzy(tmpdir):
+    urls = [
+        'sdjfpewiefh',
+        'dfsdksd',
+        'dffalldsfisslkfdksd',
+        'didif',
+        'dif',
+    ]
+    urls = ['http://example.com/abc/' + i for i in urls]
+    data = "\n".join(urls)
+    f = tmpdir.join('urls01.txt')
+    f.write(data)
+    cmdline = 'make -f %s -F pattern ' % f.strpath
+    stdout, _ = call(cmdline)
+    assert b'/abc/[a-z]+' in stdout
+
+    urls = [i + '.html' for i in urls]
+    data = "\n".join(urls)
+    f = tmpdir.join('urls02.txt')
+    f.write(data)
+    cmdline = 'make -f %s -F pattern ' % f.strpath
+    stdout, _ = call(cmdline)
+    assert b'/abc/[a-z]+[\\.]html' in stdout
+
+
 def test_match(tmpdir):
     pattern = b'/abc[0-9]{2}'
     fp = tmpdir.join('patterns.txt')

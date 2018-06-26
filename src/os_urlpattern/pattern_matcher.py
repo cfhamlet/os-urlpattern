@@ -71,8 +71,7 @@ class _ViewMatcher(object):
 class ViewMatcher(_ViewMatcher):
 
     def preprocess(self):
-        for matcher in itervalues(self._matchers):
-            matcher.preprocess()
+        [matcher.preprocess() for matcher in itervalues(self._matchers)]
 
     def add_match_node(self, match_node):
         pattern = match_node.pattern
@@ -186,9 +185,7 @@ class PatternMatchNode(TreeNode):
     def preprocess(self):
         self._view_matchers = [m for m in self._view_matchers if not m.empty()]
         [m.preprocess() for m in self._view_matchers]
-
-        for child in self.children:
-            child.preprocess()
+        [child.preprocess() for child in self.children]
 
     def match(self, parsed_pieces, idx, matched_nodes):
         parsed_piece = parsed_pieces[idx]
@@ -243,8 +240,7 @@ class PatternMatcher(object):
                    meta=pattern_path_string if meta is None else meta)
 
     def preprocess(self):
-        for root in itervalues(self._roots):
-            root.preprocess()
+        [root.preprocess() for root in itervalues(self._roots)]
 
     def match(self, url):
         url_meta, pieces = analyze_url(url)

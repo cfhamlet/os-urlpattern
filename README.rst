@@ -226,7 +226,7 @@ Command line
 
 * **pattern-match**
 
-  Load patterns, dump URLs match results.
+  Load patterns, dump URLs matched results.
 
   .. code:: console
     
@@ -287,6 +287,9 @@ Match URLs:
    # load pattern(unicode)
    for pattern in patterns:
        pattern_matcher.load(pattern, meta=pattern) # meta will bind to matched result
+
+   # preprocess for speed
+   pattern_matcher.preprocess()
 
    # match URLs(unicode)
    for url in urls:
