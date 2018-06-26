@@ -26,7 +26,8 @@ def call(cmdline, env=None, **kwargs):
 
 
 def test_make(tmpdir):
-    urls = ['http://example.com/abc%02d' % i for i in range(1, 10)]
+    num = 9
+    urls = ['http://example.com/abc%02d' % i for i in range(0, 9)]
     data = "\n".join(urls)
     f = tmpdir.join('urls.txt')
     f.write(data)
@@ -34,10 +35,16 @@ def test_make(tmpdir):
     stdout, _ = call(cmdline)
     assert b'/abc[0-9]{2}' in stdout
     assert urls[0].encode() in stdout
+
     cmdline = 'make -f %s -F pattern' % f.strpath
     stdout, _ = call(cmdline)
     assert b'/abc[0-9]{2}' in stdout
     assert urls[0].encode() not in stdout
+
+    cmdline = 'make -f %s -F ete' % f.strpath
+    stdout, _ = call(cmdline)
+    o = b'- (%d) - abc[0-9]{2}(%d)' % (num, num)
+    assert o in stdout
 
 
 def test_match(tmpdir):

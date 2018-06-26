@@ -62,6 +62,7 @@ class TreeNode(object):
     def leaf(self):
         return not self._children
 
+    @property
     def level(self):
         l = 0
         n = self.parrent
