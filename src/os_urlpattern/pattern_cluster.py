@@ -156,13 +156,27 @@ class ViewPieceBagBucket(PieceBagBucket):
         return bucket, pattern
 
 
-def confused(total, part, threshold):
+def confused(total, max_part, threshold):
+    """Determine whether it is too complex to become a cluster.
+
+    If a data set have several(<threshold) sub parts, this method use the total
+    count of the data set, the count of the max sub set and min cluster threshold
+    to determine whether it is too complex to become a cluster.
+
+    Args:
+        total (int): Total count of a data set.
+        max_part (int): The max part of the data set.
+        threshold (int): The min threashold of a cluster.
+
+    Returns:
+        bool: Too complex return True, otherwise False.
+    """
     if total < threshold:
         return False
-    o_part = total - part
-    if part >= threshold and o_part >= threshold:
+    o_part = total - max_part
+    if max_part >= threshold and o_part >= threshold:
         return True
-    return abs(part - o_part) < threshold - 1
+    return abs(max_part - o_part) < threshold - 1
 
 
 class SeekResult(object):
@@ -348,8 +362,9 @@ class LengthPatternCluster(PatternCluster):
         parsed_piece = length_bucket.pick().parsed_piece
         length = parsed_piece.piece_length
         pattern = Pattern(specify_rule(parsed_piece.fuzzy_rule, length))
+        length_bucket.set_pattern(pattern)
         if update_patterns:
-            length_bucket.set_pattern(pattern)
+            self._patterns.add(pattern)
 
 
 class MultiPatternCluster(PatternCluster):

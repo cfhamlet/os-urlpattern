@@ -28,7 +28,7 @@ patterns complexity).
 .. code:: console
 
    $ pip install -U os-urlpattern
-   $ wget -qO- 'https://git.io/vhXGq' | pattern-make
+   $ wget -qO- 'https://git.io/f4QlP' | pattern-make
    /[0-9]{2}[\.]html
          http://example.com/01.html
          http://example.com/02.html

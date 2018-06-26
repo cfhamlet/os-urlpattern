@@ -1,3 +1,4 @@
+import hashlib
 import os
 import shlex
 import subprocess
@@ -27,7 +28,8 @@ def call(cmdline, env=None, **kwargs):
 
 def test_make(tmpdir):
     num = 9
-    urls = ['http://example.com/abc%02d' % i for i in range(0, 9)]
+    urls = ['http://example.com/abc%02d?id=%02d#abc' %
+            (i, i) for i in range(0, num)]
     data = "\n".join(urls)
     f = tmpdir.join('urls.txt')
     f.write(data)
@@ -43,8 +45,35 @@ def test_make(tmpdir):
 
     cmdline = 'make -f %s -F ete' % f.strpath
     stdout, _ = call(cmdline)
-    o = b'- (%d) - abc[0-9]{2}(%d)' % (num, num)
-    assert o in stdout
+    assert b' abc[0-9]{2}(%d) ' % num
+    assert b' [\\?]id=[0-9]{2}(%d) ' % num
+    assert b' - #abc(%d)' % num
+
+
+def test_make_digest_type_urls(tmpdir):
+    urls = ['http://example.com/%s.html' % j for j in
+            [hashlib.md5(str(i).encode()).hexdigest() for i in range(0, 9)]]
+
+    data = "\n".join(urls)
+    f = tmpdir.join('urls.txt')
+    f.write(data)
+    cmdline = 'make -f %s -F pattern ' % f.strpath
+    stdout, _ = call(cmdline)
+    assert b'[0-9a-z]{32}[\\.]html' in stdout
+
+
+def test_make_noise(tmpdir):
+    urls = ['http://example.com/abc%02d?id=%02d#abc' %
+            (i, i) for i in range(0, 8)]
+    urls.append('http://example.com/abc009?id=09#abc')
+
+    data = "\n".join(urls)
+    f = tmpdir.join('urls.txt')
+    f.write(data)
+    cmdline = 'make -f %s -F pattern ' % f.strpath
+    stdout, _ = call(cmdline)
+    assert b'/abc[0-9]{2}' in stdout
+    assert b'/abc009' in stdout
 
 
 def test_match(tmpdir):

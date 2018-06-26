@@ -7,8 +7,7 @@ version_info = tuple(int(v) if v.isdigit() else v
                      for v in __version__.split('.'))
 
 if sys.version_info < (2, 7):
-    print("os-urlpattern %s requires Python 2.7" % __version__)
-    sys.exit(1)
+    sys.exit("os-urlpattern %s requires Python 2.7" % __version__)
 
 del pkgutil
 del sys
