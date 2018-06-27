@@ -1,3 +1,7 @@
+"""os-urlpattern.
+
+Unsupervised URLs clustering, generate and match URL pattern.
+"""
 import sys
 __all__ = ['__version__', 'version_info']
 

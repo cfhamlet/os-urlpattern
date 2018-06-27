@@ -1,3 +1,7 @@
+"""Raw parsed piece tree.
+
+Build a tree from the parsed URL pieces.
+"""
 from .compat import itervalues
 from .parse_utils import EMPTY_PARSED_PIECE
 from .pattern import Pattern
@@ -5,7 +9,9 @@ from .utils import TreeNode, build_tree
 
 
 class PiecePatternNode(TreeNode):
-    __slots__ = ('_pattern')
+    """Node for building raw piece tree."""
+
+    __slots__ = ('_pattern',)
 
     def __init__(self, parsed_piece_and_pattern):
         parsed_piece, self._pattern = parsed_piece_and_pattern
@@ -80,11 +86,11 @@ def build_from_parsed_pieces(root, parsed_pieces, count=1, meta=None, uniq=True)
 
 def build_from_piece_pattern_nodes(root, piece_pattern_nodes):
     """Build piece pattern tree from piece pattern tree edge.
-    
+
     Args:
         root (PiecePatternNode): The root node of the a tree.
         piece_pattern_nodes (sequence): piece pattern tree edge.
-    
+
     Returns:
         tuple: 2-tuple, (leaf_node, is_new)
     """

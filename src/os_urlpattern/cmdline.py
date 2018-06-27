@@ -1,11 +1,19 @@
+"""Command line tools.
+
+pattern-make:
+    Load URLs, cluster and generate URL pattern.
+
+pattern-matcher:
+    Load pattern, match the URL and get matched results.
+
+"""
 from __future__ import print_function
 
 import argparse
-import logging
+import logging.config
 import sys
 import time
 from collections import Counter
-from logging.config import dictConfig
 
 from .compat import binary_stdin, binary_stdout
 from .config import get_default_config
@@ -15,11 +23,17 @@ from .exceptions import (InvalidCharException, InvalidPatternException,
 from .formatter import FORMATTERS
 from .pattern_maker import PatternMaker
 from .pattern_matcher import PatternMatcher
-from .utils import LogSpeedAdapter, pretty_counter, MemoryUsageFormatter
+from .utils import LogSpeedAdapter, MemoryUsageFormatter, pretty_counter
+
+_DEFAULT_LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': True,
+    'incremental': True,
+}
 
 
 def _config_logging(log_level):
-    dictConfig(_DEFAULT_LOGGING)
+    logging.config.dictConfig(_DEFAULT_LOGGING)
     if log_level == 'NOTSET':
         handler = logging.NullHandler()
     else:
@@ -89,6 +103,7 @@ class MakePatternCommand(Command):
                             type=lambda s: s.upper())
 
     def _load(self, pattern_maker, args):
+        load_url = args.formatter == 'CLUSTER'
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in args.file[0]:
@@ -100,7 +115,8 @@ class MakePatternCommand(Command):
             speed_logger.debug('[LOADING]')
             try:
                 url = url.decode(DEFAULT_ENCODING)
-                _, is_new = pattern_maker.load(url)
+                _, is_new = pattern_maker.load(
+                    url, meta=url if load_url else None)
                 if is_new:
                     stats['UNIQ'] += 1
                 stats['VALID'] += 1
@@ -119,20 +135,18 @@ class MakePatternCommand(Command):
         self._logger.debug('[LOADED] %s', pretty_counter(stats))
 
     def _process(self, pattern_maker, args):
+        combine = args.formatter == 'ETE'
         formatter = FORMATTERS[args.formatter]()
         s = time.time()
-        combine = args.formatter == 'ETE'
         for maker in pattern_maker.makers:
-            for url_meta, root in maker.make(combine):
+            for root in maker.make(combine):
                 e = time.time()
                 self._logger.debug('[CLUSTER] %d %.2fs', root.count, e - s)
-                for record in formatter.format(url_meta, root):
+                for record in formatter.format(maker.url_meta, root):
                     print(record)
                 s = time.time()
 
     def _confirm_config(self, args):
-        if args.formatter != 'CLUSTER':
-            self._config.set('make', 'drop_url', 'true')
         self._config.freeze()
 
     def run(self, args):
@@ -165,7 +179,7 @@ class MatchPatternCommand(Command):
     def _load(self, pattern_matcher, args):
         stats = Counter()
         io_input = args.pattern_file[0]
-        self._logger.debug('[LOAD] Start %s', io_input.name)
+        self._logger.debug('[LOAD] Pattrn file: %s', io_input.name)
         speed_logger = LogSpeedAdapter(self._logger, 1000)
         for line in io_input:
             speed_logger.debug('[LOADING]')
@@ -222,13 +236,6 @@ class MatchPatternCommand(Command):
         pattern_matcher = PatternMatcher()
         self._load(pattern_matcher, args)
         self._match(pattern_matcher, args)
-
-
-_DEFAULT_LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': True,
-    'incremental': True,
-}
 
 
 def _execute(command, argv=None):

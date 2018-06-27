@@ -1,8 +1,11 @@
+"""Pattern class.
+"""
 import re
 from .utils import pick
 
 
 class PatternUnit(object):
+    """Sub-piece of pattern."""
 
     __slots__ = ('_pattern_unit_string', '_rules', '_num', '_fuzzy_rule')
 
@@ -13,6 +16,16 @@ class PatternUnit(object):
         self._fuzzy_rule = None
 
     def is_literal(self):
+        """Whether this unit string is literal or not.
+
+        Note:
+            According to the char representation, fixed-length
+            single sign is literal, like:  [\\.]{2}  [\\-]
+
+        Returns:
+            bool: Whether it is literal.
+        """
+
         from .definition import DIGIT_AND_ASCII_RULE_SET, Symbols
         r = False
         if not self._pattern_unit_string.startswith(Symbols.BRACKETS_L):
@@ -39,7 +52,11 @@ class PatternUnit(object):
         return self._rules
 
     @property
-    def num(self):  # return negative means wildcard '+'
+    def num(self):
+        """int: The literal number.
+
+        Negative means wildcard '+'.
+        """
         return self._num
 
     def __str__(self):
@@ -49,6 +66,7 @@ class PatternUnit(object):
 
 
 class Pattern(object):
+    """Pattern for handle pattern string. """
 
     __slots__ = ('_pattern_string', '_pattern_regex',
                  '_pattern_units', '_fuzzy_rule')
@@ -61,10 +79,12 @@ class Pattern(object):
 
     @property
     def pattern_units(self):
+        """tuple: Pattern units."""
+
         from .parse_utils import parse_pattern_string
         if self._pattern_units is None:
-            self._pattern_units = [PatternUnit(
-                u) for u in parse_pattern_string(self._pattern_string)]
+            self._pattern_units = tuple([PatternUnit(
+                u) for u in parse_pattern_string(self._pattern_string)])
         return self._pattern_units
 
     def __str__(self):
@@ -74,6 +94,7 @@ class Pattern(object):
 
     @property
     def pattern_string(self):
+        """str: Pattern string."""
         return self._pattern_string
 
     def __hash__(self):
@@ -90,6 +111,7 @@ class Pattern(object):
 
     @property
     def fuzzy_rule(self):
+        """str: All rules of the pattern join into a string."""
         if self._fuzzy_rule is None:
             self._fuzzy_rule = u''.join(sorted(set.union(
                 *[u.rules for u in self.pattern_units])))

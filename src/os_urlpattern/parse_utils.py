@@ -1,3 +1,5 @@
+"""Utilitis for parsing URL and pattern.
+"""
 import hashlib
 from collections import namedtuple
 
@@ -225,7 +227,7 @@ def filter_useless(objs):
 
 
 def parse_query_string(query_string):
-    """Parse query string into keys and values
+    """Parse query string into keys and values.
 
     Args:
         query_string (str): The string to be parsed.
@@ -242,7 +244,7 @@ def parse_query_string(query_string):
         return BLANK_TUPLE, BLANK_TUPLE
     elif query_string.endswith(Symbols.AMPERSAND):
         raise IrregularURLException("Invalid '&' pos")
-    kv_type = True  # qkey True, qvalue False
+    kv_type = True  # query_key True, query_value False
     last_c = None
     kv_buf = {True: StringIO(), False: StringIO()}
     kv_list = {True: [], False: []}
@@ -526,6 +528,19 @@ class PieceParser(object):
         self._piece_list = []
 
     def parse(self, piece):
+        """Parse a string into small sub-pieces with rules.
+
+        The consecutive charactors in the same charactor space
+        will be joined into one sub-piece, the corresponding
+        rule(charactor space) can also be got.
+        
+        Args:
+            piece (str): A string to be parsed.
+        
+        Returns:
+            tuple: 2-tuple, (pieces, rules).
+        """
+
         self._reset()
         self._preprocess(piece)
         return self._create_parsed_piece()
@@ -614,7 +629,7 @@ def analyze_url_pattern_string(url_pattern_string):
         url_pattern_string (str): The URL pattern string to be parsed.
 
     Returns:
-        tuple: A 2-tuple, (url_meta, pattern_string_pieces).
+        tuple: A 2-tuple, (url_meta, pattern_strings).
     """
     result = parse_url_pattern_string(url_pattern_string)
     return unpack(result, False)
@@ -736,8 +751,9 @@ def parse_pattern_unit_string(pattern_unit_string):
                 n = 1
             rule = p_str[idx:idx + n]
             if rule not in RULE_SET:
-                raise InvalidPatternException(
-                    "Invalid pattern unit: %s" % pattern_unit_string)
+                raise InvalidPatternException("Invalid rule '%s'" % rule)
             rules.add(rule)
             idx += n
+    if (num > 0 and len(rules) > num) or num == 0:
+        raise InvalidPatternException('Insufficient number')
     return rules, num

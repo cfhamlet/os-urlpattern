@@ -1,3 +1,5 @@
+"""ParsedPieceView and subclass implementation.
+"""
 from .definition import DIGIT_AND_ASCII_RULE_SET, BasePatternRule
 from .parse_utils import ParsedPiece, fuzzy_join, mix
 from .utils import pick
@@ -7,7 +9,8 @@ class ParsedPieceView(object):
     """The base class of parsed piece view.
 
     View object is a wrapper of parsed piece, which have individual
-    view, parsed_piece and parsed_pieces based on the raw parsed piece. 
+    view, parsed_piece and parsed_pieces propertys are based on the
+    raw parsed piece.
 
     """
     __slots__ = ('_parsed_piece', '_parsed_pieces', '_view')
@@ -59,7 +62,7 @@ class LengthView(ParsedPieceView):
         self._view = self._parsed_piece.piece_length
 
 
-class BaseView(ParsedPieceView):
+class MultiView(ParsedPieceView):
     pass
 
 
@@ -165,7 +168,7 @@ def view_cls_from_pattern(pattern, is_last_path=False):
                 if len(pattern_unit.rules) > 1:
                     view_cls = MixedView
                 else:
-                    view_cls = BaseView
+                    view_cls = MultiView
         if is_last_path \
                 and len(pattern_units) == 3 \
                 and view_cls != PieceView \

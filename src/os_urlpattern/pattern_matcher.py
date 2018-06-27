@@ -1,17 +1,24 @@
+"""Pattern matching APIs.
+"""
 from functools import total_ordering
 
 from .definition import BasePatternRule
 from .parse_utils import (MIXED_RULE_SET, PieceParser, analyze_url,
                           analyze_url_pattern_string, digest, fuzzy_join)
-from .parsed_piece_view import (BaseView, FuzzyView, LastDotSplitFuzzyView,
-                                LengthView, MixedView, PieceView,
+from .parsed_piece_view import (FuzzyView, LastDotSplitFuzzyView, LengthView,
+                                MixedView, MultiView, PieceView,
                                 view_cls_from_pattern)
 from .pattern import Pattern
-from .utils import TreeNode, build_tree, pick
+from .utils import TreeNode, build_tree
 
 
 @total_ordering
 class MatchPattern(Pattern):
+    """Pattern used for matching.
+
+    It is comparable and has a view_cls property to
+    identify the pattern type.
+    """
     __slots__ = ('_view_cls', '_cmp_key')
 
     def __init__(self, pattern_string, is_last_path=False):
@@ -21,6 +28,8 @@ class MatchPattern(Pattern):
 
     @property
     def cmp_key(self):
+        """str: Used for sort."""
+
         if self._cmp_key is None:
             l = [MatchPattern(u.pattern_unit_string)
                  for u in reversed(self.pattern_units)]
@@ -43,15 +52,18 @@ class MatchPattern(Pattern):
 EMPTY_MATCH_PATTERN = MatchPattern(BasePatternRule.EMPTY)
 
 
-class _ViewMatcher(object):
+class ViewMatcher(object):
+    """Base class for different type of view matcher.
+
+    Init with a specified ParsedPieceView class.
+    Filled with same view-type match node.
+    Get all matched nodes.    
+    """
     __slots__ = ('_view_cls', '_matchers')
 
     def __init__(self, view_cls):
         self._view_cls = view_cls
         self._matchers = {}
-
-    def empty(self):
-        return len(self._matchers) == 0
 
     @property
     def view_cls(self):
@@ -59,22 +71,6 @@ class _ViewMatcher(object):
 
     def add_match_node(self, match_node):
         pass
-
-    def match(self, parsed_piece):
-        pass
-
-
-class ViewMatcher(_ViewMatcher):
-
-    def add_match_node(self, match_node):
-        pattern = match_node.pattern
-        r = fuzzy_join(pattern.pattern_units)
-        if r not in self._matchers:
-            self._matchers[r] = PatternMatchNode(EMPTY_MATCH_PATTERN)
-        patterns = [MatchPattern(p.pattern_unit_string)
-                    for p in pattern.pattern_units]
-        matcher = self._matchers[r]
-        build_tree(matcher, patterns, meta=match_node)
 
     def match(self, parsed_piece):
         view = self._view_cls(parsed_piece)
@@ -87,7 +83,7 @@ class ViewMatcher(_ViewMatcher):
         return [n.meta for n in matched_result]
 
 
-class PiecePatternViewMatcher(_ViewMatcher):
+class PiecePatternViewMatcher(ViewMatcher):
 
     def add_match_node(self, match_node):
         if match_node.pattern.pattern_string not in self._matchers:
@@ -98,7 +94,7 @@ class PiecePatternViewMatcher(_ViewMatcher):
             else self._matchers[parsed_piece.piece]
 
 
-class LengthPatternViewMatcher(_ViewMatcher):
+class LengthPatternViewMatcher(ViewMatcher):
 
     def add_match_node(self, match_node):
         length = match_node.pattern.pattern_units[0].num
@@ -109,7 +105,20 @@ class LengthPatternViewMatcher(_ViewMatcher):
             else self._matchers[parsed_piece.piece_length]
 
 
-class MixedPatternViewMatcher(ViewMatcher):
+class MultiPatternViewMatcher(ViewMatcher):
+
+    def add_match_node(self, match_node):
+        pattern = match_node.pattern
+        r = fuzzy_join(pattern.pattern_units)
+        if r not in self._matchers:
+            self._matchers[r] = PatternMatchNode(EMPTY_MATCH_PATTERN)
+        patterns = [MatchPattern(p.pattern_unit_string)
+                    for p in pattern.pattern_units]
+        matcher = self._matchers[r]
+        build_tree(matcher, patterns, meta=match_node)
+
+
+class MixedPatternViewMatcher(MultiPatternViewMatcher):
 
     def _pattern(self, pattern_units):
         return MatchPattern(u''.join([p.pattern_unit_string for p in pattern_units]))
@@ -137,7 +146,7 @@ class MixedPatternViewMatcher(ViewMatcher):
         build_tree(matcher, patterns, meta=match_node)
 
 
-class FuzzyPatternViewMatcher(_ViewMatcher):
+class FuzzyPatternViewMatcher(ViewMatcher):
 
     def __init__(self, view_cls):
         super(FuzzyPatternViewMatcher, self).__init__(view_cls)
@@ -152,24 +161,34 @@ class FuzzyPatternViewMatcher(_ViewMatcher):
 
 VIEW_MATCHERS = [
     (PieceView, PiecePatternViewMatcher),
-    (BaseView, ViewMatcher),
-    (MixedView, ViewMatcher),
-    (LastDotSplitFuzzyView, ViewMatcher),
+    (MultiView, MultiPatternViewMatcher),
+    (MixedView, MultiPatternViewMatcher),
+    (LastDotSplitFuzzyView, MultiPatternViewMatcher),
     (LengthView, LengthPatternViewMatcher),
     (FuzzyView, FuzzyPatternViewMatcher),
 ]
 
-VIEW_ORDER = dict([(item[0], idx) for idx, item in enumerate(VIEW_MATCHERS)])
+VIEW_ORDER = dict([(item[0], _idx) for _idx, item in enumerate(VIEW_MATCHERS)])
 
 
 def get_view_matcher_cls(view_cls):
+    """Get specified ViewMatcher class from ParsedPieceView class.
+
+    Args:
+        view_cls (ParsedPieceView): Class of a specified ParsedPieceView.
+
+    Returns:
+        class(ViewMatcher): The Corresponding ViewMatcher class.
+    """
     idx = VIEW_ORDER[view_cls]
     return VIEW_MATCHERS[idx][1]
 
 
 @total_ordering
 class PatternMatchNode(TreeNode):
-    __slots__ = ('_view_matchers')
+    """Node for building a match tree."""
+
+    __slots__ = ('_view_matchers',)
 
     def __init__(self, value):
         super(PatternMatchNode, self).__init__(value)
@@ -180,6 +199,20 @@ class PatternMatchNode(TreeNode):
         return self.pattern.view_cls
 
     def match(self, parsed_pieces, idx, matched_nodes):
+        """DF find all matched nodes.
+
+        If a path from root to leaf match all the corresponding pieces,
+        the leaf node is called matched node.This mathed shoud be called
+        by the root node, with idx=0 and a list which will be filled with
+        all matched nodes.
+
+        Args:
+            parsed_pieces (sequence): All of the parsed pieces to be matched.
+            idx (int): Indecate which piece of the whole parsed pieces should
+                try to match this node.
+            matched_nodes (list of PatternMatchNode): Filled with all of the
+                matched leaf nodes.
+        """
         parsed_piece = parsed_pieces[idx]
         for matcher in self._view_matchers:
             nodes = matcher.match(parsed_piece)
@@ -253,7 +286,7 @@ class PatternMatcher(object):
 
         Args:
             url_pattern_string (str): URL pattern string.
-            meta (any, optional): Defaults to None. It will bind to 
+            meta (any, optional): Defaults to None. It will bind to
                 matched result's meta property.
         """
         url_meta, pattern_strings = analyze_url_pattern_string(
@@ -274,7 +307,7 @@ class PatternMatcher(object):
             url (str): The URL to be matched.
 
         Returns:
-            list: List of matched pattern node, if no match return [].
+            list: List of matched pattern nodes, if no match return [].
               Bound meta data can be accessed with node.meta.
         """
         url_meta, pieces = analyze_url(url)

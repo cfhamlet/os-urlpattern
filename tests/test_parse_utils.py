@@ -208,6 +208,8 @@ def test_parse_pattern_unit_string():
         '[z-a]',
         '[z-a]{abc}',
         '[z-a]{-1}',
+        '[\\._]',
+        '[0-9a-z]',
     ]
     for data in invalid_data:
         with pytest.raises(InvalidPatternException):

@@ -25,7 +25,7 @@ def test_fuzzy_rule():
         assert p.fuzzy_rule == r
         pw = Pattern(wildcard_rule(p.fuzzy_rule))
         assert pw.fuzzy_rule == r
-        pn = Pattern(specify_rule(p.fuzzy_rule, 3))
+        pn = Pattern(specify_rule(p.fuzzy_rule, 10))
         assert pn.fuzzy_rule == r
 
 
@@ -34,7 +34,10 @@ def test_pattern_unit():
         ('[a-z]+', 'a-z', -1, False),
         ('[a-z]{3}', 'a-z', 3, False),
         ('abc', 'a-z', 3, True),
-        ('[0-9a-z]', '0-9a-z', 1, False),
+        ('[0-9]', '0-9', 1, False),
+        ('[\\.]{2}', '\\.', 2, True),
+        ('[\\.]', '\\.', 1, True),
+        ('[\\._]{2}', '\\._', 2, False),
     ]
 
     for s, fuzzy_rule, num, literal in data:

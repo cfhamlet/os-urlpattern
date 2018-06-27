@@ -1,3 +1,5 @@
+"""Clustered record formatter.
+"""
 import json
 
 from .definition import BasePatternRule, Symbols
@@ -23,13 +25,23 @@ class Formatter(object):
 
         """
         yield
-        return
 
 
 class PatternFormatter(Formatter):
     """Pattern only formatter."""
 
     def format(self, url_meta, root, **kwargs):
+        """Generate url pattern string.
+
+        Args:
+            url_meta (URLMeta): The URLMeta object.
+            root (TreeNode): Root of a clusterd piece tree.
+            **kwargs: Arbitray keyword arguments.
+
+        Yields:
+            str: URL pattern string.
+
+        """
         for nodes in dump_tree(root):
             yield pack(url_meta, [p.pattern for p in nodes[1:]])
             break
@@ -39,6 +51,18 @@ class ClusterFormatter(PatternFormatter):
     """Pattern and meta formatter."""
 
     def format(self, url_meta, root, **kwargs):
+        """Generate url pattern string and dumps bound meta data.
+
+        Args:
+            url_meta (URLMeta): The URLMeta object.
+            root (TreeNode): Root of a clusterd piece tree.
+            **kwargs: Arbitray keyword arguments.
+
+        Yields:
+            str: Yield URL pattern string first, then yield meta
+                data of this cluster.
+
+        """
         for r in super(ClusterFormatter, self).format(url_meta, root, **kwargs):
             yield r
 
@@ -51,6 +75,18 @@ class JsonFormatter(Formatter):
     """Json record of pattern info formatter."""
 
     def format(self, url_meta, root, **kwargs):
+        """Generate json format of URL pattern and relative info.
+
+        Args:
+            url_meta (URLMeta): The URLMeta object.
+            root (TreeNode): Root of a clusterd piece tree.
+            **kwargs: Arbitray keyword arguments.
+
+        Yields:
+            str: Json string, key-value:
+                ptn: URL pattern string.
+                cnt: Number of uniq path in the cluster.
+        """
         for nodes in dump_tree(root):
             p = pack(url_meta, [p.pattern for p in nodes[1:]])
             yield json.dumps({u'ptn': p, u'cnt': root.count})
@@ -61,7 +97,16 @@ class ETEFormatter(Formatter):
     """Ete tree formatter."""
 
     def format(self, url_meta, root, **kwargs):
+        """Generate ete tree string.
 
+        Args:
+            url_meta (URLMeta): The URLMeta object.
+            root (TreeNode): Root of a pattern tree.
+            **kwargs: Arbitray keyword arguments.
+
+        Yields:
+            str: An ete tree string.
+        """
         def f(pattern_node):
             sep = Symbols.EMPTY
             query_key = Symbols.EMPTY

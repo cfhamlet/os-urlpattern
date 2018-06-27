@@ -1,3 +1,6 @@
+"""Definition of global constant varialbles.
+"""
+
 import hashlib
 
 from .compat import (ascii_lowercase_unicode, ascii_uppercase_unicode,
@@ -42,7 +45,6 @@ class BasePatternRule(object):
     MULTI_DIGIT_AND_ASCII_UPPER = u'[0-9A-Z]+'
     MULTI_DIGIT_AND_ASCII = u'[0-9A-Za-z]+'
     DOT = u'\\.'
-    ALL_MATCH = u'.*?'
     EMPTY = u''
     SINGLE_QUESTION = u'[\\?]'
 
@@ -132,5 +134,4 @@ class BasePattern(object):
         BasePatternRule.MULTI_DIGIT_AND_ASCII_UPPER)
     MULTI_DIGIT_AND_ASCII = Pattern(BasePatternRule.MULTI_DIGIT_AND_ASCII)
     DOT = Pattern(BasePatternRule.DOT)
-    ALL_MATCH = Pattern(BasePatternRule.ALL_MATCH)
     EMPTY = Pattern(BasePatternRule.EMPTY)

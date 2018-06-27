@@ -1,12 +1,23 @@
+"""Utilities.
+"""
 import logging
 import os
 import time
 
-from .compat import itervalues
+from .compat import itervalues, iteritems
 
 
 def pretty_counter(counter):
-    return ", ".join(['{0}:{1}'.format(k, v) for k, v in counter.items()])
+    """Format a dict like object.
+
+    Args:
+        counter (dict): The dict like object to be formatted.
+
+    Returns:
+        str: Formatted string.
+    """
+
+    return ", ".join(['{0}:{1}'.format(k, v) for k, v in iteritems(counter)])
 
 
 def pick(iterable):
@@ -17,7 +28,14 @@ def pick(iterable):
 
 
 class Bag(object):
-    __slots__ = ('_objs')
+    """Uniq objects container.
+
+    The objects in the bag can also be Bag instance.
+    Use pick method to get a most inside object.
+    Use iter_all method to iterate objects inside all inner bags.
+    """
+
+    __slots__ = ('_objs',)
 
     def __init__(self):
         self._objs = set()
@@ -29,13 +47,10 @@ class Bag(object):
         return len(self._objs)
 
     def pick(self):
-        obj = self._pick()
+        obj = pick(self)
         while isinstance(obj, Bag):
-            obj = obj._pick()
+            obj = pick(obj)
         return obj
-
-    def _pick(self):
-        return pick(self._objs)
 
     def __iter__(self):
         return iter(self._objs)
@@ -50,7 +65,10 @@ class Bag(object):
 
 
 class TreeNode(object):
-    __slots__ = ('_parrent', '_children', '_count', '_value', '_meta')
+    """Node of a tree."""
+
+    __slots__ = ('_parrent', '_children', '_count',
+                 '_value', '_meta', '_level')
 
     def __init__(self, value):
         self._parrent = None
@@ -58,19 +76,22 @@ class TreeNode(object):
         self._count = 0
         self._value = value
         self._meta = None
+        self._level = None
 
     def leaf(self):
         return not self._children
 
     @property
     def level(self):
-        l = 0
-        n = self.parrent
-        while n is not None:
-            l += 1
-            n = n.parrent
-
-        return l
+        """int: The level from root."""
+        if self._level is None:
+            l = 0
+            n = self.parrent
+            while n is not None:
+                l += 1
+                n = n.parrent
+            self._level = l
+        return self._level
 
     @property
     def value(self):
@@ -105,6 +126,16 @@ class TreeNode(object):
         self._count = count
 
     def add_child(self, kv):
+        """Add a node to the children data set.
+
+        Args:
+            kv (pair): Key-value object, the key is used to identify
+                a uniq node, the value is the node's data.
+
+        Returns:
+            tuple: 2-tuple, (node, is_new).
+        """
+
         if self._children is None:
             self._children = {}
         k, v = kv
@@ -118,6 +149,19 @@ class TreeNode(object):
 
 
 def build_tree(root, kv_sequence, count=1, meta=None):
+    """Build a tee.
+
+    This method will call the node's add_child(kv) to build tree.
+
+    Args:
+        root (TreeNode): Root node of a tree.
+        kv_sequence (sequence): Objects will be used to build a tree.
+        count (int, optional): Defaults to 1. Will increase the nodes count.
+        meta (any, optional): Defaults to None. Will bind to the leaf node.
+
+    Returns:
+        tuple: 2-tuple, (node, is_new)
+    """
     node = root
     node.count += count
     for kv in kv_sequence:
@@ -130,6 +174,14 @@ def build_tree(root, kv_sequence, count=1, meta=None):
 
 
 def dump_tree(root):
+    """Dump every path of a tree.
+
+    Args:
+        root (TreeNode): The root node of a tree.
+
+    Yields:
+        list: List contains all nodes from root to leaf.
+    """
     olist = []
 
     def _dump(node, _nodes):
@@ -147,6 +199,13 @@ def dump_tree(root):
 
 
 class LogSpeedAdapter(logging.LoggerAdapter):
+    """Logger adapter for logging loop speed.
+
+    Log once when called every interal times,
+    include total count and average speed.
+    Useful for logging huge loop processing.
+    """
+
     def __init__(self, logger, interval):
         super(LogSpeedAdapter, self).__init__(logger, {})
         self._count = 0
@@ -176,6 +235,12 @@ class LogSpeedAdapter(logging.LoggerAdapter):
 
 
 def used_memory():
+    """Human readable memory usage.
+
+    Returns:
+        str: Memory usage.
+    """
+
     try:
         import psutil
     except:
@@ -190,6 +255,8 @@ def used_memory():
 
 
 class MemoryUsageFormatter(logging.Formatter):
+    """Formatter support memory keyword."""
+
     def __init__(self, fmt=None, datefmt=None):
         super(MemoryUsageFormatter, self).__init__(fmt, datefmt)
         self._log_memory = True
@@ -203,6 +270,8 @@ class MemoryUsageFormatter(logging.Formatter):
 
 
 class cached_property(object):
+    """Decrator for cache class property."""
+
     def __init__(self, func):
         self.__doc__ = getattr(func, "__doc__")
         self.func = func

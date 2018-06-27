@@ -1,9 +1,11 @@
+"""Cluster algrithm.
+"""
 from collections import Counter, OrderedDict, namedtuple
 
 from .compat import itervalues
 from .parse_utils import (EMPTY_PARSED_PIECE, URLMeta, specify_rule,
                           wildcard_rule)
-from .parsed_piece_view import BaseView, LastDotSplitFuzzyView, MixedView
+from .parsed_piece_view import LastDotSplitFuzzyView, MixedView, MultiView
 from .pattern import Pattern
 from .piece_pattern_node import (PiecePatternNode, build_from_parsed_pieces,
                                  build_from_piece_pattern_nodes)
@@ -11,7 +13,7 @@ from .utils import Bag, cached_property, dump_tree, pick
 
 
 class TBag(Bag):
-    __slots__ = ('_stats')
+    __slots__ = ('_stats',)
 
     def __init__(self):
         super(TBag, self).__init__()
@@ -46,10 +48,6 @@ class TBucket(TBag):
     def __contains__(self, key):
         return key in self._objs
 
-    def _pick(self):
-        for obj in itervalues(self._objs):
-            return obj
-
     def __iter__(self):
         return iter(itervalues(self._objs))
 
@@ -63,7 +61,7 @@ class PieceBag(TBag):
     The nodes should on the same branch of a tree at the same level.
     """
 
-    __slots__ = ('_p_nodes')
+    __slots__ = ('_p_nodes',)
 
     def __init__(self):
         super(PieceBag, self).__init__()
@@ -82,7 +80,7 @@ class PieceBag(TBag):
 
 
 class PieceBagBucket(TBucket):
-    __slots__ = ('_p_nodes')
+    __slots__ = ('_p_nodes',)
 
     def __init__(self):
         super(PieceBagBucket, self).__init__()
@@ -274,7 +272,7 @@ class PiecePatternCluster(PatternCluster):
             self._processor.get_cluster(LengthPatternCluster).add(piece_bag)
             return
 
-        view = BaseView(parsed_piece)
+        view = MultiView(parsed_piece)
         p_cls = BasePatternCluster
         vl = len(view.parsed_pieces)
 

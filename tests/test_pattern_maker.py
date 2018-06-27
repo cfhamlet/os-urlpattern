@@ -20,7 +20,7 @@ def test_load(config):
     pm = PatternMaker(config)
     urls = ['http://example.com' + u for u in ['/a', '/a/b', '/a/b/c']]
     for url in urls:
-        pm.load(url)
+        pm.load(url, meta=url)
     assert len(list(pm.makers)) == len(urls)
     for _, clustered in pm.make():
         for nodes in dump_tree(clustered):

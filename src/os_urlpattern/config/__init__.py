@@ -1,3 +1,5 @@
+"""Configure.
+"""
 from ..compat import RawConfigParser
 try:
     from collections import OrderedDict as _default_dict

@@ -1,3 +1,6 @@
+"""Compatible import.
+"""
+
 import operator
 import string
 import sys

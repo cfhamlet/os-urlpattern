@@ -1,3 +1,7 @@
+"""Custom Exceptions.
+"""
+
+
 class IrregularURLException(Exception):
     pass
 

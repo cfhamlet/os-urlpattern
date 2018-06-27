@@ -1,49 +1,93 @@
+"""Pattern clustering procedure APIs.
+"""
 from .compat import itervalues
 from .definition import BasePattern
 from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, analyze_url, digest
 from .pattern_cluster import cluster
 from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
-from .utils import TreeNode, build_tree, dump_tree
+from .utils import TreeNode, build_tree, dump_tree, pick
 
 
 class PatternMaker(object):
+    """Scaffold for simplifying clustering.
+
+    After load urls, iterate all sub makers make cluster
+    individually or cluster all by calling make method.
+    """
+
     def __init__(self, config):
         self._config = config
         self._parser = PieceParser()
         self._makers = {}
-        self._drop_url = self._config.getboolean('make', 'drop_url')
 
     @property
     def makers(self):
+        """iterable: For iterating all sub makers."""
         return itervalues(self._makers)
 
-    def load(self, url):
+    def load(self, url, meta=None):
+        """Load url and meta.
+
+        Args:
+            url (str): The URL to be loaded.
+            meta (object, optional): Defaults to None. Meta data will be
+                merged at each cluster and can be accessed by clustered
+                node's meta property.
+
+        Returns:
+            tuple: 2-tules, (node, is_new).
+        """
         url_meta, pieces = analyze_url(url)
         parsed_pieces = [self._parser.parse(piece) for piece in pieces]
         sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
         if sid not in self._makers:
             self._makers[sid] = Maker(self._config, url_meta)
-        return self._makers[sid].load(parsed_pieces,
-                                      meta=url if not self._drop_url else None)
+        return self._makers[sid].load(parsed_pieces, meta=meta)
 
     def make(self, combine=False):
+        """Iterate all sub makers, start clustering and yield clustered.
+
+        Args:
+            combine (bool, optional): Defaults to False. Combine the
+                same url_meta clusters into a patten tree.
+
+        Yields:
+            tuple: 2-tuple, (url_meta, clustered). The clustered is the
+                root of a clustered tree.
+        """
         for maker in self.makers:
-            for url_meta, clustered in maker.make(combine):
-                yield url_meta, clustered
+            for clustered in maker.make(combine):
+                yield maker.url_meta, clustered
 
 
 class Maker(object):
+    """Same digest URLs cluster."""
+
     def __init__(self, config, url_meta):
         self._config = config
         self._url_meta = url_meta
         self._root = PiecePatternNode((EMPTY_PARSED_PIECE, None))
 
-    def load(self, parsed_pieces, count=1, meta=None, uniq=True):
+    @property
+    def url_meta(self):
+        """URLMeta: The url meta object."""
+        return self._url_meta
+
+    def load(self, parsed_pieces, meta=None):
+        """Load parsed pieces and meta.
+
+        Args:
+            parsed_pieces (list): The parsed pieces to be loaded.
+            meta (object, optional): Defaults to None. Meta data will be
+                merged at each cluster and can be accessed by clustered
+                node's meta property.
+
+        Returns:
+            tuple: 2-tules, (node, is_new).
+        """
         return build_from_parsed_pieces(self._root,
                                         parsed_pieces,
-                                        count=count,
-                                        meta=meta,
-                                        uniq=uniq)
+                                        meta=meta)
 
     def _cluster(self):
         for clustered in cluster(self._config,
@@ -54,16 +98,24 @@ class Maker(object):
     def _combine_clusters(self):
         root = TreeNode(BasePattern.EMPTY)
         for clustered in self._cluster():
-            for nodes in dump_tree(clustered):
-                build_tree(root, [(n.pattern, n.pattern)
-                                  for n in nodes[1:]], nodes[-1].count)
-        return root
+            nodes = pick(dump_tree(clustered))
+            build_tree(root, [(n.pattern, n.pattern)
+                              for n in nodes[1:]], nodes[0].count)
 
-    def _make(self, combine=False):
-        if combine:
-            return iter([self._combine_clusters()])
-        return self._cluster()
+        yield root
 
     def make(self, combine=False):
-        for clustered in self._make(combine):
-            yield self._url_meta, clustered
+        """Start clustering and yield clustered.
+
+        Args:
+            combine (bool, optional): Defaults to False. Combine the
+                clusters into a patten tree.
+
+        Yields:
+            TreeNode: Root of the clustered tree. If combine=False yield
+                all clustered parsed piece trees otherwise yield a
+                combined pattern tree.
+        """
+        if combine:
+            return self._combine_clusters()
+        return self._cluster()
