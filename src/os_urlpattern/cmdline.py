@@ -142,8 +142,7 @@ class MakePatternCommand(Command):
                 e = time.time()
                 self._logger.debug('[CLUSTER] %d %.2fs', root.count, e - s)
                 for record in pformat(args.format_type, maker.url_meta, root):
-                    if record is not None:
-                        print(record)
+                    print(record)
                 s = time.time()
 
     def run(self, args):

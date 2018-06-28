@@ -26,6 +26,7 @@ class Formatter(object):
             str: the formatted string.
 
         """
+        return
         yield
 
 

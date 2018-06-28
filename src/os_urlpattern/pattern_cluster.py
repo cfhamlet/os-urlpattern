@@ -724,6 +724,8 @@ def cluster(config, url_meta, root, **kwargs):
         PiecePatternNode: The clustered sub piece pattern tree root.
 
     """
+    if root.count <= 0:
+        return
     if not process(config, url_meta, root, **kwargs):
         yield root
         return
