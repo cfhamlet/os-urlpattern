@@ -32,8 +32,8 @@ def test_load(config):
     for url in urls:
         pm.load(url)
     assert len(list(pm.makers)) == 1
-    for _, clusterd in pm.make():
-        for nodes in dump_tree(clusterd):
+    for _, clustered in pm.make():
+        for nodes in dump_tree(clustered):
             assert nodes[-1].meta is None
 
 
@@ -42,8 +42,8 @@ def cluster_and_test(urls, pattern_string):
     for url in urls:
         pm.load(url)
 
-    for url_meta, clusterd in pm.make(combine=True):
-        for nodes in dump_tree(clusterd):
+    for url_meta, clustered in pm.make(combine=True):
+        for nodes in dump_tree(clustered):
             assert pack(
                 url_meta, [n.value for n in nodes[1:]]) == pattern_string
 

@@ -721,7 +721,7 @@ def cluster(config, url_meta, root, **kwargs):
         **kwargs: Keyword arguments.
 
     Yields:
-        PiecePatternNode: The clusterd sub piece pattern tree root.
+        PiecePatternNode: The clustered sub piece pattern tree root.
 
     """
     if not process(config, url_meta, root, **kwargs):

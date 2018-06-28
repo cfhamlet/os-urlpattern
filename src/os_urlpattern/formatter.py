@@ -1,6 +1,7 @@
 """Clustered record formatter.
 """
 import json
+from collections import OrderedDict
 
 from .definition import BasePatternRule, Symbols
 from .parse_utils import pack
@@ -14,7 +15,7 @@ class Formatter(object):
     """
 
     def format(self, url_meta, root, **kwargs):
-        """Format the clusterd tree.
+        """Format the clustered tree.
 
         Args:
             url_meta (URLMeta): The url_meta.
@@ -36,7 +37,7 @@ class PatternFormatter(Formatter):
 
         Args:
             url_meta (URLMeta): The URLMeta object.
-            root (TreeNode): Root of a clusterd piece tree.
+            root (TreeNode): Root of a clustered piece tree.
             **kwargs: Arbitray keyword arguments.
 
         Yields:
@@ -56,7 +57,7 @@ class ClusterFormatter(PatternFormatter):
 
         Args:
             url_meta (URLMeta): The URLMeta object.
-            root (TreeNode): Root of a clusterd piece tree.
+            root (TreeNode): Root of a clustered piece tree.
             **kwargs: Arbitray keyword arguments.
 
         Yields:
@@ -80,7 +81,7 @@ class JsonFormatter(Formatter):
 
         Args:
             url_meta (URLMeta): The URLMeta object.
-            root (TreeNode): Root of a clusterd piece tree.
+            root (TreeNode): Root of a clustered piece tree.
             **kwargs: Arbitray keyword arguments.
 
         Yields:
@@ -158,13 +159,29 @@ def get_ete_tree(root_node, format=str):
     return ete_root_node
 
 
-FORMATTERS = {
-    'PATTERN': PatternFormatter,
-    'CLUSTER': ClusterFormatter,
-    'JSON': JsonFormatter,
-}
+FORMATTERS = OrderedDict([
+    ('NULL', Formatter()),
+    ('PATTERN', PatternFormatter()),
+    ('CLUSTER', ClusterFormatter()),
+    ('JSON', JsonFormatter()),
+])
 try:
     import ete3
-    FORMATTERS['ETE'] = ETEFormatter
+    FORMATTERS['ETE'] = ETEFormatter()
 except:
     pass
+
+
+def pformat(name, url_meta, root, **kwargs):
+    """Shortcut for formatting.
+
+    Args:
+        name (str): Format type.
+        url_meta (URLMeta): The URLMeta object.
+        root (TreeNode): Root of a clustered tree.
+        **kwargs: Arbitray keyword arguments.
+
+    Returns:
+        Iterator: For iterate formatted strings.
+    """
+    return FORMATTERS[name.upper()].format(url_meta, root, **kwargs)

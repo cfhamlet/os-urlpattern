@@ -20,7 +20,7 @@ from .config import get_default_config
 from .definition import DEFAULT_ENCODING
 from .exceptions import (InvalidCharException, InvalidPatternException,
                          IrregularURLException)
-from .formatter import FORMATTERS
+from .formatter import FORMATTERS, pformat
 from .pattern_maker import PatternMaker
 from .pattern_matcher import PatternMatcher
 from .utils import LogSpeedAdapter, MemoryUsageFormatter, pretty_counter
@@ -98,12 +98,12 @@ class MakePatternCommand(Command):
                             help='output formatter (default: CLUSTER)',
                             default='CLUSTER',
                             action='store',
-                            dest='formatter',
+                            dest='format_type',
                             choices=FORMATTERS.keys(),
                             type=lambda s: s.upper())
 
     def _load(self, pattern_maker, args):
-        load_url = args.formatter == 'CLUSTER'
+        load_url = args.format_type == 'CLUSTER'
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in args.file[0]:
@@ -135,15 +135,15 @@ class MakePatternCommand(Command):
         self._logger.debug('[LOADED] %s', pretty_counter(stats))
 
     def _process(self, pattern_maker, args):
-        combine = args.formatter == 'ETE'
-        formatter = FORMATTERS[args.formatter]()
+        combine = args.format_type == 'ETE'
         s = time.time()
         for maker in pattern_maker.makers:
             for root in maker.make(combine):
                 e = time.time()
                 self._logger.debug('[CLUSTER] %d %.2fs', root.count, e - s)
-                for record in formatter.format(maker.url_meta, root):
-                    print(record)
+                for record in pformat(args.format_type, maker.url_meta, root):
+                    if record is not None:
+                        print(record)
                 s = time.time()
 
     def run(self, args):

@@ -203,7 +203,7 @@ Command line
                             log level (default: NOTSET)
       -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                             config file
-      -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {PATTERN,CLUSTER,JSON,ETE}
+      -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {NULL,PATTERN,CLUSTER,JSON,ETE}
                             output formatter (default: CLUSTER)
   
   Dump clustered URLs with patterns:
@@ -258,7 +258,7 @@ APIs
 
   .. code:: python 
   
-    from os_urlpattern.formatter import PatternFormatter
+    from os_urlpattern.formatter import pformat
     from os_urlpattern.pattern_maker import PatternMaker
 
     pattern_maker = PatternMaker()
@@ -267,10 +267,9 @@ APIs
     for url in urls:
         pattern_maker.load(url)
 
-    # cluster and dump patterns
-    formatter = PatternFormatter()
+    # cluster and print pattern
     for url_meta, clustered in pattern_maker.make():
-        for pattern in formatter.format(url_meta, clusterd)
+        for pattern in pformat('pattern', url_meta, clustered)
             print(pattern)
 
 
@@ -287,7 +286,7 @@ APIs
         # meta will bind to matched result
         pattern_matcher.load(url_pattern, meta=url_pattern)
 
-    # match URLs(unicode)
+    # match URL(unicode)
     for url in urls:
         matched_results = patterm_matcher.match(url)
         # the best matched result:
@@ -304,7 +303,7 @@ APIs
 
   .. code:: python 
   
-    from os_urlpattern.formatter import PatternFormatter
+    from os_urlpattern.formatter import pformat
     from os_urlpattern.parser import parse
     from os_urlpattern.pattern_maker import Maker
     from os_urlpattern.parse_utils import fuzzy_digest 
@@ -318,14 +317,13 @@ APIs
         # same digest same maker
         digest = fuzzy_digest(url_meta, parsed_pieces)
         if digest not in makers:
-            makers[digest] = Maker(url_meta)
+            makers[digest] = Maker(url_meta) # not PatternMaker
         makers[digest].load(parsed_pieces)
 
-    # iterate makers, cluster and dump patterns
-    formatter = PatternFormatter()
-    for maker in makers.value():
+    # iterate makers, cluster and print pattern
+    for maker in makers.values():
         for clustered in maker.make():
-            for pattern in formatter.format(maker.url_meta, clusterd)
+            for pattern in pformat('pattern', maker.url_meta, clustered)
                 print(pattern)
 
 
