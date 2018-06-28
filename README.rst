@@ -300,7 +300,7 @@ APIs
   It is necessary to use low-level APIs for customizing processing procdure,
   especially for parallel computing or working on an distributed cluster(hadoop).
 
-  **Key points: same fuzzy-digest same matcher.**
+  **Key points: same fuzzy-digest same maker and same matcher.**
 
   .. code:: python 
   
@@ -315,7 +315,7 @@ APIs
     for url in urls:
         url_meta, parsed_pieces = parse(url)
         
-        # same digest same cluster
+        # same digest same maker
         digest = fuzzy_digest(url_meta, parsed_pieces)
         if digest not in makers:
             makers[digest] = Maker(url_meta)
