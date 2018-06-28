@@ -300,7 +300,7 @@ APIs
   It is necessary to use low-level APIs for customizing processing procdure,
   especially for parallel computing or working on an distributed cluster(hadoop).
 
-  **Key points: same fuzzy-digest same cluster and same matcher.**
+  **Key points: same fuzzy-digest same matcher.**
 
   .. code:: python 
   

@@ -560,7 +560,7 @@ class PieceParser(object):
 def fuzzy_digest(url_meta, objs):
     """Generate hex digest string from URLMeta and objects' fuzzy_rules.
 
-    Same fuzzy-digest same cluster and same matcher.
+    Same fuzzy-digest same matcher.
 
     Args:
         url_meta (URLMeta): The URLMeta object.

@@ -32,7 +32,7 @@ def parse(url_or_pattern):
 def fuzzy_digest(url_or_pattern):
     """Generate hex digest string from URL or URL pattern.
 
-    Same fuzzy-digest same cluster and same matcher.
+    Same fuzzy-digest same matcher.
 
     Args:
         url_or_pattern (str): URL or URL pattern.
