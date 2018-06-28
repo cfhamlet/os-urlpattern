@@ -315,7 +315,7 @@ APIs
     for url in urls:
         url_meta, parsed_pieces = parse(url)
         
-        # different digest different cluster
+        # same digest same cluster
         digest = fuzzy_digest(url_meta, parsed_pieces)
         if digest not in makers:
             makers[digest] = Maker(url_meta)
