@@ -29,13 +29,23 @@ def parse(url_or_pattern):
     return url_meta, parsed_pieces
 
 
-def fuzzy_digest(url_or_pattern):
+def fuzzy_digest(*args):
     """Generate hex fuzzy digest string from URL or URL pattern.
 
     Args:
-        url_or_pattern (str): URL or URL pattern.
+        *args: Can be a single argument string, or 2 arguments
+            URLMeta and objects.
 
     Returns:
         str: Digest value as a string of hexadecimal digits.
     """
-    return _fuzzy_digest(*parse(url_or_pattern))
+    l = len(args)
+    url_meta = None
+    objs = None
+    if l == 2:
+        url_meta, objs = args
+    elif l == 1:
+        url_meta, objs = parse(args[0])
+    else:
+        raise ValueError('Not digestable')
+    return _fuzzy_digest(url_meta, objs)

@@ -301,12 +301,14 @@ APIs
 
   **Key points: same fuzzy-digest same maker and same matcher.**
 
+  Use ``os_urlpattern.parser.fuzzy_digest`` to get fuzzy digest from URL,
+  URL pattern or parsed URLMeta and parsed pieces.
+
   .. code:: python 
   
     from os_urlpattern.formatter import pformat
-    from os_urlpattern.parser import parse
+    from os_urlpattern.parser import fuzzy_digest, parse
     from os_urlpattern.pattern_maker import Maker
-    from os_urlpattern.parse_utils import fuzzy_digest 
 
     makers = {}
 
@@ -327,9 +329,6 @@ APIs
                 print(pattern)
 
 
-  There is a convenient method to get fuzzy digest from URL or URL pattern:
-
-  ``os_urlpattern.parser.fuzzy_digest``
 
 
 ============

@@ -3,8 +3,8 @@
 from .compat import itervalues
 from .config import get_default_config
 from .definition import BasePattern
-from .parse_utils import EMPTY_PARSED_PIECE, fuzzy_digest
-from .parser import parse
+from .parse_utils import EMPTY_PARSED_PIECE
+from .parser import fuzzy_digest, parse
 from .pattern_cluster import cluster
 from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
 from .utils import TreeNode, build_tree, dump_tree, pick

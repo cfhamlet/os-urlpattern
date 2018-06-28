@@ -3,11 +3,11 @@
 from functools import total_ordering
 
 from .definition import BasePatternRule
-from .parse_utils import MIXED_RULE_SET, PieceParser, fuzzy_digest, fuzzy_join
+from .parse_utils import MIXED_RULE_SET, PieceParser, fuzzy_join
 from .parsed_piece_view import (FuzzyView, LastDotSplitFuzzyView, LengthView,
                                 MixedView, MultiView, PieceView,
                                 view_cls_from_pattern)
-from .parser import parse
+from .parser import fuzzy_digest, parse
 from .pattern import Pattern
 from .utils import TreeNode, build_tree
 
