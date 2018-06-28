@@ -27,28 +27,9 @@ class URLMeta(namedtuple('URLMeta', 'path_depth query_keys has_fragment')):
     """
     __slots__ = ()
 
-    def __hash__(self):
-        return hash(str(self))
-
-    def __str__(self):
-        s = StringIO()
-        s.write(str(self.path_depth))
-        if self.query_keys:
-            s.write(Symbols.QUESTION)
-            s.write(Symbols.AMPERSAND.join(self.query_keys))
-        if self.has_fragment:
-            s.write(Symbols.NUMBER)
-        s.seek(0)
-        return s.read()
-
     @property
     def depth(self):
         return self.path_depth + len(self.query_keys) + (1 if self.has_fragment else 0)
-
-    def __eq__(self, o):
-        if not isinstance(o, URLMeta):
-            return False
-        return hash(o) == hash(self)
 
 
 def specify_rule(rule, num):
@@ -92,9 +73,9 @@ def specify_rule(rule, num):
 
 
 def wildcard_rule(rule):
-    """Specify the wildcard format of the rule.
+    """The wildcard format of the rule.
 
-    Shotcut of specify_rule(rule, -1).
+    Shortcut of specify_rule(rule, -1).
 
     Args:
         rule (str): The raw rule string to be secified.
@@ -362,14 +343,14 @@ def unpack(result, normalize_key=True):
 
 
 def pack(url_meta, objs):
-    """Combine the objects into string based on URLMeta.
+    """Pack into URL-like string.
 
     Args:
         url_meta (URLMeta): The URLMeta object.
-        objs (sequence): The objects to be combined.
+        objs (sequence): The objects to be packed.
 
     Returns:
-        str: The combined string.
+        str: The packed URL-like string.
     """
     s = StringIO()
     s.write(Symbols.SLASH)
@@ -405,16 +386,17 @@ def analyze_url(url):
     return unpack(result, True)
 
 
-def fuzzy_join(objs):
+def fuzzy_join(objs, sep=u'/'):
     """Join the fuzzy_rule of the objects into one string.
 
     Args:
         objs (sequence): The objects each of which have fuzzy_rule property.
+        sep (str): Defaults to '/'. Seperator for joining.
 
     Returns:
         str: The joined fuzzy_rule string.
     """
-    return u'/'.join([p.fuzzy_rule for p in objs])
+    return sep.join([p.fuzzy_rule for p in objs])
 
 
 class ParsedPiece(object):
@@ -466,7 +448,6 @@ class ParsedPiece(object):
 
         Returns:
             int: The literal length of the piece.
-
         """
         if self._piece_length < 0:
             piece = self.piece
@@ -514,18 +495,19 @@ EMPTY_PARSED_PIECE = ParsedPiece(EMPTY_TUPLE, EMPTY_TUPLE)
 
 
 class PieceParser(object):
-    """Parser to parse the piece of the URL.
+    """Parser to parse the URL piece.
 
     Used it to generate ParsedPiece object from the piece of URL.
     Not thread safe.
     """
+    __slots__ = ('_rules', '_pieces')
 
     def __init__(self):
         self._reset()
 
     def _reset(self):
-        self._rule_list = []
-        self._piece_list = []
+        self._rules = []
+        self._pieces = []
 
     def parse(self, piece):
         """Parse a string into small sub-pieces with rules.
@@ -533,10 +515,10 @@ class PieceParser(object):
         The consecutive charactors in the same charactor space
         will be joined into one sub-piece, the corresponding
         rule(charactor space) can also be got.
-        
+
         Args:
             piece (str): A string to be parsed.
-        
+
         Returns:
             tuple: 2-tuple, (pieces, rules).
         """
@@ -548,23 +530,23 @@ class PieceParser(object):
     def _preprocess(self, piece):
         for c in piece:
             self._define(c)
-        for idx, buf in enumerate(self._piece_list):
+        for idx, buf in enumerate(self._pieces):
             buf.seek(0)
             letter = buf.read()
-            self._piece_list[idx] = self._normalize(
-                letter, self._rule_list[idx])
+            self._pieces[idx] = self._normalize(
+                letter, self._rules[idx])
 
     def _define(self, char):
-        last_rule = self._rule_list[-1] if self._rule_list else None
+        last_rule = self._rules[-1] if self._rules else None
         try:
             rule = CHAR_RULE_DICT[char]
         except KeyError:
             raise InvalidCharException("Contain invalid char")
 
         if last_rule != rule:
-            self._piece_list.append(StringIO())
-            self._rule_list.append(rule)
-        self._piece_list[-1].write(char)
+            self._pieces.append(StringIO())
+            self._rules.append(rule)
+        self._pieces[-1].write(char)
 
     def _normalize(self, letter, rule):
         if rule in SIGN_RULE_SET:
@@ -572,11 +554,26 @@ class PieceParser(object):
         return letter
 
     def _create_parsed_piece(self):
-        return ParsedPiece(tuple(self._piece_list), tuple(self._rule_list))
+        return ParsedPiece(tuple(self._pieces), tuple(self._rules))
+
+
+def fuzzy_digest(url_meta, objs):
+    """Generate hex digest string from URLMeta and objects' fuzzy_rules.
+
+    Same fuzzy-digest same cluster and same matcher.
+
+    Args:
+        url_meta (URLMeta): The URLMeta object.
+        objs (sequence): Each object hava fuzzy_rule property.
+
+    Returns:
+        str: Digest value as a string of hexadecimal digits.
+    """
+    return digest(url_meta, [obj.fuzzy_rule for obj in objs])
 
 
 def digest(url_meta, objs):
-    """Get hex digest string from the given URLMeta and objects.
+    """Generate hex digest string from URLMeta and objects.
 
     Args:
         url_meta (URLMeta): The URLMeta object.
@@ -623,7 +620,7 @@ def parse_url_pattern_string(url_pattern_string):
 
 
 def analyze_url_pattern_string(url_pattern_string):
-    """Parse a URL pattern string to URLMeta object and pattern string pieces.
+    """Parse a URL pattern string into URLMeta object and pattern string pieces.
 
     Args:
         url_pattern_string (str): The URL pattern string to be parsed.

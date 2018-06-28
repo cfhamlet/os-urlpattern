@@ -174,13 +174,13 @@ def build_tree(root, kv_sequence, count=1, meta=None):
 
 
 def dump_tree(root):
-    """Dump every path of a tree.
+    """Dump each path of a tree.
 
     Args:
         root (TreeNode): The root node of a tree.
 
     Yields:
-        list: List contains all nodes from root to leaf.
+        list: List contains nodes from root to leaf as one path.
     """
     olist = []
 
@@ -199,11 +199,11 @@ def dump_tree(root):
 
 
 class LogSpeedAdapter(logging.LoggerAdapter):
-    """Logger adapter for logging loop speed.
+    """Logger adapter for speed logging.
 
-    Log once when called every interal times,
+    Log only once when called every interal times,
     include total count and average speed.
-    Useful for logging huge loop processing.
+    Used for logging huge loop processing.
     """
 
     def __init__(self, logger, interval):

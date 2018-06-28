@@ -1,10 +1,10 @@
 """Command line tools.
 
 pattern-make:
-    Load URLs, cluster and generate URL pattern.
+    Load URLs, cluster then generate URL pattern.
 
 pattern-matcher:
-    Load pattern, match the URL and get matched results.
+    Load pattern, match URL and get matched results.
 
 """
 from __future__ import print_function
@@ -146,11 +146,7 @@ class MakePatternCommand(Command):
                     print(record)
                 s = time.time()
 
-    def _confirm_config(self, args):
-        self._config.freeze()
-
     def run(self, args):
-        self._confirm_config(args)
         pattern_maker = PatternMaker(self._config)
         self._load(pattern_maker, args)
         self._process(pattern_maker, args)

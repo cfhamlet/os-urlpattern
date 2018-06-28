@@ -5,8 +5,8 @@ from os_urlpattern.exceptions import (InvalidCharException,
                                       IrregularURLException)
 from os_urlpattern.parse_utils import (PieceParser, URLMeta, analyze_url,
                                        analyze_url_pattern_string, digest,
-                                       filter_useless, normalize, pack,
-                                       parse_pattern_string,
+                                       filter_useless, fuzzy_digest, normalize,
+                                       pack, parse_pattern_string,
                                        parse_pattern_unit_string,
                                        parse_query_string, parse_url)
 from os_urlpattern.pattern import Pattern
@@ -141,9 +141,7 @@ def test_url_meta():
     assert url_meta1.depth == 3
     url_meta2 = URLMeta(1, ['key1', 'key2'], True)
     assert url_meta2.depth == 4
-    assert hash(url_meta1) != hash(url_meta2)
     url_meta3 = URLMeta(1, ['key1', 'key2'], False)
-    assert hash(url_meta1) == hash(url_meta3)
 
 
 def test_parse_url_pattern():
@@ -249,5 +247,6 @@ def test_digest():
             url_meta, pieces = analyze_url(url)
             parsed_pieces = [parser.parse(piece) for piece in pieces]
             sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
+            assert fuzzy_digest(url_meta, parsed_pieces) == sid
             digests.add(sid)
         assert len(digests) == 1

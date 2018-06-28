@@ -1,8 +1,10 @@
 """Pattern clustering procedure APIs.
 """
 from .compat import itervalues
+from .config import get_default_config
 from .definition import BasePattern
-from .parse_utils import EMPTY_PARSED_PIECE, PieceParser, analyze_url, digest
+from .parse_utils import EMPTY_PARSED_PIECE, fuzzy_digest
+from .parser import parse
 from .pattern_cluster import cluster
 from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
 from .utils import TreeNode, build_tree, dump_tree, pick
@@ -15,9 +17,8 @@ class PatternMaker(object):
     individually or cluster all by calling make method.
     """
 
-    def __init__(self, config):
-        self._config = config
-        self._parser = PieceParser()
+    def __init__(self, config=None):
+        self._config = get_default_config() if config is None else config
         self._makers = {}
 
     @property
@@ -37,11 +38,10 @@ class PatternMaker(object):
         Returns:
             tuple: 2-tules, (node, is_new).
         """
-        url_meta, pieces = analyze_url(url)
-        parsed_pieces = [self._parser.parse(piece) for piece in pieces]
-        sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
+        url_meta, parsed_pieces = parse(url)
+        sid = fuzzy_digest(url_meta, parsed_pieces)
         if sid not in self._makers:
-            self._makers[sid] = Maker(self._config, url_meta)
+            self._makers[sid] = Maker(url_meta, self._config)
         return self._makers[sid].load(parsed_pieces, meta=meta)
 
     def make(self, combine=False):
@@ -61,16 +61,16 @@ class PatternMaker(object):
 
 
 class Maker(object):
-    """Same digest URLs cluster."""
+    """Maker for clustering same digest URLs."""
 
-    def __init__(self, config, url_meta):
-        self._config = config
+    def __init__(self, url_meta, config=None):
         self._url_meta = url_meta
+        self._config = get_default_config() if config is None else config
         self._root = PiecePatternNode((EMPTY_PARSED_PIECE, None))
 
     @property
     def url_meta(self):
-        """URLMeta: The url meta object."""
+        """URLMeta: The URLMeta object."""
         return self._url_meta
 
     def load(self, parsed_pieces, meta=None):

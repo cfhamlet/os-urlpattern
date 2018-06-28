@@ -3,11 +3,11 @@
 from functools import total_ordering
 
 from .definition import BasePatternRule
-from .parse_utils import (MIXED_RULE_SET, PieceParser, analyze_url,
-                          analyze_url_pattern_string, digest, fuzzy_join)
+from .parse_utils import MIXED_RULE_SET, PieceParser, fuzzy_digest, fuzzy_join
 from .parsed_piece_view import (FuzzyView, LastDotSplitFuzzyView, LengthView,
                                 MixedView, MultiView, PieceView,
                                 view_cls_from_pattern)
+from .parser import parse
 from .pattern import Pattern
 from .utils import TreeNode, build_tree
 
@@ -289,11 +289,8 @@ class PatternMatcher(object):
             meta (any, optional): Defaults to None. It will bind to
                 matched result's meta property.
         """
-        url_meta, pattern_strings = analyze_url_pattern_string(
-            url_pattern_string)
-        patterns = [MatchPattern(p, i == url_meta.path_depth)
-                    for i, p in enumerate(pattern_strings, 1)]
-        sid = digest(url_meta, [p.fuzzy_rule for p in patterns])
+        url_meta, patterns = parse(url_pattern_string)
+        sid = fuzzy_digest(url_meta, patterns)
         if sid not in self._roots:
             self._roots[sid] = PatternMatchNode(EMPTY_MATCH_PATTERN)
         root = self._roots[sid]
@@ -310,9 +307,8 @@ class PatternMatcher(object):
             list: List of matched pattern nodes, if no match return [].
               Bound meta data can be accessed with node.meta.
         """
-        url_meta, pieces = analyze_url(url)
-        parsed_pieces = [self._parser.parse(piece) for piece in pieces]
-        sid = digest(url_meta, [p.fuzzy_rule for p in parsed_pieces])
+        url_meta, parsed_pieces = parse(url)
+        sid = fuzzy_digest(url_meta, parsed_pieces)
         matched_nodes = []
         if sid in self._roots:
             self._roots[sid].match(parsed_pieces, 0, matched_nodes)

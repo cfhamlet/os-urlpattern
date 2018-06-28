@@ -13,12 +13,13 @@ class Formatter(object):
     The subclass must define format method, which yield formatted string.
     """
 
-    def format(self, url_meta, clusterd, **kwargs):
+    def format(self, url_meta, root, **kwargs):
         """Format the clusterd tree.
 
         Args:
             url_meta (URLMeta): The url_meta.
-            clusterd (TreeNode): The root node of the clustered tree.
+            root (TreeNode): Root node of the clustered tree.
+            **kwargs: Arbitray keyword arguments.
 
         Yields:
             str: the formatted string.
@@ -48,7 +49,7 @@ class PatternFormatter(Formatter):
 
 
 class ClusterFormatter(PatternFormatter):
-    """Pattern and meta formatter."""
+    """Pattern and meta data formatter."""
 
     def format(self, url_meta, root, **kwargs):
         """Generate url pattern string and dumps bound meta data.
@@ -75,7 +76,7 @@ class JsonFormatter(Formatter):
     """Json record of pattern info formatter."""
 
     def format(self, url_meta, root, **kwargs):
-        """Generate json format of URL pattern and relative info.
+        """Generate json format of URL pattern and info.
 
         Args:
             url_meta (URLMeta): The URLMeta object.

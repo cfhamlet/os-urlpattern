@@ -1,6 +1,6 @@
 import pytest
 
-from os_urlpattern.config import Config, get_default_config
+from os_urlpattern.config import get_default_config
 from os_urlpattern.parse_utils import pack
 from os_urlpattern.pattern_maker import PatternMaker
 from os_urlpattern.utils import dump_tree
