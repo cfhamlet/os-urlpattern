@@ -15,6 +15,12 @@ def p_maker():
     return p_maker
 
 
+def test_inline(p_maker):
+    for url_meta, clustered in p_maker.make():
+        for o in pformat('inline', url_meta, clustered):
+            assert u'/abc/[0-9]{2}[\\.]html\thttp' in o
+
+
 def test_json(p_maker):
     for url_meta, clustered in p_maker.make():
         for o in pformat('json', url_meta, clustered):

@@ -103,7 +103,7 @@ class MakePatternCommand(Command):
                             type=lambda s: s.upper())
 
     def _load(self, pattern_maker, args):
-        load_url = args.format_type == 'CLUSTER'
+        load_url = args.format_type in ('CLUSTER', 'INLINE')
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         for url in args.file[0]:

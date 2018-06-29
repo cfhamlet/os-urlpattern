@@ -259,7 +259,7 @@ def parse_query_string(query_string):
     if kv_type:  # treat as value-less
         kv_list[False].append(Symbols.EMPTY)
 
-    # only one query without value, treat as key-less
+    # Only one query without value, treat as key-less.
     if len(kv_list[True]) == 1 and not kv_list[True][0].endswith(Symbols.EQUALS):
         kv_list[False][0], kv_list[True][0] = kv_list[True][0], kv_list[False][0]
     return tuple(kv_list[True]), tuple(kv_list[False])

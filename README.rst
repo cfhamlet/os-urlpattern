@@ -203,7 +203,7 @@ Command line
                             log level (default: NOTSET)
       -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                             config file
-      -F {JSON,CLUSTER,PATTERN,ETE}, --formatter {NULL,PATTERN,CLUSTER,JSON,ETE}
+      -F {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}, --formatter {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}
                             output formatter (default: CLUSTER)
   
   Dump clustered URLs with patterns:

@@ -1,10 +1,12 @@
 """Utilities.
 """
+import inspect
 import logging
 import os
+import sys
 import time
 
-from .compat import itervalues, iteritems
+from .compat import iteritems, itervalues
 
 
 def pretty_counter(counter):
@@ -282,3 +284,11 @@ class cached_property(object):
 
         value = obj.__dict__[self.func.__name__] = self.func(obj)
         return value
+
+
+def get_classes(module, base_cls, include_base_cls=True):
+    def is_class(c):
+        return inspect.isclass(c) \
+            and issubclass(c, base_cls) \
+            and (include_base_cls or c != base_cls)
+    return [c for _, c in inspect.getmembers(module, is_class)]

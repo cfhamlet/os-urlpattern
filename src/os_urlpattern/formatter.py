@@ -1,17 +1,17 @@
 """Clustered record formatter.
 """
 import json
-from collections import OrderedDict
+import sys
 
 from .definition import BasePatternRule, Symbols
 from .parse_utils import pack
-from .utils import dump_tree
+from .utils import dump_tree, get_classes
 
 
 class Formatter(object):
-    """Base class for clustered data formatter.
+    """Base class for format clustered data.
 
-    The subclass must define format method, which yield formatted string.
+    The subclass must define format method which yield formatted strings.
     """
 
     def format(self, url_meta, root, **kwargs):
@@ -34,7 +34,7 @@ class PatternFormatter(Formatter):
     """Pattern only formatter."""
 
     def format(self, url_meta, root, **kwargs):
-        """Generate url pattern string.
+        """Yield URL pattern string.
 
         Args:
             url_meta (URLMeta): The URLMeta object.
@@ -51,10 +51,13 @@ class PatternFormatter(Formatter):
 
 
 class ClusterFormatter(PatternFormatter):
-    """Pattern and meta data formatter."""
+    """URL pattern and meta data formatter.
+
+    Yield URL pattern string first, then all meta data strings.
+    """
 
     def format(self, url_meta, root, **kwargs):
-        """Generate url pattern string and dumps bound meta data.
+        """Yield URL pattern and all bound meta data strings.
 
         Args:
             url_meta (URLMeta): The URLMeta object.
@@ -62,23 +65,59 @@ class ClusterFormatter(PatternFormatter):
             **kwargs: Arbitray keyword arguments.
 
         Yields:
-            str: Yield URL pattern string first, then yield meta
-                data of this cluster.
+            object: URL pattern string first, then all meta
+                data string prefixed with '\t'.
 
         """
         for r in super(ClusterFormatter, self).format(url_meta, root, **kwargs):
             yield r
 
         for nodes in dump_tree(root):
-            for url in nodes[-1].meta:
-                yield u'\t'.join((u'', url))
+            if nodes[-1].meta is None:
+                continue
+            for obj in nodes[-1].meta:
+                yield u'\t'.join((u'', str(obj)))
+
+
+class InlineFormatter(PatternFormatter):
+    """URL pattern and meta data formatter.
+
+    URL pattern and meta data string in one line.
+    """
+
+    def format(self, url_meta, root, **kwargs):
+        """Yield URL pattern with each bound meta data string in on line.
+
+        Args:
+            url_meta (URLMeta): The URLMeta object.
+            root (TreeNode): Root of a clustered piece tree.
+            **kwargs: Arbitray keyword arguments.
+
+        Yields:
+            object: URL pattern string + '\t' + str(meta)
+
+        """
+        url_pattern_string = None
+        for r in super(InlineFormatter, self).format(url_meta, root, **kwargs):
+            url_pattern_string = r
+
+        for nodes in dump_tree(root):
+            if nodes[-1].meta is None:
+                continue
+            for obj in nodes[-1].meta:
+                yield u'\t'.join((url_pattern_string, str(obj)))
 
 
 class JsonFormatter(Formatter):
-    """Json record of pattern info formatter."""
+    """Json formatter.
+
+    Yiled Json string, {"ptn":url_pattern, "cnt":count}
+        ptn: URL pattern string.
+        cnt: Number of uniq path in the cluster.
+    """
 
     def format(self, url_meta, root, **kwargs):
-        """Generate json format of URL pattern and info.
+        """Yield json format string.
 
         Args:
             url_meta (URLMeta): The URLMeta object.
@@ -99,8 +138,11 @@ class JsonFormatter(Formatter):
 class ETEFormatter(Formatter):
     """Ete tree formatter."""
 
+    def __init__(self):
+        import ete3
+
     def format(self, url_meta, root, **kwargs):
-        """Generate ete tree string.
+        """Yield ete tree string.
 
         Args:
             url_meta (URLMeta): The URLMeta object.
@@ -160,19 +202,6 @@ def get_ete_tree(root_node, format=str):
     return ete_root_node
 
 
-FORMATTERS = OrderedDict([
-    ('NULL', Formatter()),
-    ('PATTERN', PatternFormatter()),
-    ('CLUSTER', ClusterFormatter()),
-    ('JSON', JsonFormatter()),
-])
-try:
-    import ete3
-    FORMATTERS['ETE'] = ETEFormatter()
-except:
-    pass
-
-
 def pformat(name, url_meta, root, **kwargs):
     """Shortcut for formatting.
 
@@ -186,3 +215,17 @@ def pformat(name, url_meta, root, **kwargs):
         Iterator: For iterate formatted strings.
     """
     return FORMATTERS[name.upper()].format(url_meta, root, **kwargs)
+
+
+# Auto discover Formatter classes and init FORMATTERS.
+FORMATTERS = {}
+for c_cls in get_classes(sys.modules[__name__], Formatter):
+    c_name = c_cls.__name__
+    t = c_name.rfind('Formatter')
+    if t < 0:
+        raise ImportError('Invalid formatter name: %s' % c_name)
+    name = c_name[0:t].upper() if c_name[0:t] else 'NULL'
+    try:
+        FORMATTERS[name] = c_cls()
+    except:
+        pass
