@@ -1,6 +1,8 @@
 """High-level APIs for parsing.
 """
 
+from __future__ import unicode_literals
+
 from .parse_utils import fuzzy_digest as _fuzzy_digest
 from .parse_utils import PieceParser, analyze_url, analyze_url_pattern_string
 
@@ -16,7 +18,7 @@ def parse(url_or_pattern):
     """
     url_meta = None
     parsed_pieces = None
-    if url_or_pattern.startswith(u'/'):  # URL pattern
+    if url_or_pattern.startswith('/'):  # URL pattern
         from .pattern_matcher import MatchPattern
         url_meta, pattern_strings = analyze_url_pattern_string(url_or_pattern)
         parsed_pieces = tuple([MatchPattern(p, i == url_meta.path_depth)

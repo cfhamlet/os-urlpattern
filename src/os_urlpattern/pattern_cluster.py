@@ -1,5 +1,7 @@
 """Cluster algrithm.
 """
+from __future__ import unicode_literals
+
 from collections import Counter, OrderedDict, namedtuple
 
 from .compat import itervalues
@@ -145,12 +147,12 @@ class ViewPieceBagBucket(PieceBagBucket):
         pattern = None
         bucket = ViewPieceBagBucket(self._url_meta)
         for nodes in dump_tree(root):
-            piece = u''.join([p.piece for p in nodes[1:]])
+            piece = ''.join([p.piece for p in nodes[1:]])
             view_piece_bag = self[piece]
             bucket.add(view_piece_bag, False)
             if pattern is None:
                 pattern = Pattern(
-                    u''.join([str(p.pattern) for p in nodes[1:]]))
+                    ''.join([str(p.pattern) for p in nodes[1:]]))
         return bucket, pattern
 
 
@@ -661,7 +663,7 @@ def split_by_pattern(root):
     """
     tree_roots = {}
     for nodes in dump_tree(root):
-        pid = hash(u"/".join([str(p.pattern) for p in nodes]))
+        pid = hash("/".join([str(p.pattern) for p in nodes]))
         if pid not in tree_roots:
             tree_roots[pid] = PiecePatternNode((EMPTY_PARSED_PIECE, None))
         sub_root = tree_roots[pid]

@@ -1,5 +1,7 @@
 """Pattern matching APIs.
 """
+from __future__ import unicode_literals
+
 from functools import total_ordering
 
 from .definition import BasePatternRule
@@ -33,7 +35,7 @@ class MatchPattern(Pattern):
         if self._cmp_key is None:
             l = [MatchPattern(u.pattern_unit_string)
                  for u in reversed(self.pattern_units)]
-            self._cmp_key = u''.join([str(VIEW_ORDER[p.view_cls]) for p in l])
+            self._cmp_key = ''.join([str(VIEW_ORDER[p.view_cls]) for p in l])
         return self._cmp_key
 
     @property
@@ -121,7 +123,7 @@ class MultiPatternViewMatcher(ViewMatcher):
 class MixedPatternViewMatcher(MultiPatternViewMatcher):
 
     def _pattern(self, pattern_units):
-        return MatchPattern(u''.join([p.pattern_unit_string for p in pattern_units]))
+        return MatchPattern(''.join([p.pattern_unit_string for p in pattern_units]))
 
     def add_match_node(self, match_node):
         patterns = []

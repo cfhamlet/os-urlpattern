@@ -1,52 +1,53 @@
 """Definition of global constant varialbles.
 """
 
-import hashlib
+from __future__ import unicode_literals
 
-from .compat import (ascii_lowercase_unicode, ascii_uppercase_unicode,
-                     digits_unicode)
+import hashlib
+import string
+
 from .pattern import Pattern
 
 DEFAULT_ENCODING = 'UTF-8'
 
 
 class Symbols(object):
-    PLUS = u'+'
-    EMPTY = u''
-    SLASH = u'/'
-    EQUALS = u'='
-    NUMBER = u'#'
-    PERCENT = u'%'
-    QUESTION = u'?'
-    BRACES_L = u'{'
-    BRACES_R = u'}'
-    AMPERSAND = u'&'
-    BACKSLASH = u'\\'
-    BRACKETS_L = u'['
-    BRACKETS_R = u']'
+    PLUS = '+'
+    EMPTY = ''
+    SLASH = '/'
+    EQUALS = '='
+    NUMBER = '#'
+    PERCENT = '%'
+    QUESTION = '?'
+    BRACES_L = '{'
+    BRACES_R = '}'
+    AMPERSAND = '&'
+    BACKSLASH = '\\'
+    BRACKETS_L = '['
+    BRACKETS_R = ']'
 
 
 class BasePatternRule(object):
-    DIGIT = u'0-9'
-    BASE_ASCII_LOWER = u'a-z'
-    BASE_ASCII_UPPER = u'A-Z'
-    BASE_ASCII = u'A-Za-z'
-    BASE_DIGIT_AND_ASCII_LOWER = u'0-9a-z'
-    BASE_DIGIT_AND_ASCII_UPPER = u'0-9A-Z'
-    BASE_DIGIT_AND_ASCII = u'0-9A-Za-z'
-    SINGLE_DIGIT = u'[0-9]'
-    SINGLE_ASCII_LOWER = u'[a-z]'
-    SINGLE_ASCII_UPPER = u'[A-Z]'
-    MULTI_DIGIT = u'[0-9]+'
-    MULTI_ASCII_LOWER = u'[a-z]+'
-    MULTI_ASCII_UPPER = u'[A-Z]+'
-    MULTI_ASCII = u'[A-Za-z]+'
-    MULTI_DIGIT_AND_ASCII_LOWER = u'[0-9a-z]+'
-    MULTI_DIGIT_AND_ASCII_UPPER = u'[0-9A-Z]+'
-    MULTI_DIGIT_AND_ASCII = u'[0-9A-Za-z]+'
-    DOT = u'\\.'
-    EMPTY = u''
-    SINGLE_QUESTION = u'[\\?]'
+    DIGIT = '0-9'
+    BASE_ASCII_LOWER = 'a-z'
+    BASE_ASCII_UPPER = 'A-Z'
+    BASE_ASCII = 'A-Za-z'
+    BASE_DIGIT_AND_ASCII_LOWER = '0-9a-z'
+    BASE_DIGIT_AND_ASCII_UPPER = '0-9A-Z'
+    BASE_DIGIT_AND_ASCII = '0-9A-Za-z'
+    SINGLE_DIGIT = '[0-9]'
+    SINGLE_ASCII_LOWER = '[a-z]'
+    SINGLE_ASCII_UPPER = '[A-Z]'
+    MULTI_DIGIT = '[0-9]+'
+    MULTI_ASCII_LOWER = '[a-z]+'
+    MULTI_ASCII_UPPER = '[A-Z]+'
+    MULTI_ASCII = '[A-Za-z]+'
+    MULTI_DIGIT_AND_ASCII_LOWER = '[0-9a-z]+'
+    MULTI_DIGIT_AND_ASCII_UPPER = '[0-9A-Z]+'
+    MULTI_DIGIT_AND_ASCII = '[0-9A-Za-z]+'
+    DOT = '\\.'
+    EMPTY = ''
+    SINGLE_QUESTION = '[\\?]'
 
 
 ZERO_DIGEST = hashlib.md5(b'0').hexdigest().upper()
@@ -58,30 +59,30 @@ BLANK_TUPLE = (BasePatternRule.EMPTY,)
 CHAR_AND_RULE_LIST = []
 ASCII_AND_RULE_LIST = []
 ASCII_AND_RULE_LIST.extend([(i, BasePatternRule.BASE_ASCII_LOWER)
-                            for i in ascii_lowercase_unicode])
+                            for i in string.ascii_lowercase])
 ASCII_AND_RULE_LIST.extend([(i, BasePatternRule.BASE_ASCII_UPPER)
-                            for i in ascii_uppercase_unicode])
+                            for i in string.ascii_uppercase])
 CHAR_AND_RULE_LIST.extend(ASCII_AND_RULE_LIST)
 
 # digit rules
 DIGIT_AND_RULE_LIST = [(i, BasePatternRule.DIGIT)
-                       for i in digits_unicode]
+                       for i in string.digits]
 CHAR_AND_RULE_LIST.extend(DIGIT_AND_RULE_LIST)
 
 # digit and 26 letters set
-DIGIT_SET = frozenset([i for i in digits_unicode])
-ASCII_LOWER_SET = frozenset([i for i in ascii_lowercase_unicode])
-ASCII_UPPER_SET = frozenset([i for i in ascii_uppercase_unicode])
+DIGIT_SET = frozenset([i for i in string.digits])
+ASCII_LOWER_SET = frozenset([i for i in string.ascii_lowercase])
+ASCII_UPPER_SET = frozenset([i for i in string.ascii_uppercase])
 ASCII_DIGIT_SET = frozenset([c for c, _ in CHAR_AND_RULE_LIST])
 
 # do not escaped symbol rules
-SYMBOL = u'%&_@#;:,=<>~/'
+SYMBOL = '%&_@#;:,=<>~/'
 SYMBOL_SET = frozenset([i for i in SYMBOL])
 SYMBOL_AND_RULE_LIST = [(i, i) for i in SYMBOL_SET]
 CHAR_AND_RULE_LIST.extend(SYMBOL_AND_RULE_LIST)
 
 # escaped symbol rules
-ESCAPE = u'.+\\"\'()[]{}*$^?|!-'
+ESCAPE = '.+\\"\'()[]{}*$^?|!-'
 ESCAPE_SET = frozenset([i for i in ESCAPE])
 ESCAPE_AND_RULE_LIST = [(i, '\\%s' % i) for i in ESCAPE_SET]
 CHAR_AND_RULE_LIST.extend(ESCAPE_AND_RULE_LIST)

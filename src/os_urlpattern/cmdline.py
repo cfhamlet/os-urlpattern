@@ -7,7 +7,7 @@ pattern-matcher:
     Load pattern, match URL and get matched results.
 
 """
-from __future__ import print_function
+from __future__ import print_function, unicode_literals
 
 import argparse
 import logging.config
@@ -106,15 +106,15 @@ class MakePatternCommand(Command):
         load_url = args.format_type in ('CLUSTER', 'INLINE')
         stats = Counter()
         speed_logger = LogSpeedAdapter(self._logger, 5000)
-        for url in args.file[0]:
+        for line in args.file[0]:
             stats['ALL'] += 1
-            url = url.strip()
-            if not url:
+            line = line.strip()
+            if not line:
                 stats['EMPTY'] += 1
                 continue
             speed_logger.debug('[LOADING]')
             try:
-                url = url.decode(DEFAULT_ENCODING)
+                url = line.decode(DEFAULT_ENCODING)
                 _, is_new = pattern_maker.load(
                     url, meta=url if load_url else None)
                 if is_new:
@@ -125,11 +125,11 @@ class MakePatternCommand(Command):
                     InvalidCharException,
                     UnicodeDecodeError,
                     ValueError) as e:
-                self._logger.warn('%s, %s', str(e), url)
+                self._logger.warn('%s, %r', str(e), line)
                 stats['INVALID'] += 1
                 continue
             except Exception as e:
-                self._logger.error('%s, %s', str(e), url)
+                self._logger.error('%s, %r', str(e), line)
                 stats['INVALID'] += 1
                 continue
         self._logger.debug('[LOADED] %s', pretty_counter(stats))
@@ -179,16 +179,16 @@ class MatchPatternCommand(Command):
         for line in io_input:
             speed_logger.debug('[LOADING]')
             stats['ALL'] += 1
-            pattern = line.rstrip()
-            if not pattern.startswith(b'/'):
+            line = line.rstrip()
+            if not line.startswith(b'/'):
                 stats['UNKNOW'] += 1
                 continue
             try:
-                pattern = pattern.decode(DEFAULT_ENCODING)
+                pattern = line.decode(DEFAULT_ENCODING)
                 pattern_matcher.load(pattern, meta=pattern)
                 stats['VALID'] += 1
             except Exception as e:
-                self._logger.warn("%s, %s", str(e), line)
+                self._logger.warn("%s, %r", str(e), line)
                 stats['INVALID'] += 1
         self._logger.debug('[LOAD] Finished %s', pretty_counter(stats))
 
@@ -200,18 +200,18 @@ class MatchPatternCommand(Command):
             if not args.all_matched:
                 result = sorted(result, reverse=True)
                 result = result[:1]
-            result = u'\t'.join([r.meta for r in result]
-                                ).encode(DEFAULT_ENCODING)
+            result = '\t'.join([r.meta for r in result]
+                               ).encode(DEFAULT_ENCODING)
         except (InvalidPatternException,
                 IrregularURLException,
                 InvalidCharException,
                 UnicodeDecodeError,
                 ValueError) as e:
             result = b'E'
-            self._logger.warn("%s, %s", str(e), raw_url)
+            self._logger.warn("%s, %r", str(e), raw_url)
         except Exception as e:
             result = b'E'
-            self._logger.error("%s, %s", str(e), raw_url)
+            self._logger.error("%s, %r", str(e), raw_url)
         return result
 
     def _match(self, pattern_matcher, args):

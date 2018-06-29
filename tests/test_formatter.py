@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 import json
 
 import pytest
@@ -18,12 +20,12 @@ def p_maker():
 def test_inline(p_maker):
     for url_meta, clustered in p_maker.make():
         for o in pformat('inline', url_meta, clustered):
-            assert u'/abc/[0-9]{2}[\\.]html\thttp' in o
+            assert '/abc/[0-9]{2}[\\.]html\thttp' in o
 
 
 def test_json(p_maker):
     for url_meta, clustered in p_maker.make():
         for o in pformat('json', url_meta, clustered):
             d = json.loads(o)
-            assert d['ptn'] == u'/abc/[0-9]{2}[\\.]html'
+            assert d['ptn'] == '/abc/[0-9]{2}[\\.]html'
             assert d['cnt'] == 10

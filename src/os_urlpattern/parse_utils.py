@@ -1,5 +1,8 @@
 """Utilitis for parsing URL and pattern.
 """
+
+from __future__ import unicode_literals
+
 import hashlib
 from collections import namedtuple
 
@@ -63,11 +66,11 @@ def specify_rule(rule, num):
     """
 
     if num == 1:
-        return u'[%s]' % rule
+        return '[%s]' % rule
     elif num < 0:
-        return u'[%s]+' % rule
+        return '[%s]+' % rule
     elif num > 1:
-        return u'[%s]{%d}' % (rule, num)
+        return '[%s]{%d}' % (rule, num)
     else:
         raise ValueError('Invalid num %s' % str(num))
 
@@ -294,16 +297,16 @@ def mix(pieces, rules):
             t_mix = True
         else:
             if t_rules and t_mix:
-                mixed_pieces.append(u''.join(t_pieces))
-                mixed_rules.append(u''.join(sorted(set(t_rules))))
+                mixed_pieces.append(''.join(t_pieces))
+                mixed_rules.append(''.join(sorted(set(t_rules))))
                 t_pieces = []
                 t_rules = []
             t_mix = False
         t_pieces.append(piece)
         t_rules.append(rule)
     if t_mix:
-        mixed_pieces.append(u''.join(t_pieces))
-        mixed_rules.append(u''.join(sorted(set(t_rules))))
+        mixed_pieces.append(''.join(t_pieces))
+        mixed_rules.append(''.join(sorted(set(t_rules))))
     else:
         mixed_pieces.extend(t_pieces)
         mixed_rules.extend(t_rules)
@@ -363,11 +366,11 @@ def pack(url_meta, objs):
         kv = zip(url_meta.query_keys,
                  [str(p) for p in objs[url_meta.path_depth:idx]])
         s.write(Symbols.AMPERSAND.join(
-            [u''.join((str(k), str(v))) for k, v in kv]))
+            [''.join((str(k), str(v))) for k, v in kv]))
 
     if url_meta.has_fragment:
         s.write(Symbols.NUMBER)
-        s.write(u''.join([str(p) for p in objs[idx:]]))
+        s.write(''.join([str(p) for p in objs[idx:]]))
     s.seek(0)
     return s.read()
 
@@ -386,7 +389,7 @@ def analyze_url(url):
     return unpack(result, True)
 
 
-def fuzzy_join(objs, sep=u'/'):
+def fuzzy_join(objs, sep='/'):
     """Join the fuzzy_rule of the objects into one string.
 
     Args:
@@ -425,7 +428,7 @@ class ParsedPiece(object):
     @property
     def fuzzy_rule(self):
         if not self._fuzzy_rule:
-            self._fuzzy_rule = u''.join(sorted(set(self.rules)))
+            self._fuzzy_rule = ''.join(sorted(set(self.rules)))
         return self._fuzzy_rule
 
     @property
@@ -482,7 +485,7 @@ class ParsedPiece(object):
     @property
     def piece(self):
         if self._piece is None:
-            self._piece = u''.join(self._pieces)
+            self._piece = ''.join(self._pieces)
         return self._piece
 
     def __str__(self):

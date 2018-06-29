@@ -1,6 +1,7 @@
 """Compatible import.
 """
 
+from __future__ import unicode_literals
 import operator
 import string
 import sys
@@ -15,9 +16,6 @@ if _PY3:
     from configparser import ConfigParser
     binary_stdin = sys.stdin.buffer
     binary_stdout = sys.stdout.buffer
-    ascii_lowercase_unicode = string.ascii_lowercase
-    ascii_uppercase_unicode = string.ascii_uppercase
-    digits_unicode = string.digits
 else:
     from StringIO import StringIO
     iteritems = operator.methodcaller("iteritems")
@@ -26,6 +24,3 @@ else:
     from ConfigParser import ConfigParser
     binary_stdin = sys.stdin
     binary_stdout = sys.stdout
-    ascii_lowercase_unicode = unicode(string.ascii_lowercase)
-    ascii_uppercase_unicode = unicode(string.ascii_uppercase)
-    digits_unicode = unicode(string.digits)

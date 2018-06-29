@@ -2,6 +2,8 @@
 
 Build a tree from the parsed URL pieces.
 """
+from __future__ import unicode_literals
+
 from .compat import itervalues
 from .parse_utils import EMPTY_PARSED_PIECE
 from .pattern import Pattern
@@ -46,7 +48,7 @@ class PiecePatternNode(TreeNode):
             node = node.parrent
 
     def __str__(self):
-        return u' '.join((self.piece, str(self.pattern)))
+        return ' '.join((self.piece, str(self.pattern)))
 
     def add_meta(self, data):
         if data is None:

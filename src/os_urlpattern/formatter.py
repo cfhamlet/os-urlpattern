@@ -1,5 +1,7 @@
 """Clustered record formatter.
 """
+from __future__ import unicode_literals
+
 import json
 import sys
 
@@ -76,7 +78,7 @@ class ClusterFormatter(PatternFormatter):
             if nodes[-1].meta is None:
                 continue
             for obj in nodes[-1].meta:
-                yield u'\t'.join((u'', str(obj)))
+                yield '\t'.join(('', str(obj)))
 
 
 class InlineFormatter(PatternFormatter):
@@ -105,7 +107,7 @@ class InlineFormatter(PatternFormatter):
             if nodes[-1].meta is None:
                 continue
             for obj in nodes[-1].meta:
-                yield u'\t'.join((url_pattern_string, str(obj)))
+                yield '\t'.join((url_pattern_string, str(obj)))
 
 
 class JsonFormatter(Formatter):
@@ -131,7 +133,7 @@ class JsonFormatter(Formatter):
         """
         for nodes in dump_tree(root):
             p = pack(url_meta, [p.pattern for p in nodes[1:]])
-            yield json.dumps({u'ptn': p, u'cnt': root.count})
+            yield json.dumps({'ptn': p, 'cnt': root.count})
             break
 
 
@@ -166,7 +168,7 @@ class ETEFormatter(Formatter):
                 query_key = url_meta.query_keys[current_level - path_depth - 1]
             elif current_level == path_depth + query_depth + 1:
                 sep = Symbols.NUMBER
-            return u' {sep}{query_key}{pattern_string}({count}) '.format(
+            return ' {sep}{query_key}{pattern_string}({count}) '.format(
                 count=pattern_node.count,
                 pattern_string=pattern_node.value,
                 query_key=query_key,

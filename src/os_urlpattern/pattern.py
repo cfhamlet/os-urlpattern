@@ -1,6 +1,9 @@
 """Pattern class.
 """
+from __future__ import unicode_literals
+
 import re
+
 from .utils import pick
 
 
@@ -44,7 +47,7 @@ class PatternUnit(object):
     @property
     def fuzzy_rule(self):
         if self._fuzzy_rule is None:
-            self._fuzzy_rule = u''.join(sorted(self._rules))
+            self._fuzzy_rule = ''.join(sorted(self._rules))
         return self._fuzzy_rule
 
     @property
@@ -60,7 +63,7 @@ class PatternUnit(object):
         return self._num
 
     def __str__(self):
-        return u' '.join((self._pattern_unit_string, self.fuzzy_rule, str(self._num)))
+        return ' '.join((self._pattern_unit_string, self.fuzzy_rule, str(self._num)))
 
     __repr__ = __str__
 
@@ -106,13 +109,13 @@ class Pattern(object):
     def match(self, piece):
         if not self._pattern_regex:
             self._pattern_regex = re.compile(
-                u''.join((u'^', self._pattern_string, u'$')))
+                ''.join(('^', self._pattern_string, '$')))
         return True if re.match(self._pattern_regex, piece) else False
 
     @property
     def fuzzy_rule(self):
         """str: All rules of the pattern join into a string."""
         if self._fuzzy_rule is None:
-            self._fuzzy_rule = u''.join(sorted(set.union(
+            self._fuzzy_rule = ''.join(sorted(set.union(
                 *[u.rules for u in self.pattern_units])))
         return self._fuzzy_rule

@@ -1,3 +1,5 @@
+from __future__ import unicode_literals
+
 from os_urlpattern.parse_utils import (EMPTY_PARSED_PIECE, PieceParser,
                                        analyze_url)
 from os_urlpattern.piece_pattern_node import (PiecePatternNode,
@@ -28,4 +30,4 @@ def test_count():
 
     nodes = pick(dump_tree(root))
     assert nodes[-1].parrent.children_num == num
-    assert str(nodes[-1].parrent.pattern) == u"abc"
+    assert str(nodes[-1].parrent.pattern) == "abc"
