@@ -345,11 +345,12 @@ APIs
 
         # same digest same matcher
         digest = fuzzy_digest(url_meta, parsed_pieces)
-        if digest not in matchers: # no matched at all
-            pass
-        else:
+        if digest in matchers:
             matched = [n.meta for n in matchers[digest].match(parsed_pieces)]
-            print(url, *matched, sep="\t")
+            print(url, *matched, sep="\t")        
+        else: # no matched at all
+            pass
+
 
 
 ============
