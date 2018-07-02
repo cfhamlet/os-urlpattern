@@ -4,6 +4,7 @@ import inspect
 import logging
 import os
 import time
+from functools import partial
 
 from .compat import iteritems, itervalues
 
@@ -204,16 +205,24 @@ class LogSpeedAdapter(logging.LoggerAdapter):
 
     Log only once when called every interal times,
     include total count and average speed.
-    Used for logging huge loop processing.
+    Used as 'with statement' for logging huge loop processing.
+
     """
 
     def __init__(self, logger, interval):
         super(LogSpeedAdapter, self).__init__(logger, {})
         self._count = 0
+        assert(interval) > 0
         self._interval = interval
         self._start_time = time.time()
+        self._replace()
 
-    def process(self, msg, kwargs):
+    def _replace(self):
+        for name in ['debug', 'info', 'warning', 'error', 'exception', 'critical']:
+            setattr(self, name, partial(self._log, name))
+        self.log = self._log
+
+    def _log(self, name, msg, *args, **kwargs):
         self._count += 1
 
         if self._count % self._interval == 0:
@@ -221,18 +230,19 @@ class LogSpeedAdapter(logging.LoggerAdapter):
             extra_msg = '{count} {speed:.1f}/s'.format(
                 count=self._count, speed=speed)
             msg = ' '.join((msg, extra_msg))
-            return msg, kwargs
-
-    def debug(self, msg, *args, **kwargs):
-        returnd = self.process(msg, kwargs)
-        if not returnd:
-            return
-        msg, kwargs = returnd
-        self.logger.debug(msg, *args, **kwargs)
+            if isinstance(name, int):
+                name = logging.getLevelName(name)
+            getattr(self.logger, name)(msg, *args, **kwargs)
 
     def _speed(self):
-        now = time.time()
-        return self._count / (now - self._start_time)
+        return self._count / (time.time() - self._start_time)
+
+    def __enter__(self):
+        self._start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        pass
 
 
 def used_memory():

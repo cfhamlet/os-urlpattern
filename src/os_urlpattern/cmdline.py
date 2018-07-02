@@ -105,33 +105,33 @@ class MakePatternCommand(Command):
     def _load(self, pattern_maker, args):
         load_url = args.format_type in ('CLUSTER', 'INLINE')
         stats = Counter()
-        speed_logger = LogSpeedAdapter(self._logger, 5000)
-        for line in args.file[0]:
-            stats['ALL'] += 1
-            line = line.strip()
-            if not line:
-                stats['EMPTY'] += 1
-                continue
-            speed_logger.debug('[LOADING]')
-            try:
-                url = line.decode(DEFAULT_ENCODING)
-                _, is_new = pattern_maker.load(
-                    url, meta=url if load_url else None)
-                if is_new:
-                    stats['UNIQ'] += 1
-                stats['VALID'] += 1
-            except (InvalidPatternException,
-                    IrregularURLException,
-                    InvalidCharException,
-                    UnicodeDecodeError,
-                    ValueError) as e:
-                self._logger.warn('%s, %r', str(e), line)
-                stats['INVALID'] += 1
-                continue
-            except Exception as e:
-                self._logger.error('%s, %r', str(e), line)
-                stats['INVALID'] += 1
-                continue
+        with LogSpeedAdapter(self._logger, 5000) as speed_logger:
+            for line in args.file[0]:
+                speed_logger.debug('[LOADING]')
+                stats['ALL'] += 1
+                line = line.strip()
+                if not line:
+                    stats['EMPTY'] += 1
+                    continue
+                try:
+                    url = line.decode(DEFAULT_ENCODING)
+                    _, is_new = pattern_maker.load(
+                        url, meta=url if load_url else None)
+                    if is_new:
+                        stats['UNIQ'] += 1
+                    stats['VALID'] += 1
+                except (InvalidPatternException,
+                        IrregularURLException,
+                        InvalidCharException,
+                        UnicodeDecodeError,
+                        ValueError) as e:
+                    self._logger.warn('%s, %r', str(e), line)
+                    stats['INVALID'] += 1
+                    continue
+                except Exception as e:
+                    self._logger.error('%s, %r', str(e), line)
+                    stats['INVALID'] += 1
+                    continue
         self._logger.debug('[LOADED] %s', pretty_counter(stats))
 
     def _process(self, pattern_maker, args):
@@ -175,21 +175,21 @@ class MatchPatternCommand(Command):
         stats = Counter()
         io_input = args.pattern_file[0]
         self._logger.debug('[LOAD] Pattrn file: %s', io_input.name)
-        speed_logger = LogSpeedAdapter(self._logger, 1000)
-        for line in io_input:
-            speed_logger.debug('[LOADING]')
-            stats['ALL'] += 1
-            line = line.rstrip()
-            if not line.startswith(b'/'):
-                stats['UNKNOW'] += 1
-                continue
-            try:
-                pattern = line.decode(DEFAULT_ENCODING)
-                pattern_matcher.load(pattern, meta=pattern)
-                stats['VALID'] += 1
-            except Exception as e:
-                self._logger.warn("%s, %r", str(e), line)
-                stats['INVALID'] += 1
+        with LogSpeedAdapter(self._logger, 1000) as speed_logger:
+            for line in io_input:
+                speed_logger.debug('[LOADING]')
+                stats['ALL'] += 1
+                line = line.rstrip()
+                if not line.startswith(b'/'):
+                    stats['UNKNOW'] += 1
+                    continue
+                try:
+                    pattern = line.decode(DEFAULT_ENCODING)
+                    pattern_matcher.load(pattern, meta=pattern)
+                    stats['VALID'] += 1
+                except Exception as e:
+                    self._logger.warn("%s, %r", str(e), line)
+                    stats['INVALID'] += 1
         self._logger.debug('[LOAD] Finished %s', pretty_counter(stats))
 
     def _match_result(self, pattern_matcher, raw_url, args):
