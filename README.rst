@@ -106,7 +106,10 @@ distinguished feature.
 
   character space order: A-Z a-z 0-9 !
 
-Complex consecutive major character space can be joined, order is less important.
+
+Merge
+=====================
+Complex consecutive major character space can be mreged, order is less important.
 
 ::
 
@@ -118,7 +121,7 @@ Complex consecutive major character space can be joined, order is less important
 
   character space order: A-Za-z0-9 !
 
-Because of URL quote, '%' can be joined with major character space.
+Because of URL quote, '%' can be merged with major character space.
 
 ::
 
