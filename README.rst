@@ -92,7 +92,7 @@ number letters(0-9). Other symbols are in their own character space.
 
   character space: a-z A-Z 0-9 !
       
-Character space order
+Order consideration
 =====================
 
 Split a string by character, consecutive character space can be joined. 
