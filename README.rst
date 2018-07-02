@@ -50,7 +50,7 @@ Similar URLs
 
 * Components of the parsed URLs at the same position are in the same **character space**.
 
-* Different types of charactors may in the same order in most cases.
+* Different types of charactors may be in the same order in most cases.
 
 
 URL structure
