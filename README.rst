@@ -317,7 +317,7 @@ APIs
     makers = {}
     matchers = {}
 
-    # Init makers and load URLs(unicode).
+    # Init makers from URLs(unicode).
     for url in urls:
         url_meta, parsed_pieces = parse(url)
         
