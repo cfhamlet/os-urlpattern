@@ -22,7 +22,7 @@ from cluster for matching purpose. It is a pure python package tested under pyth
 `pypy <http://pypy.org/>`_ can also be used for performance(4x-8x). Command line tools are provided 
 for standalone clustering and matching, APIs are also convenient. Several extra packages can be 
 installed for additional features. Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min 
-and 200M memory. Built-in matching strategy is efficient enough at most use case(3k/s, depend on 
+and 200M memory. Built-in matching strategy is efficient enough in most use cases(3k/s, depend on 
 patterns complexity).
 
 .. code:: console
