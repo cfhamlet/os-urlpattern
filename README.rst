@@ -88,20 +88,21 @@ number letters(0-9). Other symbols are in their own character space.
   
 ::
 
-  HeLlOwoRd233!
+  HeLlOwoRd666!
 
   character space: a-z A-Z 0-9 !
       
 Order consideration
 =====================
 
-Split a string by character, consecutive character space can be joined. 
+Split a string by character, consecutive character space can be joined. In most cases, order is a 
+distinguished feature.
 
 ::
 
-  HELLOword233!
+  HELLOword666!
 
-  split into: HELLO word 233 !
+  split into: HELLO word 666 !
 
   character space order: A-Z a-z 0-9 !
 
@@ -109,11 +110,11 @@ Complex consecutive major character space can be joined, order is less important
 
 ::
 
-  HellWorld233!
+  HellWorld666!
 
-  split into: H ell W orld 233 !
+  split into: H ell W orld 666 !
 
-  major join: HellWorld233 !
+  major join: HellWorld666 !
 
   character space order: A-Za-z0-9 !
 
