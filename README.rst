@@ -105,7 +105,7 @@ Split a string by character, consecutive character space can be joined.
 
   character space order: A-Z a-z 0-9 !
 
-Complex consecutive major character space can be joined.
+Complex consecutive major character space can be joined, order is less important.
 
 ::
 
