@@ -131,7 +131,7 @@ Because of URL quote, '%' can be joined with major character space.
   character space order: A-Z0-9% !
 
 
-URL Pattern
+URL pattern
 ============
 
 URL pattern is used to express each cluster. It is normal regex string. Each URL in 
@@ -213,7 +213,7 @@ Command line
   
     $ cat urls.txt | pattern-make -L debug > clustered.txt
 
-  Only generate URL Patterns:
+  Only generate URL patterns:
 
   .. code:: console
   
