@@ -18,7 +18,6 @@ os-urlpattern
 
 
 This package is used for unsupervised URLs clustering. Furthermore, it generate URL Pattern(RegEx) 
-
 `pypy <http://pypy.org/>`_ can also be used for performance(4x-8x). Command line tools are provided 
 for standalone clustering and matching, APIs are also convenient. Several extra packages can be 
 installed for additional features. Under CPython 1cpu, 100 thousand URLs clustering cost almost 1min 
