@@ -292,6 +292,8 @@ class PatternMatcher(object):
                 matched result's meta property.
         """
         url_meta, patterns = parse(url_pattern_string)
+        if not isinstance(patterns[0], MatchPattern):
+            raise ValueError('Invalid URL pattern')
         sid = fuzzy_digest(url_meta, patterns)
         if sid not in self._roots:
             self._roots[sid] = PatternMatchNode(EMPTY_MATCH_PATTERN)

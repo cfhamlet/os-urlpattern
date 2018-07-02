@@ -3,7 +3,7 @@
 from .compat import itervalues
 from .config import get_default_config
 from .definition import BasePattern
-from .parse_utils import EMPTY_PARSED_PIECE
+from .parse_utils import EMPTY_PARSED_PIECE, ParsedPiece
 from .parser import fuzzy_digest, parse
 from .pattern_cluster import cluster
 from .piece_pattern_node import PiecePatternNode, build_from_parsed_pieces
@@ -39,6 +39,8 @@ class PatternMaker(object):
             tuple: 2-tules, (node, is_new).
         """
         url_meta, parsed_pieces = parse(url)
+        if not isinstance(parsed_pieces[0], ParsedPiece):
+            raise ValueError('Invalid URL')
         sid = fuzzy_digest(url_meta, parsed_pieces)
         if sid not in self._makers:
             self._makers[sid] = Maker(url_meta, self._config)

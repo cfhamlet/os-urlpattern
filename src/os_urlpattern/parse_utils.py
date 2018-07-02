@@ -541,10 +541,9 @@ class PieceParser(object):
 
     def _define(self, char):
         last_rule = self._rules[-1] if self._rules else None
-        try:
-            rule = CHAR_RULE_DICT[char]
-        except KeyError:
-            raise InvalidCharException("Contain invalid char")
+        if char not in CHAR_RULE_DICT:
+            raise InvalidCharException("Invalid char %r" % char)
+        rule = CHAR_RULE_DICT[char]
 
         if last_rule != rule:
             self._pieces.append(StringIO())
@@ -677,17 +676,19 @@ def parse_pattern_string(pattern_string):
                     num_str = pattern_string[old_idx:idx]
                     if not num_str.isdigit():
                         raise InvalidPatternException(
-                            "Invalid num '%s'" % num_str)
+                            "Invalid num %r" % num_str)
 
                 elif pattern_string[idx + 1] == Symbols.PLUS:
                     idx += 1
             idx += 1
             pattern_unit_strings.append(pattern_string[idx_s:idx])
         else:
+            if c not in CHAR_RULE_DICT:
+                raise InvalidPatternException("Invaid char %r" % c)
             rule = CHAR_RULE_DICT[c]
             if rule not in DIGIT_AND_ASCII_RULE_SET:
                 raise InvalidPatternException(
-                    'Invalid pattern: %s' % pattern_string)
+                    'Invalid pattern')
             if last_rule is None:
                 s.write(c)
             else:
@@ -730,7 +731,7 @@ def parse_pattern_unit_string(pattern_unit_string):
             t = pattern_unit_string.rfind(Symbols.BRACES_L)
             num_str = pattern_unit_string[t + 1:-1]
             if not num_str.isdigit():
-                raise InvalidPatternException("Invalid num '%s'" % num_str)
+                raise InvalidPatternException("Invalid num %r" % num_str)
             num = int(num_str)
         elif pattern_unit_string[-1] == Symbols.PLUS:
             num = -1
@@ -749,7 +750,7 @@ def parse_pattern_unit_string(pattern_unit_string):
                 n = 1
             rule = p_str[idx:idx + n]
             if rule not in RULE_SET:
-                raise InvalidPatternException("Invalid rule '%s'" % rule)
+                raise InvalidPatternException("Invalid rule %r" % rule)
             rules.add(rule)
             idx += n
     if (num > 0 and len(rules) > num) or num == 0:
