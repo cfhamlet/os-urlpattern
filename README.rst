@@ -109,7 +109,7 @@ distinguished feature.
 
 Merge
 =====================
-Complex consecutive major character space can be mreged, order is less important.
+Complex consecutive major character space can be merged, order is less important.
 
 ::
 
