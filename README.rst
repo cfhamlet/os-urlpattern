@@ -309,11 +309,13 @@ APIs
 
   .. code:: python 
   
+    from __future__ import print_function, unicode_literals
     from os_urlpattern.formatter import pformat
     from os_urlpattern.parser import fuzzy_digest, parse
     from os_urlpattern.pattern_maker import Maker
     from os_urlpattern.pattern_matcher import Matcher
 
+    urls = ['http://t.com/%02d.html' % i for i in xrange(0,10)]
     makers = {}
     matchers = {}
 
@@ -346,7 +348,8 @@ APIs
         if digest not in matchers: # no matched at all
             pass
         else:
-            matchers[digest].match(parsed_pieces)
+            matched = [n.meta for n in matchers[digest].match(parsed_pieces)]
+            print(url, *matched, sep="\t")
 
 
 ============
