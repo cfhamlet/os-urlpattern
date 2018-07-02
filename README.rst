@@ -323,9 +323,8 @@ APIs
         
         # same digest same maker
         digest = fuzzy_digest(url_meta, parsed_pieces)
-        if digest not in makers:
-            makers[digest] = Maker(url_meta) # not PatternMaker
-        makers[digest].load(parsed_pieces)
+        maker = makers.get(digest, Maker(url_meta))
+        maker.load(parsed_pieces)
 
     # Iterate makers, do clustering, generate URL pattern and init matchers.
     for maker in makers.values():
@@ -333,9 +332,8 @@ APIs
             for pattern in pformat('pattern', maker.url_meta, clustered):
                 url_meta, parsed_patterns = parse(pattern)
                 digest = fuzzy_digest(url_meta, parsed_patterns)
-                if digest not in matchers:
-                    matchers[digest] = Matcher(url_meta)
-                matchers[digest].load(parsed_patterns, pattern)
+                mathcher = matchers.get(digest, Matcher(url_meta))
+                matcher.load(parsed_patterns, pattern)
     
     # Match URLs(unicode).
     for url in urls:
