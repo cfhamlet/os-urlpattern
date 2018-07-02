@@ -303,17 +303,21 @@ APIs
   **Key points: same fuzzy-digest same maker and same matcher.**
 
   Use ``os_urlpattern.parser.fuzzy_digest`` to get fuzzy digest from URL,
-  URL pattern or parsed URLMeta and parsed pieces.
+  URL pattern or URLMeta and parsed pieces/patterns.
+
+  A brief All-In-One example:
 
   .. code:: python 
   
     from os_urlpattern.formatter import pformat
     from os_urlpattern.parser import fuzzy_digest, parse
     from os_urlpattern.pattern_maker import Maker
+    from os_urlpattern.pattern_matcher import Matcher
 
     makers = {}
+    matchers = {}
 
-    # load URLs(unicode)
+    # Init makers and load URLs(unicode).
     for url in urls:
         url_meta, parsed_pieces = parse(url)
         
@@ -323,13 +327,26 @@ APIs
             makers[digest] = Maker(url_meta) # not PatternMaker
         makers[digest].load(parsed_pieces)
 
-    # iterate makers, cluster and print pattern
+    # Iterate makers, do clustering, generate URL pattern and init matchers.
     for maker in makers.values():
         for clustered in maker.make():
-            for pattern in pformat('pattern', maker.url_meta, clustered)
-                print(pattern)
+            for pattern in pformat('pattern', maker.url_meta, clustered):
+                url_meta, parsed_patterns = parse(pattern)
+                digest = fuzzy_digest(url_meta, parsed_patterns)
+                if digest not in matchers:
+                    matchers[digest] = Matcher(url_meta)
+                matchers[digest].load(parsed_patterns, pattern)
+    
+    # Match URLs(unicode).
+    for url in urls:
+        url_meta, parsed_pieces = parse(url)
 
-
+        # same digest same matcher
+        digest = fuzzy_digest(url_meta, parsed_pieces)
+        if digest not in matchers: # no matched at all
+            pass
+        else:
+            matchers[digest].match(parsed_pieces)
 
 
 ============

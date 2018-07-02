@@ -281,7 +281,7 @@ class PatternMatcher(object):
 
     def __init__(self):
         self._parser = PieceParser()
-        self._roots = {}
+        self._matchers = {}
 
     def load(self, url_pattern_string, meta=None):
         """Load URL pattern string.
@@ -290,16 +290,18 @@ class PatternMatcher(object):
             url_pattern_string (str): URL pattern string.
             meta (any, optional): Defaults to None. It will bind to
                 matched result's meta property.
+
+        Returns:
+            tuple: 2-tules, (node, is_new).
         """
-        url_meta, patterns = parse(url_pattern_string)
-        if not isinstance(patterns[0], MatchPattern):
+        url_meta, parsed_patterns = parse(url_pattern_string)
+        if not isinstance(parsed_patterns[0], MatchPattern):
             raise ValueError('Invalid URL pattern')
-        sid = fuzzy_digest(url_meta, patterns)
-        if sid not in self._roots:
-            self._roots[sid] = PatternMatchNode(EMPTY_MATCH_PATTERN)
-        root = self._roots[sid]
-        build_tree(root, patterns,
-                   meta=url_pattern_string if meta is None else meta)
+        sid = fuzzy_digest(url_meta, parsed_patterns)
+        if sid not in self._matchers:
+            self._matchers[sid] = Matcher(url_meta)
+        matcher = self._matchers[sid]
+        return matcher.load(parsed_patterns, meta=meta)
 
     def match(self, url):
         """Match url, get the matched results.
@@ -313,7 +315,50 @@ class PatternMatcher(object):
         """
         url_meta, parsed_pieces = parse(url)
         sid = fuzzy_digest(url_meta, parsed_pieces)
+        if sid in self._matchers:
+            return self._matchers[sid].match(parsed_pieces)
+        return []
+
+
+class Matcher(object):
+    """Low-level APIs for matching.
+
+    Suppose this will only be used for same fuzzy-digest matching.
+    """
+
+    def __init__(self, url_meta):
+        self._url_meta = url_meta
+        self._root = PatternMatchNode(EMPTY_MATCH_PATTERN)
+
+    @property
+    def url_meta(self):
+        """URLMeta: The URLMeta object."""
+        return self._url_meta
+
+    def match(self, parsed_pieces):
+        """Match URL parsed peices.
+
+        Args:
+            parsed_pieces (sequence): URL parsed pieces.
+
+        Returns:
+            list: List of matched pattern nodes, if no match return [].
+              Bound meta data can be accessed with node.meta.
+        """
+
         matched_nodes = []
-        if sid in self._roots:
-            self._roots[sid].match(parsed_pieces, 0, matched_nodes)
+        self._root.match(parsed_pieces, 0, matched_nodes)
         return matched_nodes
+
+    def load(self, parsed_patterns, meta=None):
+        """Load from parsed URL pattern.
+
+        Args:
+            parsed_patterns (sequence): MatchNodes.
+            meta (any, optional): Defaults to None. It will bind to
+                matched result's meta property.
+
+        Returns:
+            tuple: 2-tules, (node, is_new).
+        """
+        return build_tree(self._root, parsed_patterns, meta=meta)

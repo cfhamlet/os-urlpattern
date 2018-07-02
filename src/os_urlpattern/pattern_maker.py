@@ -63,7 +63,10 @@ class PatternMaker(object):
 
 
 class Maker(object):
-    """Maker for clustering same digest URLs."""
+    """Low-level APIs for clustering.
+
+    Suppose this will only be used for same fuzzy-digest clustering.
+    """
 
     def __init__(self, url_meta, config=None):
         self._url_meta = url_meta
