@@ -336,6 +336,7 @@ APIs
     for maker in makers.values():
         for clustered in maker.make():
             for pattern in pformat('pattern', maker.url_meta, clustered):
+                # init matchers
                 url_meta, parsed_patterns = parse(pattern)
                 digest = fuzzy_digest(url_meta, parsed_patterns)
                 if digest not in matchers:
