@@ -17,7 +17,10 @@ if _PY3:
     binary_stdin = sys.stdin.buffer
     binary_stdout = sys.stdout.buffer
 else:
-    from StringIO import StringIO
+    try:
+        from cStringIO import StringIO  # trick, only process ascii
+    except ImportError:
+        from StringIO import StringIO
     iteritems = operator.methodcaller("iteritems")
     itervalues = operator.methodcaller("itervalues")
     from urlparse import urlparse, ParseResult
