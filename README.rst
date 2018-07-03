@@ -273,7 +273,7 @@ APIs
 
     # cluster and print pattern
     for url_meta, clustered in pattern_maker.make():
-        for pattern in pformat('pattern', url_meta, clustered)
+        for pattern in pformat('pattern', url_meta, clustered):
             print(pattern)
 
 
