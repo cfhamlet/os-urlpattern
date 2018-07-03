@@ -215,13 +215,12 @@ class PatternMatchNode(TreeNode):
             if nodes[0].leaf():
                 matched_nodes.extend(nodes)
                 continue
-            self._deep_match(nodes, parsed_pieces, idx,
+            self._deep_match(nodes, parsed_pieces, idx + 1,
                              matched_nodes)
 
     def _deep_match(self, nodes, parsed_pieces, idx, matched_nodes):
-        idx_next = idx + 1
         for node in nodes:
-            node.match(parsed_pieces, idx_next, matched_nodes)
+            node.match(parsed_pieces, idx, matched_nodes)
 
     def _get_matcher(self, view_cls):
         s = 0

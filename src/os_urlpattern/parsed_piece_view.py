@@ -165,6 +165,7 @@ def view_cls_from_pattern(pattern, is_last_path=False):
             if not pattern_unit.is_literal():
                 if len(pattern_unit.rules) > 1:
                     view_cls = MixedView
+                    break
                 else:
                     view_cls = MultiView
         if is_last_path \
