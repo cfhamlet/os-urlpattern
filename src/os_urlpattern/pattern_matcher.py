@@ -21,11 +21,11 @@ class MatchPattern(Pattern):
     It is comparable and has a view_cls property to
     identify the pattern type.
     """
-    __slots__ = ('_view_cls', '_cmp_key')
+    __slots__ = ('view_cls', '_cmp_key')
 
     def __init__(self, pattern_string, is_last_path=False):
         super(MatchPattern, self).__init__(pattern_string)
-        self._view_cls = view_cls_from_pattern(self, is_last_path)
+        self.view_cls = view_cls_from_pattern(self, is_last_path)
         self._cmp_key = None
 
     @property
@@ -38,12 +38,8 @@ class MatchPattern(Pattern):
             self._cmp_key = ''.join([str(VIEW_ORDER[p.view_cls]) for p in l])
         return self._cmp_key
 
-    @property
-    def view_cls(self):
-        return self._view_cls
-
     def __ne__(self, other):
-        return self._pattern_string != other.pattern_string
+        return self.pattern_string != other.pattern_string
 
     def __lt__(self, other):
         if self.view_cls == other.view_cls:
@@ -61,21 +57,17 @@ class ViewMatcher(object):
     Filled with same view-type match node.
     Get all matched nodes.    
     """
-    __slots__ = ('_view_cls', '_matchers')
+    __slots__ = ('view_cls', '_matchers')
 
     def __init__(self, view_cls):
-        self._view_cls = view_cls
+        self.view_cls = view_cls
         self._matchers = {}
-
-    @property
-    def view_cls(self):
-        return self._view_cls
 
     def add_match_node(self, match_node):
         pass
 
     def match(self, parsed_piece):
-        view = self._view_cls(parsed_piece)
+        view = self.view_cls(parsed_piece)
         if view.view not in self._matchers:
             return []
         parsed_pieces = view.parsed_pieces
@@ -252,7 +244,7 @@ class PatternMatchNode(TreeNode):
 
     @property
     def pattern(self):
-        return self._value
+        return self.value
 
     def add_child(self, pattern):
         child, is_new = super(PatternMatchNode, self).add_child(

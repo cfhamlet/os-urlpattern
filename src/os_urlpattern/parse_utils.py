@@ -410,7 +410,7 @@ class ParsedPiece(object):
     It is can be used as map key.
 
     """
-    __slots__ = ('_pieces', '_rules', '_piece', '_piece_length', '_fuzzy_rule')
+    __slots__ = ('pieces', 'rules', '_piece', '_piece_length', '_fuzzy_rule')
 
     def __init__(self, pieces, rules):
         """Init the ParsedPiece object.
@@ -419,8 +419,8 @@ class ParsedPiece(object):
             pieces (tuple): The tuple of parsed pieces.
             rules (tuple): The tuple of the rules of each parsed pieces.
         """
-        self._pieces = pieces
-        self._rules = rules
+        self.pieces = pieces
+        self.rules = rules
         self._piece_length = -1
         self._piece = pieces[0] if len(pieces) == 1 else None
         self._fuzzy_rule = rules[0] if len(rules) == 1 else None
@@ -430,14 +430,6 @@ class ParsedPiece(object):
         if not self._fuzzy_rule:
             self._fuzzy_rule = ''.join(sorted(set(self.rules)))
         return self._fuzzy_rule
-
-    @property
-    def rules(self):
-        return self._rules
-
-    @property
-    def pieces(self):
-        return self._pieces
 
     @property
     def piece_length(self):
@@ -485,7 +477,7 @@ class ParsedPiece(object):
     @property
     def piece(self):
         if self._piece is None:
-            self._piece = ''.join(self._pieces)
+            self._piece = ''.join(self.pieces)
         return self._piece
 
     def __str__(self):

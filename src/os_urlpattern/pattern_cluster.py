@@ -15,23 +15,19 @@ from .utils import Bag, cached_property, dump_tree, pick
 
 
 class TBag(Bag):
-    __slots__ = ('_stats',)
+    __slots__ = ('stats',)
 
     def __init__(self):
         super(TBag, self).__init__()
-        self._stats = Counter()
+        self.stats = Counter()
 
     @property
     def count(self):
-        return self._stats['count']
-
-    @property
-    def stats(self):
-        return self._stats
+        return self.stats['count']
 
     def add(self, obj):
         super(TBag, self).add(obj)
-        self._stats['count'] += obj.count
+        self.stats['count'] += obj.count
 
     def set_pattern(self, pattern):
         for obj in self:
@@ -72,7 +68,7 @@ class PieceBag(TBag):
     def add(self, piece_pattern_node):
         super(PieceBag, self).add(piece_pattern_node)
         self._p_nodes.add(piece_pattern_node.parrent)
-        self._stats['p_nodes_count'] += piece_pattern_node.parrent.count \
+        self.stats['p_nodes_count'] += piece_pattern_node.parrent.count \
             if piece_pattern_node.parrent is not None \
             else piece_pattern_node.count
 
@@ -102,7 +98,7 @@ class PieceBagBucket(TBucket):
         else:
             raise ValueError('not PiecePatternNode nor PieceBag')
 
-        self._stats['count'] += obj.count
+        self.stats['count'] += obj.count
 
     @property
     def p_nodes(self):

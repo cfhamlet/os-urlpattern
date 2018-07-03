@@ -69,16 +69,16 @@ class Bag(object):
 class TreeNode(object):
     """Node of a tree."""
 
-    __slots__ = ('_parrent', '_children', '_count',
-                 '_value', '_meta', '_level')
+    __slots__ = ('parrent', '_children', 'count',
+                 'value', 'meta', '_level')
 
     def __init__(self, value):
-        self._parrent = None
-        self._children = None
-        self._count = 0
-        self._value = value
-        self._meta = None
+        self.parrent = None
+        self.count = 0
+        self.value = value
+        self.meta = None
         self._level = None
+        self._children = None
 
     def leaf(self):
         return not self._children
@@ -96,36 +96,8 @@ class TreeNode(object):
         return self._level
 
     @property
-    def value(self):
-        return self._value
-
-    @property
-    def meta(self):
-        return self._meta
-
-    @meta.setter
-    def meta(self, meta):
-        self._meta = meta
-
-    @property
-    def parrent(self):
-        return self._parrent
-
-    @parrent.setter
-    def parrent(self, parrent):
-        self._parrent = parrent
-
-    @property
     def children(self):
         return itervalues(self._children if self._children is not None else {})
-
-    @property
-    def count(self):
-        return self._count
-
-    @count.setter
-    def count(self, count):
-        self._count = count
 
     def add_child(self, kv):
         """Add a node to the children data set.
@@ -296,8 +268,38 @@ class cached_property(object):
 
 
 def get_classes(module, base_cls, include_base_cls=True):
+    """Get specified classes form module.
+
+    Args:
+        module (module): Where to find classes.
+        base_cls (type): The base class.
+        include_base_cls (bool, optional): Defaults to True.
+            Whether include base class.
+
+    Returns:
+        list: The specified classes.
+    """
     def is_class(c):
         return inspect.isclass(c) \
             and issubclass(c, base_cls) \
             and (include_base_cls or c != base_cls)
     return [c for _, c in inspect.getmembers(module, is_class)]
+
+
+def with_metaclass(meta, *bases):
+    """Create a base class with a metaclass.
+
+    From six.
+    """
+    # This requires a bit of explanation: the basic idea is to make a dummy
+    # metaclass for one level of class instantiation that replaces itself with
+    # the actual metaclass.
+    class metaclass(type):
+
+        def __new__(cls, name, this_bases, d):
+            return meta(name, bases, d)
+
+        @classmethod
+        def __prepare__(cls, name, this_bases):
+            return meta.__prepare__(name, bases)
+    return type.__new__(metaclass, 'temporary_class', (), {})

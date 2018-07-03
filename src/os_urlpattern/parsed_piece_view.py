@@ -15,16 +15,12 @@ class ParsedPieceView(object):
     raw parsed piece.
 
     """
-    __slots__ = ('_parsed_piece', '_parsed_pieces', '_view')
+    __slots__ = ('parsed_piece', '_parsed_pieces', '_view')
 
     def __init__(self, parsed_piece):
-        self._parsed_piece = parsed_piece
+        self.parsed_piece = parsed_piece
         self._parsed_pieces = None
         self._view = None
-
-    @property
-    def parsed_piece(self):
-        return self._parsed_piece
 
     def __eq__(self, o):
         if not isinstance(o, ParsedPieceView):
@@ -46,7 +42,7 @@ class ParsedPieceView(object):
             return self._parsed_pieces
 
         self._parsed_pieces = [ParsedPiece((piece,), (rule,)) for piece, rule in zip(
-            self._parsed_piece.pieces, self._parsed_piece.rules)]
+            self.parsed_piece.pieces, self.parsed_piece.rules)]
         return self._parsed_pieces
 
 
@@ -54,14 +50,14 @@ class PieceView(ParsedPieceView):
 
     def __init__(self, parsed_piece):
         super(PieceView, self).__init__(parsed_piece)
-        self._view = self._parsed_piece.piece
+        self._view = self.parsed_piece.piece
 
 
 class LengthView(ParsedPieceView):
 
     def __init__(self, parsed_piece):
         super(LengthView, self).__init__(parsed_piece)
-        self._view = self._parsed_piece.piece_length
+        self._view = self.parsed_piece.piece_length
 
 
 class MultiView(ParsedPieceView):
@@ -75,11 +71,11 @@ class MixedView(ParsedPieceView):
         if self._parsed_pieces:
             return self._parsed_pieces
 
-        if len(self._parsed_piece.rules) <= 1:
-            self._parsed_pieces = [self._parsed_piece]
+        if len(self.parsed_piece.rules) <= 1:
+            self._parsed_pieces = [self.parsed_piece]
         else:
             mixed_pieces, mixed_rules = mix(
-                self._parsed_piece.pieces, self._parsed_piece.rules)
+                self.parsed_piece.pieces, self.parsed_piece.rules)
 
             self._parsed_pieces = [ParsedPiece(
                 (piece,), (rule,)) for piece, rule in zip(mixed_pieces, mixed_rules)]
@@ -92,7 +88,7 @@ class LastDotSplitFuzzyView(ParsedPieceView):
     def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
-        rules = self._parsed_piece.rules
+        rules = self.parsed_piece.rules
         dot_idx = None
         part_num = len(rules)
         for idx, rule in enumerate(reversed(rules)):
@@ -101,25 +97,25 @@ class LastDotSplitFuzzyView(ParsedPieceView):
             if rule == BasePatternRule.DOT:
                 dot_idx = part_num - idx - 1
                 break
-        self._parsed_pieces = [ParsedPiece((self._parsed_piece.piece,),
-                                           (self._parsed_piece.fuzzy_rule,))]
+        self._parsed_pieces = [ParsedPiece((self.parsed_piece.piece,),
+                                           (self.parsed_piece.fuzzy_rule,))]
         if dot_idx is not None:
             skip = False
-            for rule in self._parsed_piece.rules[dot_idx + 1:]:
+            for rule in self.parsed_piece.rules[dot_idx + 1:]:
                 if rule not in DIGIT_AND_ASCII_RULE_SET:
                     skip = True
                     break
             if not skip:
                 pieces = []
                 rules = []
-                pieces.append(''.join(self._parsed_piece.pieces[0:dot_idx]))
-                pieces.append(self._parsed_piece.pieces[dot_idx])
+                pieces.append(''.join(self.parsed_piece.pieces[0:dot_idx]))
+                pieces.append(self.parsed_piece.pieces[dot_idx])
                 rules.append(
-                    ''.join(sorted(set(self._parsed_piece.rules[0:dot_idx]))))
-                rules.append(self._parsed_piece.rules[dot_idx])
+                    ''.join(sorted(set(self.parsed_piece.rules[0:dot_idx]))))
+                rules.append(self.parsed_piece.rules[dot_idx])
                 mixed_pieces, mixed_rules = mix(
-                    self._parsed_piece.pieces[dot_idx + 1:],
-                    self._parsed_piece.rules[dot_idx + 1:])
+                    self.parsed_piece.pieces[dot_idx + 1:],
+                    self.parsed_piece.rules[dot_idx + 1:])
                 pieces.extend(mixed_pieces)
                 rules.extend(mixed_rules)
                 self._parsed_pieces = [ParsedPiece(
@@ -131,14 +127,14 @@ class FuzzyView(ParsedPieceView):
 
     def __init__(self, parsed_piece):
         super(FuzzyView, self).__init__(parsed_piece)
-        self._view = self._parsed_piece.fuzzy_rule
+        self._view = self.parsed_piece.fuzzy_rule
 
     @property
     def parsed_pieces(self):
         if self._parsed_pieces:
             return self._parsed_pieces
-        self._parsed_pieces = [ParsedPiece((self._parsed_piece.piece,),
-                                           (self._parsed_piece.fuzzy_rule,))]
+        self._parsed_pieces = [ParsedPiece((self.parsed_piece.piece,),
+                                           (self.parsed_piece.fuzzy_rule,))]
         return self._parsed_pieces
 
 

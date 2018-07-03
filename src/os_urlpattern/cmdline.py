@@ -106,6 +106,7 @@ class MakePatternCommand(Command):
         load_url = args.format_type in ('CLUSTER', 'INLINE')
         stats = Counter()
         with LogSpeedAdapter(self._logger, 5000) as speed_logger:
+            load = pattern_maker.load
             for line in args.file[0]:
                 speed_logger.debug('[LOADING]')
                 stats['ALL'] += 1
@@ -115,8 +116,7 @@ class MakePatternCommand(Command):
                     continue
                 try:
                     url = line.decode(DEFAULT_ENCODING)
-                    _, is_new = pattern_maker.load(
-                        url, meta=url if load_url else None)
+                    _, is_new = load(url, meta=url if load_url else None)
                     if is_new:
                         stats['UNIQ'] += 1
                     stats['VALID'] += 1
@@ -176,6 +176,7 @@ class MatchPatternCommand(Command):
         io_input = args.pattern_file[0]
         self._logger.debug('[LOAD] Pattrn file: %s', io_input.name)
         with LogSpeedAdapter(self._logger, 1000) as speed_logger:
+            load = pattern_matcher.load
             for line in io_input:
                 speed_logger.debug('[LOADING]')
                 stats['ALL'] += 1
@@ -185,7 +186,7 @@ class MatchPatternCommand(Command):
                     continue
                 try:
                     pattern = line.decode(DEFAULT_ENCODING)
-                    pattern_matcher.load(pattern, meta=pattern)
+                    load(pattern, meta=pattern)
                     stats['VALID'] += 1
                 except Exception as e:
                     self._logger.warn("%s, %r", str(e), line)
@@ -216,16 +217,17 @@ class MatchPatternCommand(Command):
 
     def _match(self, pattern_matcher, args):
         speed_logger = LogSpeedAdapter(self._logger, 5000)
+        write = binary_stdout.write
         for line in args.file[0]:
             speed_logger.debug('[MATCHING]')
             line = line.strip()
             result = self._match_result(pattern_matcher, line, args)
             if not result:
                 result = b'N'
-            binary_stdout.write(result)
-            binary_stdout.write(b'\t')
-            binary_stdout.write(line)
-            binary_stdout.write(b'\n')
+            write(result)
+            write(b'\t')
+            write(line)
+            write(b'\n')
 
     def run(self, args):
         pattern_matcher = PatternMatcher()

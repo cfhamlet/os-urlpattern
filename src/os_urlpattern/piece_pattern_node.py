@@ -34,14 +34,14 @@ class PiecePatternNode(TreeNode):
 
     @property
     def parsed_piece(self):
-        return self._value
+        return self.value
 
     @property
     def children_num(self):
         return len(self._children)
 
     def incr_count(self, count, recur=False):
-        self._count += count
+        self.count += count
         node = self.parrent if recur else None
         while node:
             node.incr_count(count)
@@ -53,16 +53,16 @@ class PiecePatternNode(TreeNode):
     def add_meta(self, data):
         if data is None:
             return
-        if self._meta is None:
-            self._meta = set()
-        self._meta.add(data)
+        if self.meta is None:
+            self.meta = set()
+        self.meta.add(data)
 
     def update_meta(self, data):
         if not data:
             return
-        if self._meta is None:
-            self._meta = set()
-        self._meta.update(data)
+        if self.meta is None:
+            self.meta = set()
+        self.meta.update(data)
 
 
 def build_from_parsed_pieces(root, parsed_pieces, count=1, meta=None, uniq=True):
