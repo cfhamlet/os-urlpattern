@@ -18,7 +18,7 @@ if _PY3:
     binary_stdout = sys.stdout.buffer
 else:
     try:
-        from cStringIO import StringIO  # trick, only process ascii
+        from cStringIO import StringIO  # safe, only process ascii
     except ImportError:
         from StringIO import StringIO
     iteritems = operator.methodcaller("iteritems")
