@@ -195,19 +195,20 @@ Command line
   .. code:: console
     
     $ pattern-make -h
-    usage: pattern-make [-h] [-f FILE [FILE ...]]
-                        [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
-                        [-c CONFIG [CONFIG ...]] [-F {JSON,ETE}]
+    usage: pattern-make [-h] [-i INPUT [INPUT ...]]
+                        [-l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
+                        [-c CONFIG [CONFIG ...]]
+                        [-f {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}]
 
     optional arguments:
       -h, --help            show this help message and exit
-      -f FILE [FILE ...], --file FILE [FILE ...]
-                            file to be processed (default: stdin)
-      -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+      -i INPUT [INPUT ...], --input INPUT [INPUT ...]
+                            input file to be processed (default: stdin)
+      -l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
                             log level (default: NOTSET)
       -c CONFIG [CONFIG ...], --config CONFIG [CONFIG ...]
                             config file
-      -F {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}, --formatter {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}
+      -f {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}, --formatter {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}
                             output formatter (default: CLUSTER)
   
   Dump clustered URLs with patterns:
@@ -235,18 +236,19 @@ Command line
   .. code:: console
     
     $ pattern-match -h
-    usage: pattern-match [-h] [-f FILE [FILE ...]]
-                      [-L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
-                      [PATTERN_FILE ...]
+    usage: pattern-match [-h] [-i INPUT [INPUT ...]]
+                      [-l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
+                      [PATTERN_FILE ...] [-a]
 
     optional arguments:
       -h, --help            show this help message and exit
-      -f FILE [FILE ...], --file FILE [FILE ...]
-                            file to be processed (default: stdin)
-      -L {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
+      -i INPUT [INPUT ...], --input INPUT [INPUT ...]
+                            input file to be processed (default: stdin)
+      -l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
                             log level (default: NOTSET)
       -p PATTERN_FILE [PATTERN_FILE ...], --pattern-file PATTERN_FILE [PATTERN_FILE ...]
                             pattern file to be loaded
+      -a, --all_matched     all matched patterns
 
 
   Match URLs:

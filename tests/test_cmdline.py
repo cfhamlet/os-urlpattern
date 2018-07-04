@@ -33,17 +33,17 @@ def test_make(tmpdir):
     data = "\n".join(urls)
     f = tmpdir.join('urls.txt')
     f.write(data)
-    cmdline = 'make -f %s' % f.strpath
+    cmdline = 'make -i %s' % f.strpath
     stdout, _ = call(cmdline)
     assert b'/abc[0-9]{2}' in stdout
     assert urls[0].encode() in stdout
 
-    cmdline = 'make -f %s -F pattern' % f.strpath
+    cmdline = 'make -i %s -f pattern' % f.strpath
     stdout, _ = call(cmdline)
     assert b'/abc[0-9]{2}' in stdout
     assert urls[0].encode() not in stdout
 
-    cmdline = 'make -f %s -F ete' % f.strpath
+    cmdline = 'make -i %s -f ete' % f.strpath
     stdout, _ = call(cmdline)
     assert b' abc[0-9]{2}(%d) ' % num
     assert b' [\\?]id=[0-9]{2}(%d) ' % num
@@ -57,7 +57,7 @@ def test_make_digest_type_urls(tmpdir):
     data = "\n".join(urls)
     f = tmpdir.join('urls.txt')
     f.write(data)
-    cmdline = 'make -f %s -F pattern ' % f.strpath
+    cmdline = 'make -i %s -f pattern ' % f.strpath
     stdout, _ = call(cmdline)
     assert b'[0-9a-z]{32}[\\.]html' in stdout
 
@@ -70,7 +70,7 @@ def test_make_noise(tmpdir):
     data = "\n".join(urls)
     f = tmpdir.join('urls.txt')
     f.write(data)
-    cmdline = 'make -f %s -F pattern ' % f.strpath
+    cmdline = 'make -i %s -f pattern ' % f.strpath
     stdout, _ = call(cmdline)
     assert b'/abc[0-9]{2}' in stdout
     assert b'/abc009' in stdout
@@ -88,7 +88,7 @@ def test_make_fuzzy(tmpdir):
     data = "\n".join(urls)
     f = tmpdir.join('urls01.txt')
     f.write(data)
-    cmdline = 'make -f %s -F pattern ' % f.strpath
+    cmdline = 'make -i %s -f pattern ' % f.strpath
     stdout, _ = call(cmdline)
     assert b'/abc/[a-z]+' in stdout
 
@@ -96,7 +96,7 @@ def test_make_fuzzy(tmpdir):
     data = "\n".join(urls)
     f = tmpdir.join('urls02.txt')
     f.write(data)
-    cmdline = 'make -f %s -F pattern ' % f.strpath
+    cmdline = 'make -i %s -f pattern ' % f.strpath
     stdout, _ = call(cmdline)
     assert b'/abc/[a-z]+[\\.]html' in stdout
 
@@ -111,7 +111,7 @@ def test_match(tmpdir):
     fu = tmpdir.join('urls.txt')
     fu.write(data)
 
-    cmdline = 'match -f %s -p %s' % (fu.strpath, fp.strpath)
+    cmdline = 'match -i %s -p %s' % (fu.strpath, fp.strpath)
     stdout, _ = call(cmdline)
 
     assert pattern in stdout
