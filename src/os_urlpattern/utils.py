@@ -2,6 +2,7 @@
 """
 import inspect
 import logging
+import math
 import os
 import time
 from functools import partial
@@ -218,7 +219,7 @@ class LogSpeedAdapter(logging.LoggerAdapter):
 
 
 def used_memory():
-    """Human readable memory usage.
+    """Human readable memory usage(Byte).
 
     Returns:
         str: Memory usage.
@@ -229,12 +230,31 @@ def used_memory():
     except:
         return '-'
     p = psutil.Process(os.getpid())
-    memory = p.memory_info().rss / 1024.0
-    for i in ('K', 'M', 'G'):
-        if memory < 1024.0:
-            return '%.1f%s' % (memory, i)
-        memory = memory / 1024.0
-    return '%.1fG' % memory
+    memory = p.memory_info().rss
+    return format_byte(memory)
+
+
+# global variables for format_byte
+_UNIT_SUFFIXES = ['', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y']
+_LOG_1024 = math.log(1024)
+_SUFFIXES_LENGTH = len(_UNIT_SUFFIXES)
+
+
+def format_byte(value, precision=2):
+    """Format byte size into human readable.
+
+    Args:
+        value (int): The byte size.
+        precision (int, optional): Defaults to 2. Precision.
+
+    Returns:
+        str: Human readable format.
+    """
+
+    factor = float(10 ** precision)
+    suffix = min(int(math.log(value) / _LOG_1024), _SUFFIXES_LENGTH)
+    num = math.ceil(value / (1024.0 ** suffix) * factor) / factor
+    return ''.join((str(num), _UNIT_SUFFIXES[suffix]))
 
 
 class MemoryUsageFormatter(logging.Formatter):
