@@ -237,8 +237,8 @@ Command line
     
     $ pattern-match -h
     usage: pattern-match [-h] [-i INPUT [INPUT ...]]
-                      [-l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
-                      [PATTERN_FILE ...] [-a]
+                         [-l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
+                         [PATTERN_FILE ...] [-a]
 
     optional arguments:
       -h, --help            show this help message and exit
