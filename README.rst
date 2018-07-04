@@ -261,7 +261,7 @@ APIs
 * Cluster and generate URL patterns:
 
   .. code:: python 
-  
+
     from os_urlpattern.formatter import pformat
     from os_urlpattern.pattern_maker import PatternMaker
 
@@ -274,7 +274,8 @@ APIs
     # cluster and print pattern
     for url_meta, clustered in pattern_maker.make():
         for pattern in pformat('pattern', url_meta, clustered):
-            print(pattern)
+            # do whatever you want
+            pass
 
 
 * Match URLs:
