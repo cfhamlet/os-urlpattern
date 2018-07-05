@@ -56,6 +56,12 @@ class Command(object):
 
     def add_argument(self, parser):
 
+        parser.add_argument('-v', '--version',
+                            action='version',
+                            version='%(prog)s {version}'.format(
+                                version=__version__)
+                            )
+
         parser.add_argument('-i', '--input',
                             help='input file to be processed (default: stdin)',
                             nargs='+',
@@ -238,7 +244,7 @@ class MatchPatternCommand(Command):
 
 def _execute(command, argv=None):
     argv = argv or sys.argv
-    parser = argparse.ArgumentParser(version=__version__)
+    parser = argparse.ArgumentParser()
     command.add_argument(parser)
     args = parser.parse_args(argv[1:])
     command.process_args(args)
