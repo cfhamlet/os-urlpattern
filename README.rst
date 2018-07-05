@@ -195,13 +195,14 @@ Command line
   .. code:: console
     
     $ pattern-make -h
-    usage: pattern-make [-h] [-i INPUT [INPUT ...]]
+    usage: pattern-make [-h] [-v] [-i INPUT [INPUT ...]]
                         [-l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}]
                         [-c CONFIG [CONFIG ...]]
                         [-f {PATTERN,CLUSTER,JSON,ETE,INLINE,NULL}]
 
     optional arguments:
       -h, --help            show this help message and exit
+      -v, --version         show program's version number and exit
       -i INPUT [INPUT ...], --input INPUT [INPUT ...]
                             input file to be processed (default: stdin)
       -l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
@@ -236,12 +237,13 @@ Command line
   .. code:: console
     
     $ pattern-match -h
-    usage: pattern-match [-h] [-i INPUT [INPUT ...]]
+    usage: pattern-match [-h] [-v] [-i INPUT [INPUT ...]]
                          [-l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}] -p PATTERN_FILE
                          [PATTERN_FILE ...] [-a]
 
     optional arguments:
       -h, --help            show this help message and exit
+      -v, --version         show program's version number and exit
       -i INPUT [INPUT ...], --input INPUT [INPUT ...]
                             input file to be processed (default: stdin)
       -l {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}, --loglevel {NOTSET,DEBUG,INFO,WARN,ERROR,FATAL}
