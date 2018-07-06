@@ -14,6 +14,7 @@ import logging.config
 import sys
 import time
 from collections import Counter
+from itertools import chain
 
 from . import __version__
 from .compat import binary_stdin, binary_stdout
@@ -62,12 +63,12 @@ class Command(object):
                                 version=__version__)
                             )
 
-        parser.add_argument('-i', '--input',
-                            help='input file to be processed (default: stdin)',
+        parser.add_argument('-i', '--inputs',
+                            help='input files to be processed (default: stdin)',
                             nargs='+',
                             type=argparse.FileType('rb'),
                             default=[binary_stdin],
-                            dest='input')
+                            dest='inputs')
 
         parser.add_argument('-l', '--loglevel',
                             help='log level (default: NOTSET)',
@@ -96,9 +97,8 @@ class MakePatternCommand(Command):
         super(MakePatternCommand, self).add_argument(parser)
         parser.add_argument('-c', '--config',
                             help='config file',
-                            nargs='+',
+                            nargs=1,
                             type=argparse.FileType('r'),
-                            action='store',
                             dest='config')
 
         parser.add_argument('-f', '--formatter',
@@ -114,7 +114,7 @@ class MakePatternCommand(Command):
         stats = Counter()
         with LogSpeedAdapter(self._logger, 5000) as speed_logger:
             load = pattern_maker.load
-            for line in args.input[0]:
+            for line in chain.from_iterable(args.inputs):
                 speed_logger.debug('[LOADING]')
                 stats['ALL'] += 1
                 line = line.strip()
@@ -164,13 +164,12 @@ class MatchPatternCommand(Command):
 
     def add_argument(self, parser):
         super(MatchPatternCommand, self).add_argument(parser)
-        parser.add_argument('-p', '--pattern-file',
-                            help='pattern file to be loaded',
+        parser.add_argument('-p', '--pattern-files',
+                            help='pattern files to be loaded',
                             nargs='+',
                             type=argparse.FileType('rb'),
                             required=True,
-                            action='store',
-                            dest='pattern_file')
+                            dest='pattern_files')
 
         parser.add_argument('-a', '--all_matched',
                             help='all matched patterns',
@@ -180,11 +179,14 @@ class MatchPatternCommand(Command):
 
     def _load(self, pattern_matcher, args):
         stats = Counter()
-        io_input = args.pattern_file[0]
-        self._logger.debug('[LOAD] Pattrn file: %s', io_input.name)
+        p_inputs = args.pattern_files
+        self._logger.debug('[LOAD] %d pattern file%s: %s',
+                           len(p_inputs),
+                           's' if len(p_inputs) > 1 else '',
+                           ', '.join([p.name for p in p_inputs]))
         with LogSpeedAdapter(self._logger, 1000) as speed_logger:
             load = pattern_matcher.load
-            for line in io_input:
+            for line in chain.from_iterable(p_inputs):
                 speed_logger.debug('[LOADING]')
                 stats['ALL'] += 1
                 line = line.rstrip()
@@ -225,7 +227,7 @@ class MatchPatternCommand(Command):
     def _match(self, pattern_matcher, args):
         speed_logger = LogSpeedAdapter(self._logger, 5000)
         write = binary_stdout.write
-        for line in args.input[0]:
+        for line in chain.from_iterable(args.inputs):
             speed_logger.debug('[MATCHING]')
             line = line.strip()
             result = self._match_result(pattern_matcher, line, args)
