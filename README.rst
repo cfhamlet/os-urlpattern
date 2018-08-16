@@ -81,7 +81,7 @@ Character space
 Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_,
 URL with the following characters would be legal:
 
-``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
+``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%<>\"{}^|``
 
 There are three major character space: lower-case letters(a-z), upper-case letters(A-Z), 
 number letters(0-9). Other symbols are in their own character space.
