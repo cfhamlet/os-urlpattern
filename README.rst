@@ -249,7 +249,7 @@ Command line
                             log level (default: NOTSET)
       -p PATTERN_FILES [PATTERN_FILES ...], --pattern-files PATTERN_FILES [PATTERN_FILES ...]
                             pattern files to be loaded
-      -a, --all_matched     all matched patterns
+      -a, --all-matched     all matched patterns
 
 
   Match URLs:

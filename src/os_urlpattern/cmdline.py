@@ -171,7 +171,7 @@ class MatchPatternCommand(Command):
                             required=True,
                             dest='pattern_files')
 
-        parser.add_argument('-a', '--all_matched',
+        parser.add_argument('-a', '--all-matched',
                             help='all matched patterns',
                             default=False,
                             action='store_true',
