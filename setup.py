@@ -34,7 +34,7 @@ setup(
     },
     extras_require={
         'memory': ['psutil'],
-        'ete_tree': ['six', 'ete3']
+        'ete-tree': ['six', 'ete3']
     },
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',

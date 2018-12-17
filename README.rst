@@ -178,7 +178,7 @@ Install extra packages
     - ``pip install os-urlpattern[memroy]``
     - Show memory useage
   * - ete-tree
-    - ``pip install os-urlpattern[ete_tree]``
+    - ``pip install os-urlpattern[ete-tree]``
     - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
 
 ========
