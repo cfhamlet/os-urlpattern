@@ -81,7 +81,7 @@ Character space
 Consider `RFC 3986 (Section 2: Characters) <https://tools.ietf.org/html/rfc3986#section-2>`_,
 URL with the following characters would be legal:
 
-``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=``
+``ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%<>\"{}^|``
 
 There are three major character space: lower-case letters(a-z), upper-case letters(A-Z), 
 number letters(0-9). Other symbols are in their own character space.
@@ -178,7 +178,7 @@ Install extra packages
     - ``pip install os-urlpattern[memroy]``
     - Show memory useage
   * - ete-tree
-    - ``pip install os-urlpattern[ete_tree]``
+    - ``pip install os-urlpattern[ete-tree]``
     - Enable `ete <https://github.com/etetoolkit/ete>`_ pattern tree formatter
 
 ========
@@ -249,7 +249,7 @@ Command line
                             log level (default: NOTSET)
       -p PATTERN_FILES [PATTERN_FILES ...], --pattern-files PATTERN_FILES [PATTERN_FILES ...]
                             pattern files to be loaded
-      -a, --all_matched     all matched patterns
+      -a, --all-matched     all matched patterns
 
 
   Match URLs:

@@ -1,4 +1,4 @@
-"""Cluster algrithm.
+"""Cluster algorithm.
 """
 from __future__ import unicode_literals
 
