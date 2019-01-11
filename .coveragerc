@@ -7,3 +7,4 @@ source = os_urlpattern
 source =
     src/os_urlpattern
     .tox/*/lib/python*/site-packages/os_urlpattern
+    .tox/*/site-packages/os_urlpattern
